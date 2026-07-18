@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ── GLOBAL TENANT ISOLATION ──
+    match /tenants/{tenantId}/{document=**} {
+      
+      // ALLOW: Public submission of surveys for all tenants (inc. demo)
+      allow create: if true; 
+      
+      // ALLOW: Read access restricted by token (for production) 
+      // OR allow access if it's a demo tenant (for demo testing)
+      allow read: if request.auth != null && 
+                  (request.auth.token.airline == tenantId || tenantId.matches('demo-.*'));
+                  
+      // DENY: Write/Delete protection for all tenants
+      allow update, delete: if false; 
+    }
+  }
+}

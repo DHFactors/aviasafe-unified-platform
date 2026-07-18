@@ -1,0 +1,110 @@
+<!-- 
+  FOLDER/FILE PATH: public/index.html
+  VERSION NO: 1.0.0
+  DATE: 2026-07-17
+  PURPOSE OF THE FILE: The global State Safety Programme (SSP) role gateway. 
+  Directs incoming traffic to the appropriate isolated cloud application 
+  based on the user's operational role.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Safety Programme | Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #002F6C;
+            --sky: #00A3E0;
+            --white: #FFFFFF;
+            --light: #F8FAFC;
+            --text: #1E293B;
+            --border: #E2E8F0;
+        }
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--light);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .gateway-card {
+            background: var(--white);
+            padding: 3rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 47, 108, 0.08);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            border-top: 6px solid var(--navy);
+        }
+        h1 {
+            font-family: 'Roboto', sans-serif;
+            color: var(--navy);
+            margin-bottom: 0.5rem;
+        }
+        p.subtitle {
+            color: #64748B;
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+        }
+        .role-btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: var(--white);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            color: var(--navy);
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+        .role-btn:hover {
+            border-color: var(--sky);
+            background: #F0F9FF;
+            transform: translateY(-2px);
+        }
+        .role-btn.primary {
+            background: var(--navy);
+            color: var(--white);
+            border-color: var(--navy);
+        }
+        .role-btn.primary:hover {
+            background: #004080;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="gateway-card">
+        <h1>Safety Culture Portal</h1>
+        <p class="subtitle">State Safety Programme (SSP) · ICAO Annex 19</p>
+
+        <!-- Employee Survey Route (Appends a test tenant parameter) -->
+        <a href="/survey/index.html?tenant=sita-air" class="role-btn primary">
+            ✈️ Take Safety Survey
+        </a>
+
+        <!-- Safety Manager Route -->
+        <a href="/dashboards/safety.html" class="role-btn">
+            📊 Airline Safety Manager Login
+        </a>
+
+        <!-- CAAN Regulator Route -->
+        <a href="/dashboards/caan.html" class="role-btn">
+            🏛️ CAAN SMD Login
+        </a>
+    </div>
+
+</body>
+</html>
