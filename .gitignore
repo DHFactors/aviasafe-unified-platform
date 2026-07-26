@@ -1,0 +1,16 @@
+# Database Secrets and Local Keys
+.env
+backend/.env
+*.env
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# IDE and System Files
+.vscode/
+.idea/
+Thumbs.db

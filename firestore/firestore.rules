@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── SUPER ADMIN: Full system access ──
+    match /{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.role == 'SUPER_ADMIN';
+    }
+
+    // ── TENANT METADATA ──
+    match /tenants/{tenantId} {
+      // SUPER_ADMIN can create/update tenant metadata
+      allow read: if request.auth != null && (
+        request.auth.token.role == 'CAAN_SMD' ||
+        request.auth.token.role == 'AIRLINE_ADMIN'
+      );
+      allow create, update, delete: if request.auth != null && request.auth.token.role == 'SUPER_ADMIN';
+    }
+
+    // ── TENANT RESPONSES (SURVEY DATA) ──
+    match /tenants/{tenantId}/responses/{document=**} {
+
+      // Public submission (anonymous surveys)
+      allow create: if true;
+
+      // Tenant isolation: only matching airline admin can read
+      allow read: if request.auth != null && (
+        request.auth.token.airline == tenantId ||
+        tenantId.matches('demo-.*')
+      );
+
+      // Immutable records — Just Culture protection
+      allow update, delete: if false;
+    }
+  }
+}

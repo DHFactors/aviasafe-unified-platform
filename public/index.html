@@ -1,0 +1,462 @@
+<!-- ============================================================================
+FILE: index.html
+PATH: public/index.html
+VERSION: 2.3.0
+DATE CREATED: 2026-07-26
+DATE REVISED: 2026-07-26
+PURPOSE: Main landing page for AviaSAFE SSP Platform.
+         Marketing-first copy with benefit-driven messaging.
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: AviaSafeSystems
+============================================================================ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AviaSAFEsystem - Aviation Safety Management Platform</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/tenant-overrides.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ========== HERO ========== */
+        .hero {
+            background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+            color: var(--color-white);
+            padding: var(--spacing-3xl) 0;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: var(--font-size-4xl);
+            color: var(--color-white);
+            margin-bottom: var(--spacing-md);
+        }
+        .hero h1 .safe-highlight {
+            color: #34a853;
+        }
+        .hero p {
+            font-size: var(--font-size-lg);
+            max-width: 700px;
+            margin: 0 auto var(--spacing-xl);
+            opacity: 0.9;
+        }
+        .hero .btn-group {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .hero .btn-hero-primary {
+            background: var(--color-secondary);
+            color: var(--color-white);
+            padding: var(--spacing-md) var(--spacing-2xl);
+            border-radius: var(--border-radius-md);
+            font-weight: 600;
+            transition: all var(--transition-normal);
+        }
+        .hero .btn-hero-primary:hover {
+            background: var(--color-secondary-dark);
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+        .hero .btn-hero-secondary {
+            background: rgba(255,255,255,0.15);
+            color: var(--color-white);
+            padding: var(--spacing-md) var(--spacing-2xl);
+            border-radius: var(--border-radius-md);
+            font-weight: 600;
+            border: 2px solid rgba(255,255,255,0.3);
+            transition: all var(--transition-normal);
+        }
+        .hero .btn-hero-secondary:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        /* ========== FEATURES ========== */
+        .features-section {
+            padding: var(--spacing-3xl) 0;
+            background: var(--color-white);
+        }
+        .features-section h2 {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-xl);
+        }
+        .feature-card {
+            background: var(--color-gray-50);
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            text-align: center;
+            transition: all var(--transition-normal);
+            border: 1px solid transparent;
+        }
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--color-primary-light);
+        }
+        .feature-card i {
+            font-size: 2.5rem;
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-md);
+        }
+        .feature-card h3 {
+            margin-bottom: var(--spacing-xs);
+        }
+        .feature-card .tagline {
+            font-size: var(--font-size-sm);
+            color: var(--color-primary);
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+        }
+        .feature-card p {
+            color: var(--color-gray-700);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-md);
+        }
+        .feature-card .badge {
+            display: inline-block;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ========== BADGES ========== */
+        .badge-thermometer { background: var(--color-info-bg); color: var(--color-info); }
+        .badge-speakup { background: var(--color-success-bg); color: var(--color-success); }
+        .badge-regulatory { background: var(--color-danger-bg); color: var(--color-danger); }
+        .badge-cockpit { background: var(--color-warning-bg); color: var(--color-warning); }
+        .badge-pulse { background: var(--color-primary-light); color: var(--color-primary-dark); }
+        .badge-command { background: var(--color-secondary-light); color: var(--color-secondary-dark); }
+
+        /* ========== TRUST SECTION ========== */
+        .trust-section {
+            background: var(--color-gray-50);
+            padding: var(--spacing-3xl) 0;
+            text-align: center;
+        }
+        .trust-section h2 {
+            margin-bottom: var(--spacing-xl);
+        }
+        .trust-section h2 i {
+            color: var(--color-primary);
+            margin-right: var(--spacing-sm);
+        }
+        .trust-logos {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-2xl);
+            flex-wrap: wrap;
+            opacity: 0.8;
+        }
+        .trust-logos span {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--color-gray-600);
+            letter-spacing: 1px;
+        }
+
+        /* ========== TENANT PORTAL ========== */
+        .tenant-portal-section {
+            background: var(--color-primary-light);
+            padding: var(--spacing-2xl) 0;
+            text-align: center;
+        }
+        .tenant-portal-section h2 {
+            color: var(--color-primary-dark);
+        }
+        .tenant-portal-section p {
+            color: var(--color-gray-700);
+            max-width: 600px;
+            margin: 0 auto var(--spacing-lg);
+        }
+        .tenant-input-group {
+            display: flex;
+            max-width: 400px;
+            margin: 0 auto;
+            gap: var(--spacing-sm);
+        }
+        .tenant-input-group input {
+            flex: 1;
+            padding: var(--spacing-md);
+            border: var(--border-width) solid var(--color-gray-300);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-base);
+        }
+        .tenant-input-group input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+        }
+        .tenant-input-group .btn {
+            padding: var(--spacing-md) var(--spacing-xl);
+            background: var(--color-primary);
+            color: var(--color-white);
+            border: none;
+            border-radius: var(--border-radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+        .tenant-input-group .btn:hover {
+            background: var(--color-primary-dark);
+        }
+        .tenant-hint {
+            margin-top: var(--spacing-md);
+            font-size: var(--font-size-sm);
+            color: var(--color-gray-700);
+        }
+        .tenant-hint code {
+            background: var(--color-gray-200);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-xs);
+        }
+
+        /* ========== UTILITIES ========== */
+        section {
+            scroll-margin-top: 80px;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 992px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .hero h1 { font-size: var(--font-size-2xl); }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .tenant-input-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<header class="app-header">
+    <div class="container header-content">
+        <div class="logo">
+            <i class="fas fa-shield-alt"></i>
+            <span>Avia<span style="color: #34a853;">SAFE</span>system</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/" class="active">Home</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#tenants">Tenant Portal</a></li>
+                <li><a href="login.html" class="btn btn-outline" style="color: white; border-color: rgba(255,255,255,0.3);">Login</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<!-- ========== HERO ========== -->
+<section class="hero" id="home">
+    <div class="container">
+        <h1>Avia<span class="safe-highlight">SAFE</span>system</h1>
+        <p>
+            ICAO Annex 19 & CAR-19 compliant. Enterprise-grade safety management
+            for airlines, regulators, and aviation organizations.
+        </p>
+        <div class="btn-group">
+            <a href="/survey/" class="btn-hero-primary">
+                <i class="fas fa-clipboard-list"></i> Take Survey
+            </a>
+            <a href="login.html" class="btn-hero-secondary">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ========== FEATURES ========== -->
+<section class="features-section" id="features">
+    <div class="container">
+        <h2>Complete Safety Management Solution</h2>
+        <div class="features-grid">
+
+            <!-- 1. Survey -->
+            <div class="feature-card">
+                <i class="fas fa-thermometer-half"></i>
+                <h3>Gap Analysis Survey</h3>
+                <div class="tagline">Your Safety Thermometer</div>
+                <p>Measure your SMS health in 15 minutes. Bilingual support (English/Nepali).</p>
+                <span class="badge badge-thermometer">Take the Pulse</span>
+            </div>
+
+            <!-- 2. VSR -->
+            <div class="feature-card">
+                <i class="fas fa-comment-dots"></i>
+                <h3>Voluntary Safety Report</h3>
+                <div class="tagline">Speak Up, Stay Safe</div>
+                <p>Anonymous reporting. Just Culture protected. Your voice matters.</p>
+                <span class="badge badge-speakup">Always Open</span>
+            </div>
+
+            <!-- 3. MOR -->
+            <div class="feature-card">
+                <i class="fas fa-gavel"></i>
+                <h3>Mandatory Occurrence Report</h3>
+                <div class="tagline">Regulatory-Ready Reporting</div>
+                <p>ICAO/EASA compliant. 72-hour submission window. Audit-ready.</p>
+                <span class="badge badge-regulatory">Compliant</span>
+            </div>
+
+            <!-- 4. Dashboard -->
+            <div class="feature-card">
+                <i class="fas fa-cockpit"></i>
+                <h3>Safety Dashboard</h3>
+                <div class="tagline">Your Safety Cockpit</div>
+                <p>Real-time visibility. Actionable insights. Risk at a glance.</p>
+                <span class="badge badge-cockpit">Command Center</span>
+            </div>
+
+            <!-- 5. CAAN -->
+            <div class="feature-card">
+                <i class="fas fa-heart-pulse"></i>
+                <h3>CAAN Oversight</h3>
+                <div class="tagline">National Safety Pulse</div>
+                <p>Aggregated intelligence. Zero identity exposure. Industry-wide view.</p>
+                <span class="badge badge-pulse">Regulator Access</span>
+            </div>
+
+            <!-- 6. Admin -->
+            <div class="feature-card">
+                <i class="fas fa-sliders-h"></i>
+                <h3>System Administration</h3>
+                <div class="tagline">Command Center</div>
+                <p>Full control. Total visibility. Tenant and user management.</p>
+                <span class="badge badge-command">Admin Only</span>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ========== TENANT PORTAL ========== -->
+<section class="tenant-portal-section" id="tenants">
+    <div class="container">
+        <h2><i class="fas fa-building"></i> Tenant Portal</h2>
+        <p>
+            Enter your organization's tenant ID to access your dedicated safety portal.
+        </p>
+        <div class="tenant-input-group">
+            <input type="text" id="tenantInput" placeholder="e.g., sita-air" aria-label="Tenant ID">
+            <button class="btn" onclick="goToTenant()">
+                <i class="fas fa-arrow-right"></i> Go
+            </button>
+        </div>
+        <div class="tenant-hint">
+            <i class="fas fa-info-circle"></i>
+            Examples: <code>sita-air</code>, <code>buddha-air</code>, <code>tara-air</code>, <code>caan</code>, <code>admin</code>
+        </div>
+    </div>
+</section>
+
+<!-- ========== TRUST ========== -->
+<section class="trust-section">
+    <div class="container">
+        <h2><i class="fas fa-search-plus"></i> Recognize Your SMS Health Status</h2>
+        <p style="color: var(--color-gray-700); max-width: 600px; margin: 0 auto var(--spacing-xl);">
+            Built in alignment with international aviation safety standards.
+        </p>
+        <div class="trust-logos">
+            <span>ICAO Annex 19</span>
+            <span>CAR-19</span>
+            <span>EASA IMS</span>
+            <span>Just Culture</span>
+        </div>
+    </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="app-footer">
+    <div class="container">
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <span class="footer-divider">|</span>
+            <a href="/survey/">Survey</a>
+            <span class="footer-divider">|</span>
+            <a href="login.html">Login</a>
+            <span class="footer-divider">|</span>
+            <a href="#">Privacy Policy</a>
+            <span class="footer-divider">|</span>
+            <a href="#">Terms of Service</a>
+            <span class="footer-divider">|</span>
+            <a href="#">Contact</a>
+        </div>
+
+        <p style="margin-top: var(--spacing-md); font-size: var(--font-size-sm); opacity: 0.8;">
+            A project by <strong>Ghanshyam Acharya</strong>.
+        </p>
+        <p style="margin-top: var(--spacing-xs); font-size: var(--font-size-sm); opacity: 0.6;">
+            &copy; 2026 AviaSAFEsystem. All rights reserved.
+        </p>
+    </div>
+</footer>
+
+<script>
+// ============================================================================
+// INDEX PAGE - Tenant Portal
+// ============================================================================
+
+function goToTenant() {
+    const input = document.getElementById('tenantInput');
+    const tenantId = input.value.trim().toLowerCase();
+
+    if (!tenantId) {
+        alert('Please enter a tenant ID.');
+        return;
+    }
+
+    if (!/^[a-z0-9-]+$/.test(tenantId)) {
+        alert('Tenant ID can only contain lowercase letters, numbers, and hyphens.');
+        return;
+    }
+
+    window.location.href = 'https://' + tenantId + '.aviasafesystems.com';
+}
+
+document.getElementById('tenantInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        goToTenant();
+    }
+});
+
+// Subdomain redirect
+(function() {
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+
+    if (parts.length >= 2 && parts[1] === 'aviasafesystems') {
+        const subdomain = parts[0];
+        const reserved = ['www', 'app', 'api', 'caan', 'admin', 'auth', 'docs'];
+
+        if (!reserved.includes(subdomain) && subdomain !== 'aviasafesystems') {
+            const user = localStorage.getItem('user');
+            if (user) {
+                window.location.href = '/safety.html';
+            } else {
+                window.location.href = '/login.html?tenant=' + subdomain;
+            }
+        }
+    }
+})();
+</script>
+
+</body>
+</html>

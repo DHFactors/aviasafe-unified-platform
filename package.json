@@ -1,0 +1,40 @@
+{
+  "name": "surveysms",
+  "version": "2.0.0",
+  "description": "ICAO Annex 19 SMS Survey Platform - Multi-tenant Safety Management System",
+  "main": "index.html",
+  "scripts": {
+    "dev": "serve -l 3000",
+    "start": "serve -l 3000",
+    "python": "python -m http.server 8000",
+    "python3": "python3 -m http.server 8000",
+    "php": "php -S localhost:8000",
+    "live": "live-server --port=5500",
+    "build": "echo 'No build step required'",
+    "test": "echo 'No tests configured'"
+  },
+  "keywords": [
+    "safety-management",
+    "icao-annex-19",
+    "sms",
+    "survey",
+    "aviation",
+    "gap-analysis",
+    "multi-tenant"
+  ],
+  "author": "AviaSafeSystems.com",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aviasafesystems/surveysms"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.11.1"
+  }
+}

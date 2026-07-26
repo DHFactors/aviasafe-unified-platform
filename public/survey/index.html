@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Safety Survey - AviaSAFEsystem</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ========== RESET ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f9fa; height: 100vh; overflow: hidden; }
+
+        /* ========== APP CONTAINER ========== */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        /* ========== HEADER ========== */
+        .app-header {
+            background: #1a73e8;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            min-height: 56px;
+        }
+        .app-header .logo { font-size: 18px; font-weight: 700; }
+        .app-header .logo span { color: #34a853; }
+        .app-header nav a { color: white; margin-left: 16px; text-decoration: none; font-size: 14px; }
+        .app-header nav a.active { font-weight: 700; }
+
+        /* ========== STEP 1: INFO SCREEN ========== */
+        #infoScreen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+            overflow-y: auto;
+        }
+        #infoScreen .icon { font-size: 48px; color: #1a73e8; margin-bottom: 16px; }
+        #infoScreen h1 { font-size: 24px; color: #1a73e8; margin-bottom: 8px; }
+        #infoScreen .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
+        #infoScreen .demo-badge { background: #fff3cd; padding: 8px 16px; border-radius: 20px; font-size: 12px; color: #856404; margin-bottom: 24px; }
+        #infoScreen .fields { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        #infoScreen .fields input { padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        #infoScreen .fields input:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+        #infoScreen .btn-group { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        #infoScreen .btn-group .btn { padding: 12px 32px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        #infoScreen .btn-group .btn-primary { background: #1a73e8; color: white; }
+        #infoScreen .btn-group .btn-primary:hover { background: #1557b0; }
+        #infoScreen .btn-group .btn-secondary { background: #e9ecef; color: #333; }
+        #infoScreen .btn-group .btn-secondary:hover { background: #dee2e6; }
+
+        /* ========== STEP 2: SURVEY SCREEN ========== */
+        #surveyScreen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            padding: 16px 20px;
+            overflow: hidden;
+        }
+        #surveyScreen.active { display: flex; }
+
+        /* ========== PROGRESS ========== */
+        .survey-progress { margin-bottom: 12px; flex-shrink: 0; }
+        .progress-bar { height: 4px; background: #1a73e8; border-radius: 2px; transition: width 0.3s; }
+        .progress-text { font-size: 12px; color: #666; text-align: right; margin-top: 4px; }
+
+        /* ========== SECTION HEADER ========== */
+        .section-header { background: #e8f0fe; padding: 4px 12px; border-radius: 4px; font-weight: 700; color: #1a73e8; font-size: 12px; letter-spacing: 0.5px; text-align: center; margin-bottom: 12px; flex-shrink: 0; }
+
+        /* ========== QUESTION ========== */
+        .question-container { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow-y: auto; padding: 4px 0; }
+        .question-text { font-size: 18px; font-weight: 500; color: #202124; margin-bottom: 16px; line-height: 1.4; }
+
+        /* ========== OPTIONS ========== */
+        .options-container { display: flex; flex-direction: column; gap: 8px; }
+        .likert-row { display: flex; gap: 8px; justify-content: center; }
+        .likert-row .option-btn {
+            flex: 1;
+            padding: 10px 4px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 13px;
+            min-height: 56px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+        }
+        .likert-row .option-btn .value { font-size: 11px; opacity: 0.4; font-weight: 700; }
+        .likert-row .option-btn .label { font-size: 11px; }
+        .likert-row .option-btn.selected { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; font-weight: 600; }
+        .likert-row .option-btn:hover { border-color: #1a73e8; }
+
+        .choice-options { display: flex; gap: 12px; justify-content: center; }
+        .choice-options .option-btn { padding: 12px 24px; border: 2px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; min-width: 100px; text-align: center; }
+        .choice-options .option-btn.selected { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; font-weight: 600; }
+
+        /* ========== NAVIGATION ========== */
+        .navigation-buttons { display: flex; gap: 12px; margin-top: 12px; flex-shrink: 0; padding-top: 8px; border-top: 1px solid #eee; }
+        .navigation-buttons .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .navigation-buttons .btn-primary { background: #1a73e8; color: white; }
+        .navigation-buttons .btn-primary:hover { background: #1557b0; }
+        .navigation-buttons .btn-secondary { background: #e9ecef; color: #333; }
+        .navigation-buttons .btn-secondary:hover { background: #dee2e6; }
+        .navigation-buttons .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ========== COMPLETE ========== */
+        #completeScreen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+        }
+        #completeScreen.active { display: flex; }
+        #completeScreen .icon { font-size: 48px; color: #f9ab00; margin-bottom: 16px; }
+        #completeScreen h2 { color: #f9ab00; font-size: 24px; margin-bottom: 8px; }
+        #completeScreen p { color: #666; margin-bottom: 16px; }
+        #completeScreen .note { background: #fff3cd; padding: 12px 16px; border-radius: 8px; font-size: 14px; color: #856404; max-width: 400px; margin-bottom: 20px; }
+        #completeScreen .btn { padding: 12px 32px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1a73e8; color: white; text-decoration: none; }
+
+        /* ========== FOOTER ========== */
+        .app-footer { background: #f8f9fa; padding: 8px 16px; text-align: center; font-size: 11px; color: #999; flex-shrink: 0; border-top: 1px solid #eee; }
+        .app-footer a { color: #999; text-decoration: none; margin: 0 8px; }
+        .app-footer a:hover { color: #1a73e8; }
+
+        /* ========== RESPONSIVE: MOBILE ========== */
+        @media (max-width: 600px) {
+            .app-header .logo { font-size: 16px; }
+            .app-header nav a { font-size: 12px; margin-left: 10px; }
+            .question-text { font-size: 16px; }
+            .likert-row .option-btn { font-size: 11px; min-height: 48px; padding: 6px 2px; }
+            .likert-row .option-btn .label { font-size: 9px; }
+            .likert-row .option-btn .value { font-size: 9px; }
+            .choice-options .option-btn { font-size: 14px; padding: 10px 16px; min-width: 80px; }
+            .navigation-buttons .btn { font-size: 13px; padding: 10px; }
+            #infoScreen h1 { font-size: 20px; }
+            #infoScreen .fields input { font-size: 16px; padding: 10px 14px; }
+            .section-header { font-size: 10px; }
+        }
+
+        @media (max-width: 400px) {
+            .question-text { font-size: 14px; }
+            .likert-row .option-btn { font-size: 9px; min-height: 40px; padding: 4px 2px; }
+            .likert-row .option-btn .label { font-size: 8px; }
+            .likert-row .option-btn .value { font-size: 8px; }
+            .choice-options .option-btn { font-size: 12px; padding: 8px 12px; min-width: 60px; }
+        }
+
+        /* ========== DESKTOP: Single Row ========== */
+        @media (min-width: 601px) {
+            .likert-row .option-btn { font-size: 14px; min-height: 64px; padding: 8px 12px; }
+            .likert-row .option-btn .label { font-size: 13px; }
+            .likert-row .option-btn .value { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+        <div class="logo">Avia<span>SAFE</span>system</div>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/survey/" class="active">Survey</a>
+            <a href="/login.html">Login</a>
+        </nav>
+    </header>
+
+    <!-- ===== STEP 1: INFO SCREEN ===== -->
+    <div id="infoScreen">
+        <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+        <h1>Safety Survey</h1>
+        <p class="subtitle">ICAO Annex 19 Gap Analysis · SMS Maturity Assessment</p>
+        <div class="demo-badge">⚠️ DEMO — Responses are not saved</div>
+
+        <div class="fields">
+            <input type="text" id="respondentName" placeholder="Full Name (optional)">
+            <input type="text" id="respondentDesignation" placeholder="Designation / Role (optional)">
+            <input type="text" id="respondentDepartment" placeholder="Department (optional)">
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="skipInfo()">Skip</button>
+            <button class="btn btn-primary" onclick="startSurvey()">Begin Survey →</button>
+        </div>
+        <p style="font-size: 12px; color: #999; margin-top: 16px;">Your information is optional and confidential</p>
+    </div>
+
+    <!-- ===== STEP 2: SURVEY SCREEN ===== -->
+    <div id="surveyScreen">
+        <div id="surveyContainer" style="flex:1; display:flex; flex-direction:column;">
+            <!-- Dynamically rendered -->
+        </div>
+    </div>
+
+    <!-- ===== COMPLETE SCREEN ===== -->
+    <div id="completeScreen">
+        <div class="icon"><i class="fas fa-flask"></i></div>
+        <h2>Demo Complete!</h2>
+        <p>Thank you for participating in this demonstration.</p>
+        <div class="note">⚠️ This is a demo version. Your responses have <strong>not been saved</strong>.</div>
+        <a href="/" class="btn"><i class="fas fa-home"></i> Return Home</a>
+        <a href="/survey/" style="margin-top:12px; color:#1a73e8; font-size:14px; text-decoration:none;">Retake Survey</a>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="app-footer">
+        <span>A project by <strong>Ghanshyam Acharya</strong></span>
+        <span style="margin:0 8px;">·</span>
+        <span>&copy; 2026 AviaSAFEsystem</span>
+    </footer>
+
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="default_q.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

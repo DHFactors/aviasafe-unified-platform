@@ -1,0 +1,381 @@
+<!-- ============================================================================
+FILE: caan.html
+PATH: public/caan.html
+VERSION: 2.0.0
+DATE CREATED: 2026-07-26
+PURPOSE: CAAN SMD Regulator Dashboard.
+         Shows aggregated, anonymized safety data across all tenants.
+         No access to individual identities (Just Culture compliant).
+AUTHOR: AviaSAFE Systems
+============================================================================ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAAN SMD Dashboard - AviaSAFE SSP</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/tenant-overrides.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .caan-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
+        }
+        .caan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+        .caan-header h1 {
+            margin-bottom: 0;
+        }
+        .caan-header .subtitle {
+            color: var(--color-gray-700);
+            font-size: var(--font-size-sm);
+        }
+        .caan-badge {
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--color-primary-light);
+            color: var(--color-primary-dark);
+            border-radius: var(--border-radius-full);
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+        }
+        .caan-badge i {
+            margin-right: var(--spacing-sm);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+        .stat-card {
+            background: var(--color-white);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+        .stat-card .number {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .stat-card .label {
+            font-size: var(--font-size-sm);
+            color: var(--color-gray-700);
+            margin-top: var(--spacing-xs);
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        .chart-card {
+            background: var(--color-white);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+        .chart-card h3 {
+            margin-top: 0;
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-size-base);
+            color: var(--color-gray-800);
+        }
+        .chart-placeholder {
+            height: 200px;
+            background: var(--color-gray-50);
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-gray-700);
+            font-size: var(--font-size-sm);
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+        .chart-placeholder i {
+            font-size: 2rem;
+            color: var(--color-gray-400);
+        }
+        .tenants-list {
+            background: var(--color-white);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .tenants-list table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .tenants-list th {
+            background: var(--color-gray-50);
+            padding: var(--spacing-md);
+            text-align: left;
+            font-weight: 600;
+            color: var(--color-gray-700);
+            font-size: var(--font-size-sm);
+        }
+        .tenants-list td {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--color-gray-100);
+        }
+        .tenants-list tr:last-child td {
+            border-bottom: none;
+        }
+        .tenants-list tr:hover {
+            background: var(--color-gray-50);
+        }
+        .privacy-notice {
+            background: var(--color-info-bg);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            border-left: 4px solid var(--color-info);
+            margin-bottom: var(--spacing-xl);
+            font-size: var(--font-size-sm);
+        }
+        .privacy-notice i {
+            color: var(--color-info);
+            margin-right: var(--spacing-sm);
+        }
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="caan-page">
+    <!-- Header -->
+    <div class="caan-header">
+        <div>
+            <h1><i class="fas fa-building" style="color: var(--color-primary);"></i> CAAN SMD Dashboard</h1>
+            <div class="subtitle">
+                <span class="caan-badge"><i class="fas fa-shield-alt"></i> Regulator Access</span>
+                <span style="margin-left: var(--spacing-md);">Aggregated Industry Safety Data</span>
+            </div>
+        </div>
+        <div>
+            <button onclick="logout()" class="btn btn-danger btn-sm">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Privacy Notice -->
+    <div class="privacy-notice">
+        <i class="fas fa-user-secret"></i>
+        <strong>Privacy Protected:</strong>
+        All data is aggregated and anonymized. Individual identities are never exposed.
+        Data is presented at the industry and regional level only.
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="number" id="totalTenants">0</div>
+            <div class="label">Active Tenants</div>
+        </div>
+        <div class="stat-card">
+            <div class="number" id="totalReports">0</div>
+            <div class="label">Total Reports</div>
+        </div>
+        <div class="stat-card">
+            <div class="number" id="totalResponses">0</div>
+            <div class="label">Survey Responses</div>
+        </div>
+        <div class="stat-card">
+            <div class="number" id="highRiskCount">0</div>
+            <div class="label">High Risk Items</div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3><i class="fas fa-chart-pie"></i> Risk Distribution</h3>
+            <div class="chart-placeholder" id="riskChart">
+                <i class="fas fa-chart-pie"></i>
+                <span>Risk distribution visualization</span>
+                <span style="font-size: var(--font-size-xs); color: var(--color-gray-500);">(Coming soon)</span>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3><i class="fas fa-chart-bar"></i> Hazard Frequency</h3>
+            <div class="chart-placeholder" id="hazardChart">
+                <i class="fas fa-chart-bar"></i>
+                <span>Hazard frequency by type</span>
+                <span style="font-size: var(--font-size-xs); color: var(--color-gray-500);">(Coming soon)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tenants List -->
+    <h2 style="margin-bottom: var(--spacing-md);"><i class="fas fa-list"></i> Industry Overview</h2>
+    <div class="tenants-list">
+        <div id="tenantsTableContainer">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Organization</th>
+                        <th>ICAO</th>
+                        <th>Country</th>
+                        <th>Reports</th>
+                        <th>Survey Responses</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tenantsTableBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--color-gray-700); padding: var(--spacing-xl);">
+                            <i class="fas fa-spinner fa-spin"></i> Loading industry data...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="/js/firebase.js"></script>
+<script src="/js/tenant.js"></script>
+<script src="/js/app.js"></script>
+<script>
+// ============================================================================
+// CAAN SMD DASHBOARD
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Check authentication
+    const user = await getCurrentUser();
+    if (!user) {
+        window.location.href = '/login.html?tenant=caan';
+        return;
+    }
+
+    // Check role
+    if (user.role !== 'CAAN_SMD' && user.role !== 'SUPER_ADMIN') {
+        alert('Access denied. CAAN_SMD or SUPER_ADMIN role required.');
+        window.location.href = '/';
+        return;
+    }
+
+    // Load data
+    await loadIndustryData();
+});
+
+async function loadIndustryData() {
+    try {
+        // Get all tenants
+        const tenantsSnapshot = await db.collection('tenants').get();
+
+        if (tenantsSnapshot.empty) {
+            document.getElementById('tenantsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--color-gray-700); padding: var(--spacing-xl);">
+                        <i class="fas fa-inbox"></i> No tenants found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        let totalReports = 0;
+        let totalResponses = 0;
+        let highRiskCount = 0;
+        let activeTenants = 0;
+        let html = '';
+
+        for (const tenantDoc of tenantsSnapshot.docs) {
+            const tenantId = tenantDoc.id;
+            const tenantData = tenantDoc.data();
+            const isActive = tenantData.active !== false;
+
+            if (isActive) activeTenants++;
+
+            // Get report count
+            const reportsSnapshot = await db.collection('tenants')
+                .doc(tenantId)
+                .collection('reports')
+                .get();
+            const reportCount = reportsSnapshot.size;
+            totalReports += reportCount;
+
+            // Get survey response count
+            const responsesSnapshot = await db.collection('tenants')
+                .doc(tenantId)
+                .collection('responses')
+                .get();
+            const responseCount = responsesSnapshot.size;
+            totalResponses += responseCount;
+
+            // Count high risk (if classification exists)
+            reportsSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.riskLevel === 'High' || data.riskLevel === 'Critical') {
+                    highRiskCount++;
+                }
+            });
+
+            html += `
+                <tr>
+                    <td><strong>${tenantData.name || tenantId}</strong></td>
+                    <td>${tenantData.icao || '-'}</td>
+                    <td>${tenantData.country || 'Nepal'}</td>
+                    <td>${reportCount}</td>
+                    <td>${responseCount}</td>
+                    <td>
+                        <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
+                            ${isActive ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Update stats
+        document.getElementById('totalTenants').textContent = activeTenants;
+        document.getElementById('totalReports').textContent = totalReports;
+        document.getElementById('totalResponses').textContent = totalResponses;
+        document.getElementById('highRiskCount').textContent = highRiskCount;
+
+        // Update table
+        document.getElementById('tenantsTableBody').innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading industry data:', error);
+        document.getElementById('tenantsTableBody').innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; color: var(--color-danger); padding: var(--spacing-xl);">
+                    <i class="fas fa-exclamation-circle"></i> Error loading data: ${error.message}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+async function logout() {
+    try {
+        await signOut();
+        window.location.href = '/';
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+}
+</script>
+
+</body>
+</html>

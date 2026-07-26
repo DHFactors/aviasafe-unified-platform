@@ -1,0 +1,79 @@
+/* ============================================================================
+   FILE: tenant-overrides.css
+   PATH: public/css/tenant-overrides.css
+   VERSION: 1.0.0
+   PURPOSE: Tenant-specific branding overrides.
+            Generated dynamically based on tenant metadata.
+            Each tenant can have their own colors.
+   AUTHOR: AviaSAFE Systems
+   ============================================================================ */
+
+/* ============================================
+   TENANT: sita-air
+   ============================================ */
+[data-tenant="sita-air"] {
+    --color-primary: #1a73e8;
+    --color-primary-dark: #0d47a1;
+    --color-secondary: #f57c00;
+    --color-secondary-dark: #e65100;
+}
+
+/* ============================================
+   TENANT: buddha-air
+   ============================================ */
+[data-tenant="buddha-air"] {
+    --color-primary: #2e7d32;
+    --color-primary-dark: #1b5e20;
+    --color-secondary: #f9a825;
+    --color-secondary-dark: #f57f17;
+}
+
+/* ============================================
+   TENANT: tara-air
+   ============================================ */
+[data-tenant="tara-air"] {
+    --color-primary: #6a1b9a;
+    --color-primary-dark: #4a148c;
+    --color-secondary: #e65100;
+    --color-secondary-dark: #bf360c;
+}
+
+/* ============================================
+   TENANT: yeti-airlines
+   ============================================ */
+[data-tenant="yeti-airlines"] {
+    --color-primary: #c62828;
+    --color-primary-dark: #b71c1c;
+    --color-secondary: #ff6f00;
+    --color-secondary-dark: #e65100;
+}
+
+/* ============================================
+   TENANT: summit-air
+   ============================================ */
+[data-tenant="summit-air"] {
+    --color-primary: #00695c;
+    --color-primary-dark: #004d40;
+    --color-secondary: #ff6f00;
+    --color-secondary-dark: #e65100;
+}
+
+/* ============================================
+   TENANT: shree-airlines
+   ============================================ */
+[data-tenant="shree-airlines"] {
+    --color-primary: #283593;
+    --color-primary-dark: #1a237e;
+    --color-secondary: #ff8f00;
+    --color-secondary-dark: #ff6f00;
+}
+
+/* ============================================
+   TENANT: danfe-air
+   ============================================ */
+[data-tenant="danfe-air"] {
+    --color-primary: #4e342e;
+    --color-primary-dark: #3e2723;
+    --color-secondary: #bf360c;
+    --color-secondary-dark: #9e2a0b;
+}
