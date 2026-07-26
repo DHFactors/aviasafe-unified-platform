@@ -14,7 +14,7 @@
 // ============================================================================
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBq9gFgQ-R5M9xkxyg9X_pzW2xP0VwQ5Ow",
+    apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
     authDomain: "gap-analysis-ssp.firebaseapp.com",
     projectId: "gap-analysis-ssp",
     storageBucket: "gap-analysis-ssp.appspot.com",
