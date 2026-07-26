@@ -10,6 +10,9 @@ env/
 __pycache__/
 *.pyc
 
+# Node.js
+node_modules/
+
 # IDE and System Files
 .vscode/
 .idea/

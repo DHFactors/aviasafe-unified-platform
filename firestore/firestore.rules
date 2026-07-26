@@ -2,34 +2,67 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── SUPER ADMIN: Full system access ──
+    // ========================================================================
+    // HELPER FUNCTIONS
+    // ========================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'SUPER_ADMIN';
+    }
+
+    function isCaanSmd() {
+      return isAuthenticated() && request.auth.token.role == 'CAAN_SMD';
+    }
+
+    function isTenantMember(tenantId) {
+      return isAuthenticated() && request.auth.token.tenant_id == tenantId;
+    }
+
+    // ========================================================================
+    // SUPER ADMIN: Full system access
+    // ========================================================================
     match /{document=**} {
-      allow read, write: if request.auth != null && request.auth.token.role == 'SUPER_ADMIN';
+      allow read, write: if isSuperAdmin();
     }
 
-    // ── TENANT METADATA ──
+    // ========================================================================
+    // TENANT METADATA
+    // Collection: tenants/{tenantId}
+    // - Read: any authenticated user
+    // - Write: SUPER_ADMIN only
+    // ========================================================================
     match /tenants/{tenantId} {
-      // SUPER_ADMIN can create/update tenant metadata
-      allow read: if request.auth != null && (
-        request.auth.token.role == 'CAAN_SMD' ||
-        request.auth.token.role == 'AIRLINE_ADMIN'
-      );
-      allow create, update, delete: if request.auth != null && request.auth.token.role == 'SUPER_ADMIN';
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isSuperAdmin();
     }
 
-    // ── TENANT RESPONSES (SURVEY DATA) ──
+    // ========================================================================
+    // SURVEY RESPONSES
+    // Collection: tenants/{tenantId}/responses/{documentId}
+    // - Create: anyone (anonymous submissions allowed)
+    // - Read: tenant member, SUPER_ADMIN, CAAN_SMD, or demo tenant
+    // - Update/Delete: never (immutable — Just Culture protection)
+    // ========================================================================
     match /tenants/{tenantId}/responses/{document=**} {
-
-      // Public submission (anonymous surveys)
       allow create: if true;
+      allow read: if isTenantMember(tenantId) || isSuperAdmin() || isCaanSmd() || tenantId.matches('demo-.*');
+      allow update, delete: if false;
+    }
 
-      // Tenant isolation: only matching airline admin can read
-      allow read: if request.auth != null && (
-        request.auth.token.airline == tenantId ||
-        tenantId.matches('demo-.*')
-      );
-
-      // Immutable records — Just Culture protection
+    // ========================================================================
+    // SAFETY REPORTS (VSR & MOR)
+    // Collection: tenants/{tenantId}/reports/{documentId}
+    // - Create: authenticated tenant member only
+    // - Read: tenant member, SUPER_ADMIN, or CAAN_SMD
+    // - Update/Delete: never (immutable — audit trail)
+    // ========================================================================
+    match /tenants/{tenantId}/reports/{document=**} {
+      allow create: if isTenantMember(tenantId);
+      allow read: if isTenantMember(tenantId) || isSuperAdmin() || isCaanSmd();
       allow update, delete: if false;
     }
   }
