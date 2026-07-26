@@ -1,8 +1,8 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
+    apiKey: "AIzaSyBq9gFgQ-R5M9xkxyg9X_pzW2xP0VwQ5Ow",
     authDomain: "gap-analysis-ssp.firebaseapp.com",
     projectId: "gap-analysis-ssp",
-    storageBucket: "gap-analysis-ssp.firebasestorage.app",
+    storageBucket: "gap-analysis-ssp.appspot.com",
     messagingSenderId: "817614332543",
     appId: "1:817614332543:web:01224a312e8478b24d554a"
 };

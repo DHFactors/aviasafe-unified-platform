@@ -19,7 +19,7 @@ const firebaseConfig = {
     projectId: "gap-analysis-ssp",
     storageBucket: "gap-analysis-ssp.appspot.com",
     messagingSenderId: "817614332543",
-    appId: "1:817614332543:web:your-app-id"
+    appId: "1:817614332543:web:01224a312e8478b24d554a"
 };
 
 // ============================================================================
