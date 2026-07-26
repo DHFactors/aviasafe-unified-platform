@@ -75,8 +75,8 @@ function monitorAuthState(onAuthStateChanged, collection, getDocs, query, orderB
     onAuthStateChanged(auth, (user) => {
         if (user) {
             user.getIdTokenResult().then((idTokenResult) => {
-                if (idTokenResult.claims.role === 'AIRLINE_ADMIN' && idTokenResult.claims.airline) {
-                    currentTenant = idTokenResult.claims.airline;
+                if (idTokenResult.claims.role === 'AIRLINE_ADMIN' && idTokenResult.claims.tenant_id) {
+                    currentTenant = idTokenResult.claims.tenant_id;
                     loadDashboardUI();
                     fetchTenantData(collection, getDocs, query, orderBy, limit);
                 } else {
