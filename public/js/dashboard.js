@@ -206,14 +206,23 @@ function renderRiskChart(data) {
     const ctx = document.getElementById('riskChartCanvas');
     if (!ctx) return;
 
+    const counts = { Low: 0, Medium: 0, High: 0, 'Very High': 0 };
+    for (const d of data) {
+        const level = d.risk_level;
+        if (counts.hasOwnProperty(level)) counts[level] = d.count;
+    }
+    const labels = ICAO_RISK_LABELS;
+    const vals = labels.map(l => counts[l] || 0);
+    const colors = labels.map(l => ICAO_COLORS[l]);
+
     chartInstances.risk = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: data.map(d => d.risk_level),
+            labels,
             datasets: [{
                 label: 'Reports',
-                data: data.map(d => d.count),
-                backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#28a745', '#6c757d'],
+                data: vals,
+                backgroundColor: colors,
                 borderRadius: 4,
             }],
         },
@@ -223,9 +232,10 @@ function renderRiskChart(data) {
             plugins: {
                 tooltip: {
                     callbacks: {
-                        label: (ctx) => `${ctx.parsed.y} (${data[ctx.dataIndex].percentage}%)`,
+                        label: (ctx) => `${ctx.parsed.y} (${data[ctx.dataIndex]?.percentage || 0}%)`,
                     },
                 },
+                legend: { display: false },
             },
             scales: {
                 y: { beginAtZero: true, ticks: { precision: 0 } },
@@ -284,6 +294,7 @@ function renderHazardChart(data) {
             scales: {
                 x: { beginAtZero: true, ticks: { precision: 0 } },
             },
+            plugins: { legend: { display: false } },
         },
     });
 }
@@ -327,18 +338,8 @@ function renderHeatMapFromReports(reports, container) {
 
     const getTextColor = (count) => (count === 0 ? '#94a3b8' : '#1e293b');
 
-    const getRiskClass = (index) => {
-        if (index <= 5) return 'badge badge-low';
-        if (index <= 9) return 'badge badge-medium';
-        if (index <= 15) return 'badge badge-high';
-        return 'badge badge-critical';
-    };
-    const getRiskText = (index) => {
-        if (index <= 5) return 'Low';
-        if (index <= 9) return 'Medium';
-        if (index <= 15) return 'High';
-        return 'V.High';
-    };
+    const getRiskClass = (index) => getRiskBadgeClass(classifyRisk(index));
+    const getRiskText = (index) => classifyRisk(index);
 
     let html = '<table style="border-collapse:collapse;margin:0 auto;font-size:0.85rem;">';
     html += '<tr><td style="padding:0.5rem;font-weight:700;color:#475569;text-align:right;">P\\S</td>';
@@ -356,7 +357,7 @@ function renderHeatMapFromReports(reports, container) {
             const color = getColor(count);
             html += `<td style="padding:0.5rem;text-align:center;background:${color};border:1px solid #e2e8f0;border-radius:4px;min-width:70px;">
                 <div style="font-weight:700;color:${getTextColor(count)};font-size:1.1rem;">${index}</div>
-                <div style="font-size:0.65rem;margin-top:0.1rem;"><span class="${getRiskClass(index)}">${getRiskText(index)}</span></div>
+                <div style="font-size:0.65rem;margin-top:0.1rem;"><span class="badge ${getRiskClass(index)}">${getRiskText(index)}</span></div>
                 <div style="font-size:0.75rem;color:${getTextColor(count)};margin-top:0.15rem;">${count}</div>
             </td>`;
         }
@@ -423,11 +424,8 @@ function renderPagination(data, container) {
 }
 
 function getRiskLevelLabel(index) {
-    if (index === null || index === undefined) return { text: 'N/A', class: 'badge-default' };
-    if (index <= 5) return { text: 'Low', class: 'badge-low' };
-    if (index <= 9) return { text: 'Medium', class: 'badge-medium' };
-    if (index <= 15) return { text: 'High', class: 'badge-high' };
-    return { text: 'Very High', class: 'badge-critical' };
+    const level = classifyRisk(index);
+    return { text: level, class: getRiskBadgeClass(level) };
 }
 
 function severityBadgeClass(sev) {

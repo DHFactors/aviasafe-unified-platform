@@ -258,6 +258,7 @@ AUTHOR: AviaSAFE Systems
 <script src="/js/firebase.js"></script>
 <script src="/js/tenant.js"></script>
 <script src="/js/app.js"></script>
+<script src="/js/dashboard-utils.js"></script>
 <script>
 // ============================================================================
 // CAAN SMD DASHBOARD
@@ -409,9 +410,9 @@ function renderCaanRiskChart(counts) {
     const ctx = document.getElementById('caanRiskChartCanvas');
     if (!ctx) return;
 
-    const labels = ['Low', 'Medium', 'High', 'Very High'];
+    const labels = ICAO_RISK_LABELS;
     const data = labels.map(l => counts[l] || 0);
-    const colors = ['#28a745', '#f9a825', '#fd7e14', '#dc3545'];
+    const colors = labels.map(l => ICAO_COLORS[l]);
 
     caanChartInstances.risk = new Chart(ctx, {
         type: 'bar',
@@ -445,12 +446,7 @@ function renderCaanHeatMap(data) {
         return '#fde8e8';
     };
 
-    const getRiskClass = (index) => {
-        if (index <= 5) return 'badge badge-low';
-        if (index <= 9) return 'badge badge-medium';
-        if (index <= 15) return 'badge badge-high';
-        return 'badge badge-critical';
-    };
+    const getRiskClass = (index) => getRiskBadgeClass(classifyRisk(index));
 
     let html = '<table style="border-collapse:collapse;margin:0 auto;font-size:0.85rem;">';
     html += '<tr><td style="padding:0.5rem;font-weight:700;color:#475569;text-align:right;">P\\S</td>';
@@ -468,7 +464,7 @@ function renderCaanHeatMap(data) {
             const color = getColor(count);
             html += `<td style="padding:0.5rem;text-align:center;background:${color};border:1px solid #e2e8f0;border-radius:4px;min-width:70px;">
                 <div style="font-weight:700;font-size:1.1rem;">${index}</div>
-                <div style="font-size:0.65rem;margin-top:0.1rem;"><span class="${getRiskClass(index)}">${index <= 5 ? 'Low' : index <= 9 ? 'Medium' : index <= 15 ? 'High' : 'V.High'}</span></div>
+                <div style="font-size:0.65rem;margin-top:0.1rem;"><span class="badge ${getRiskClass(index)}">${classifyRisk(index)}</span></div>
                 <div style="font-size:0.75rem;margin-top:0.15rem;">${count}</div>
             </td>`;
         }
