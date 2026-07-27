@@ -226,6 +226,14 @@ AUTHOR: AviaSAFE Systems
         <div id="caanHeatMapContainer"></div>
     </div>
 
+    <!-- Top Risks -->
+    <h2 style="margin-bottom:var(--spacing-md);"><i class="fas fa-exclamation-triangle"></i> Top Risks by ADREP Category</h2>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div id="caanTopRisksContainer" style="min-height:200px;"></div>
+        </div>
+    </div>
+
     <!-- Tenants List -->
     <h2 style="margin-bottom: var(--spacing-md);"><i class="fas fa-list"></i> Industry Overview</h2>
     <div class="tenants-list">
@@ -240,12 +248,11 @@ AUTHOR: AviaSAFE Systems
                         <th>High Risk</th>
                         <th>V.High Risk</th>
                         <th>Survey Responses</th>
-                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="tenantsTableBody">
                     <tr>
-                        <td colspan="6" style="text-align: center; color: var(--color-gray-700); padding: var(--spacing-xl);">
+                        <td colspan="7" style="text-align: center; color: var(--color-gray-700); padding: var(--spacing-xl);">
                             <i class="fas fa-spinner fa-spin"></i> Loading industry data...
                         </td>
                     </tr>
@@ -297,12 +304,16 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function loadIndustryData() {
     try {
-        const tenantsSnapshot = await db.collection('tenants').get();
+        const [tenantsSnap, reportsSnap, responsesSnap] = await Promise.all([
+            db.collection('tenants').get(),
+            db.collectionGroup('reports').get(),
+            db.collectionGroup('responses').get(),
+        ]);
 
-        if (tenantsSnapshot.empty) {
+        if (tenantsSnap.empty) {
             document.getElementById('tenantsTableBody').innerHTML = `
                 <tr>
-                    <td colspan="8" style="text-align: center; color: var(--color-gray-700); padding: var(--spacing-xl);">
+                    <td colspan="7" style="text-align: center; color: var(--color-gray-700); padding: var(--spacing-xl);">
                         <i class="fas fa-inbox"></i> No tenants found.
                     </td>
                 </tr>
@@ -310,14 +321,19 @@ async function loadIndustryData() {
             return;
         }
 
-        let totalReports = 0;
-        let totalResponses = 0;
-        let highRiskCount = 0;
-        let veryHighRiskCount = 0;
+        // Build tenant map
+        const tenantMap = {};
         let activeTenants = 0;
-        let html = '';
+        tenantsSnap.forEach(doc => {
+            const d = doc.data();
+            const active = d.active !== false;
+            if (active) activeTenants++;
+            tenantMap[doc.id] = { ...d, id: doc.id, active };
+        });
 
-        // Aggregate risk level counts for chart + heat map
+        // Aggregate all reports
+        const allReports = [];
+        const perTenant = {};
         const riskLevelCounts = { 'Low': 0, 'Medium': 0, 'High': 0, 'Very High': 0 };
         const heatMapData = [];
         for (let s = 1; s <= 5; s++) {
@@ -326,63 +342,55 @@ async function loadIndustryData() {
             }
         }
 
-        for (const tenantDoc of tenantsSnapshot.docs) {
-            const tenantId = tenantDoc.id;
-            const tenantData = tenantDoc.data();
-            const isActive = tenantData.active !== false;
+        reportsSnap.forEach(doc => {
+            const data = doc.data();
+            allReports.push(data);
 
-            if (isActive) activeTenants++;
+            const tenantId = doc.ref.path.split('/')[1];
+            if (!perTenant[tenantId]) perTenant[tenantId] = { reports: 0, high: 0, veryHigh: 0, responses: 0 };
+            perTenant[tenantId].reports++;
 
-            const reportsSnapshot = await db.collection('tenants')
-                .doc(tenantId)
-                .collection('reports')
-                .get();
-            const reportCount = reportsSnapshot.size;
-            totalReports += reportCount;
+            let rl = data.risk_level || data.riskLevel || '';
+            if (rl === 'Critical') rl = 'Very High';
+            if (rl === 'High') perTenant[tenantId].high++;
+            if (rl === 'Very High') perTenant[tenantId].veryHigh++;
+            if (riskLevelCounts.hasOwnProperty(rl)) riskLevelCounts[rl]++;
 
-            const responsesSnapshot = await db.collection('tenants')
-                .doc(tenantId)
-                .collection('responses')
-                .get();
-            const responseCount = responsesSnapshot.size;
-            totalResponses += responseCount;
+            const s = data.severity_level;
+            const p = data.probability_level;
+            if (s >= 1 && s <= 5 && p >= 1 && p <= 5) {
+                const hmItem = heatMapData.find(d => d.severity === s && d.probability === p);
+                if (hmItem) hmItem.count++;
+            }
+        });
 
-            let tenantHigh = 0;
-            let tenantVeryHigh = 0;
+        // Aggregate responses per tenant
+        responsesSnap.forEach(doc => {
+            const tenantId = doc.ref.path.split('/')[1];
+            if (!perTenant[tenantId]) perTenant[tenantId] = { reports: 0, high: 0, veryHigh: 0, responses: 0 };
+            perTenant[tenantId].responses++;
+        });
 
-            reportsSnapshot.forEach(doc => {
-                const data = doc.data();
-                const rl = data.risk_level || data.riskLevel || '';
-                if (rl === 'High' || rl === 'Critical') {
-                    if (rl === 'Critical') rl = 'Very High';
-                }
-                if (rl === 'High') { highRiskCount++; tenantHigh++; }
-                if (rl === 'Very High' || rl === 'Critical') { veryHighRiskCount++; tenantVeryHigh++; }
-                if (riskLevelCounts.hasOwnProperty(rl)) riskLevelCounts[rl]++;
+        const totalReports = reportsSnap.size;
+        const totalResponses = responsesSnap.size;
+        const highRiskCount = riskLevelCounts['High'] + riskLevelCounts['Very High'];
 
-                // Heat map: use severity_level and probability_level if available
-                const s = data.severity_level;
-                const p = data.probability_level;
-                if (s >= 1 && s <= 5 && p >= 1 && p <= 5) {
-                    const hmItem = heatMapData.find(d => d.severity === s && d.probability === p);
-                    if (hmItem) hmItem.count++;
-                }
-            });
+        // Compute top risks from all reports
+        const topRisks = aggregateTopRisks(allReports);
 
+        // Build table rows
+        let html = '';
+        for (const tenant of Object.values(tenantMap)) {
+            const stats = perTenant[tenant.id] || { reports: 0, high: 0, veryHigh: 0, responses: 0 };
             html += `
                 <tr>
-                    <td><strong>${tenantData.name || tenantId}</strong></td>
-                    <td>${tenantData.icao || '-'}</td>
-                    <td>${tenantData.country || 'Nepal'}</td>
-                    <td>${reportCount}</td>
-                    <td>${tenantHigh}</td>
-                    <td>${tenantVeryHigh}</td>
-                    <td>${responseCount}</td>
-                    <td>
-                        <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
-                            ${isActive ? 'Active' : 'Inactive'}
-                        </span>
-                    </td>
+                    <td><strong>${tenant.name || tenant.id}</strong></td>
+                    <td>${tenant.icao || '-'}</td>
+                    <td>${tenant.country || 'Nepal'}</td>
+                    <td>${stats.reports}</td>
+                    <td>${stats.high}</td>
+                    <td>${stats.veryHigh}</td>
+                    <td>${stats.responses}</td>
                 </tr>
             `;
         }
@@ -390,17 +398,18 @@ async function loadIndustryData() {
         document.getElementById('totalTenants').textContent = activeTenants;
         document.getElementById('totalReports').textContent = totalReports;
         document.getElementById('totalResponses').textContent = totalResponses;
-        document.getElementById('highRiskCount').textContent = highRiskCount + veryHighRiskCount;
+        document.getElementById('highRiskCount').textContent = highRiskCount;
         document.getElementById('tenantsTableBody').innerHTML = html;
 
         renderCaanRiskChart(riskLevelCounts);
         renderCaanHeatMap(heatMapData);
+        renderCaanTopRisks(topRisks);
 
     } catch (error) {
         console.error('Error loading industry data:', error);
         document.getElementById('tenantsTableBody').innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; color: var(--color-danger); padding: var(--spacing-xl);">
+                <td colspan="7" style="text-align: center; color: var(--color-danger); padding: var(--spacing-xl);">
                     <i class="fas fa-exclamation-circle"></i> Error loading data: ${error.message}
                 </td>
             </tr>
@@ -438,15 +447,13 @@ function renderCaanRiskChart(counts) {
 
 function renderCaanHeatMap(data) {
     const container = document.getElementById('caanHeatMapContainer');
-    const maxCount = Math.max(...data.map(d => d.count), 1);
 
-    const getColor = (count) => {
-        if (count === 0) return '#f1f5f9';
-        const ratio = count / maxCount;
-        if (ratio < 0.25) return '#e8f5e9';
-        if (ratio < 0.5) return '#fff8e1';
-        if (ratio < 0.75) return '#fff3e0';
-        return '#fde8e8';
+    const getHeatMapColor = (riskIndex) => {
+        if (riskIndex >= 1 && riskIndex <= 3) return '#34a853';
+        if (riskIndex >= 4 && riskIndex <= 6) return '#f9ab00';
+        if (riskIndex >= 8 && riskIndex <= 12) return '#f57c00';
+        if (riskIndex >= 15 && riskIndex <= 25) return '#ea4335';
+        return '#f1f5f9';
     };
 
     const getRiskClass = (index) => getRiskBadgeClass(classifyRisk(index));
@@ -464,7 +471,7 @@ function renderCaanHeatMap(data) {
             const item = data.find(d => d.severity === s && d.probability === p);
             const count = item ? item.count : 0;
             const index = s * p;
-            const color = getColor(count);
+            const color = getHeatMapColor(index);
             html += `<td style="padding:0.5rem;text-align:center;background:${color};border:1px solid #e2e8f0;border-radius:4px;min-width:70px;">
                 <div style="font-weight:700;font-size:1.1rem;">${index}</div>
                 <div style="font-size:0.65rem;margin-top:0.1rem;"><span class="badge ${getRiskClass(index)}">${classifyRisk(index)}</span></div>
@@ -476,6 +483,27 @@ function renderCaanHeatMap(data) {
     html += '</table>';
     html += '<p style="text-align:center;font-size:0.75rem;color:#94a3b8;margin-top:0.75rem;">Severity × Probability — Industry-wide report distribution</p>';
 
+    container.innerHTML = html;
+}
+
+function renderCaanTopRisks(topRisks) {
+    const container = document.getElementById('caanTopRisksContainer');
+    if (!topRisks || topRisks.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:2rem;"><i class="fas fa-chart-bar"></i> No risk data available.</p>';
+        return;
+    }
+    const maxCount = topRisks[0].count;
+    let html = '<table style="width:100%;border-collapse:collapse;">';
+    html += '<thead><tr style="border-bottom:2px solid #e2e8f0;"><th style="padding:0.75rem;text-align:left;font-weight:600;color:#475569;">Category</th><th style="padding:0.75rem;text-align:right;font-weight:600;color:#475569;">Reports</th><th style="padding:0.75rem;width:40%;"></th></tr></thead><tbody>';
+    for (const r of topRisks) {
+        const pct = maxCount > 0 ? (r.count / maxCount * 100) : 0;
+        html += `<tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:0.75rem;font-size:0.875rem;">${r.category}</td>
+            <td style="padding:0.75rem;text-align:right;font-weight:600;font-size:0.875rem;">${r.count}</td>
+            <td style="padding:0.75rem;"><div style="background:#e2e8f0;border-radius:4px;height:20px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:#1a73e8;border-radius:4px;transition:width 0.3s;"></div></div></td>
+        </tr>`;
+    }
+    html += '</tbody></table>';
     container.innerHTML = html;
 }
 
