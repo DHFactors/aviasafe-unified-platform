@@ -63,6 +63,8 @@
         .mandatory-notice { background: var(--color-danger-bg); padding: var(--spacing-md); border-radius: var(--border-radius-md); border-left: 4px solid var(--color-danger); margin-bottom: var(--spacing-lg); font-size: var(--font-size-sm); }
         .mandatory-notice i { color: var(--color-danger); margin-right: var(--spacing-sm); }
         .mandatory-notice strong { color: var(--color-danger); }
+        .required-hint { font-size: 14px; color: #5f6368; margin-bottom: var(--spacing-lg); padding: 4px 0; }
+        .required-star { color: #ea4335; font-weight: bold; }
         .success-message { display: none; background: var(--color-success-bg); color: var(--color-success); padding: var(--spacing-md); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-lg); border-left: 4px solid var(--color-success); }
         .error-message { display: none; background: var(--color-danger-bg); color: var(--color-danger); padding: var(--spacing-md); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-lg); border-left: 4px solid var(--color-danger); }
         .risk-display { background: var(--color-gray-50); padding: var(--spacing-lg); border-radius: var(--border-radius-md); border: 1px solid var(--color-gray-200); margin-bottom: var(--spacing-lg); }
@@ -140,6 +142,8 @@
 
         <div id="successMessage" class="success-message"><i class="fas fa-check-circle"></i> <span id="successText">Report submitted!</span></div>
         <div id="errorMessage" class="error-message"><i class="fas fa-exclamation-circle"></i> <span id="errorText">An error occurred.</span></div>
+
+        <p class="required-hint"><span class="required-star">*</span> Indicates a required field.</p>
 
         <form id="morForm" novalidate>
 
@@ -544,6 +548,9 @@
     </main>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="/js/firebase.js"></script>
 <script src="/js/tenant.js"></script>
 <script src="/js/mor.js"></script>
