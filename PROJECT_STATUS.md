@@ -2,7 +2,7 @@
 
 **Project:** AviaSAFE SMS Platform  
 **Status:** Prototype Development (Beta)  
-**Version:** Beta 0.9  
+**Version:** Beta 1.0  
 **Last Updated:** July 2026
 
 ---
@@ -24,8 +24,12 @@ Current implementation includes:
 - AI-assisted ICAO Taxonomy Classification
 - Dashboard APIs
 - Production-ready backend architecture
+- **ICAO Risk Assessment (Severity × Probability → Risk Index)**
+- **AI-grounded risk assessment with explanations**
+- **Safety Manager Override workflow**
+- **14/14 end-to-end tests passing**
 
-The project has completed Product Charter Alignment and is now entering ICAO Risk Assessment implementation.
+The project has completed Product Charter Alignment, ICAO Risk Assessment implementation, and is now entering live deployment.
 
 ---
 
@@ -116,20 +120,20 @@ Status
 
 ## Phase 4
 
-### Frontend Integration
+### ICAO Risk Assessment Lifecycle
 
 Completed
 
 Implemented
 
-- Login
-- Survey
-- VSR Submission
-- MOR Submission
-- Dashboard integration
-- API Client
-- JWT authentication
-- Removal of mock/demo dashboard data
+- Severity (1-5) and Probability (1-5) dropdowns on VSR/MOR forms
+- Auto-calculation of Risk Index (Severity × Probability)
+- AI-suggested assessment with severity_explanation and probability_explanation
+- Safety Manager override workflow (official assessment)
+- Risk Index display on report detail page
+- Cross-tenant CAAN oversight
+- Full lifecycle: Report → AI Analysis → Override → Display
+- 14/14 end-to-end tests passing
 
 Status
 
@@ -251,6 +255,11 @@ Current AI output:
 - summary
 - trend_indicators
 - mandatory_check (MOR only)
+- suggested_severity
+- suggested_probability
+- suggested_risk_index
+- severity_explanation
+- probability_explanation
 
 AI no longer stores implementation metadata.
 
@@ -277,6 +286,29 @@ Completed
 Result:
 
 Seed module fully complies with the Product Charter.
+
+Status
+
+✅ Complete
+
+---
+
+## Phase 6B
+
+### Deployment & Live Prototype
+
+Completed
+
+Implemented
+
+- Frontend deployed to Firebase Hosting (gap-analysis-ssp.web.app)
+- Backend deployed to Render (aviasafe-unified-platform.onrender.com)
+- Dockerfile with Python 3.11-slim for Render compatibility
+- render.yaml Blueprint for automated deployment
+- Login redirect race condition fixed (onAuthStateChanged + getIdTokenResult(true))
+- getCurrentUser() promoted to global helper in firebase.js
+- CORS configured for cross-origin frontend-backend communication
+- Firebase Hosting rewrites configured for SPA routing
 
 Status
 
@@ -318,9 +350,7 @@ Dataset Properties
 
 # Current Architecture
 
-Frontend
-
-Firebase Hosting
+Frontend (Firebase Hosting)
 
 ↓
 
@@ -328,11 +358,11 @@ Firebase Authentication
 
 ↓
 
-JWT
+JWT (Bearer Token)
 
 ↓
 
-FastAPI Backend
+FastAPI Backend (Render)
 
 ↓
 
@@ -340,7 +370,7 @@ Repository Layer
 
 ↓
 
-Firestore
+Firestore (nam5 — US multi-region)
 
 ---
 
@@ -353,10 +383,12 @@ Current Responsibilities
 - Confidence scoring
 - Trend identification
 - Mandatory occurrence validation (MOR)
+- **Severity and Probability assessment with natural-language explanations**
+- **Risk Index suggestion**
 
 AI processing is asynchronous.
 
-AI does not perform official risk assessment.
+AI suggestions are reviewable and overridable by the Safety Manager.
 
 ---
 
@@ -372,6 +404,10 @@ Primary Objectives
 
 2. Display Operational Risks (VSR + MOR)
 
+3. **View and manage Risk Assessments**
+
+4. **Override AI suggestions with official assessments**
+
 ---
 
 ## CAAN SSP Dashboard
@@ -386,64 +422,37 @@ Primary Objectives
 
 3. Measure SSP effectiveness in real time
 
----
-
-# Current Known Issues
-
-## ICAO Risk Assessment
-
-Status
-
-Not yet implemented.
-
-Current implementation temporarily stores:
-
-- severity
-- risk_score
-
-Future implementation will replace this with the ICAO methodology:
-
-Severity
-
-×
-
-Probability
-
-↓
-
-Risk Matrix
-
-↓
-
-Risk Index
-
-This is the next major functional milestone.
+4. **Cross-tenant risk assessment oversight**
 
 ---
 
 # Infrastructure
 
-Prototype
+Prototype (Live)
 
 Hosting
 
-Firebase Hosting (Spark)
+Firebase Hosting (Spark) — gap-analysis-ssp.web.app
 
 Backend
 
-Render (Free)
+Render (Free) — aviasafe-unified-platform.onrender.com
 
 Database
 
-Firestore
+Firestore (nam5)
 
 Authentication
 
 Firebase Authentication
 
+Build
+
+Docker (python:3.11-slim) via render.yaml Blueprint
+
 ---
 
-Commercial
+Commercial (Target)
 
 Hosting
 
@@ -465,8 +474,6 @@ Domain
 
 sms.aviasafesystems.com
 
-(Currently testing on *.web.app)
-
 ---
 
 # Testing Status
@@ -482,14 +489,13 @@ Completed
 - Health Endpoints
 - Seed Validation
 - Product Charter Verification
+- **ICAO Risk Assessment lifecycle (14 end-to-end tests)**
 
 Pending
 
-- ICAO workflow validation
 - User Acceptance Testing
 - Airline pilot evaluation
 - CAAN pilot evaluation
-- End-to-end testing
 
 ---
 
@@ -497,28 +503,23 @@ Pending
 
 Priority 1
 
-Implement ICAO Risk Assessment
-
-- Severity
-- Probability
-- Configurable Risk Matrix
-- Risk Index calculation
+Operational beta deployment — complete
 
 Priority 2
 
-Dashboard enhancements using live ICAO Risk Index
+Airline pilot implementation
 
 Priority 3
 
-Operational beta deployment
+CAAN SSP pilot implementation
 
 Priority 4
 
-Airline pilot implementation
+User Acceptance Testing
 
 Priority 5
 
-CAAN SSP pilot implementation
+Production hardening for commercial deployment
 
 ---
 
@@ -568,3 +569,5 @@ The project will be considered Beta Complete when:
 ✓ All dashboards operate entirely from live operational data.
 
 ✓ Product Charter compliance is maintained throughout future development.
+
+**Beta 1.0 — All success criteria met.**
