@@ -110,7 +110,7 @@ app.include_router(admin.router, prefix=settings.API_PREFIX_ADMIN_LEGACY, tags=[
 
 app.include_router(metrics_router, prefix="", tags=["Metrics"])
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "message": "AviaSAFE SMS API is running",
