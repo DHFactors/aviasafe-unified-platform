@@ -2,7 +2,7 @@ services:
   - type: web
     name: aviasafe-api
     env: docker
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /live
     envVars:
       - key: PYTHON_VERSION
