@@ -25,13 +25,6 @@ class AiStatus(str, Enum):
     FAILED = "FAILED"
 
 
-class Severity(str, Enum):
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
-    CRITICAL = "Critical"
-
-
 _OCCURRENCE_TYPES = [
     "Runway Excursion", "Runway Incursion", "Airborne Conflict",
     "Abnormal Runway Contact", "Ground Collision", "System/Component Failure",
@@ -40,10 +33,38 @@ _OCCURRENCE_TYPES = [
     "Other"
 ]
 
+_OCCURRENCE_CLASSES = ["ACCIDENT", "SERIOUS_INCIDENT", "INCIDENT"]
+
+_OCCURRENCE_CATEGORIES = [
+    "ARC", "MAC", "BIRD", "CABIN", "CFIT", "ENG", "FIRE", "GCOL",
+    "LOCI", "PRO", "RE", "RI", "SYS", "WX", "OTHER"
+]
+
 _SEVERITY_LEVELS = ["Low", "Medium", "High", "Critical"]
 
 _INVESTIGATION_STATUSES = [
     "NOT_INVESTIGATED", "INVESTIGATING", "INVESTIGATED", "CLOSED"
+]
+
+_FLIGHT_PHASES = [
+    "Standing", "Pushback/Towing", "Taxi", "Takeoff", "Initial Climb",
+    "Climb", "Cruise", "Descent", "Approach", "Landing", "Go-Around",
+    "Emergency", "Hover", "Circuit", "Aerobatics"
+]
+
+_FLIGHT_TYPES = ["Commercial", "Private", "Training", "Cargo", "Ferry", "Other"]
+
+_AIRCRAFT_CATEGORIES = ["Aeroplane", "Helicopter", "Glider", "Drone", "Other"]
+
+_HUMAN_FACTORS = [
+    "Decision Making Error", "Situational Awareness", "Skill-Based Error",
+    "Procedural Error", "Communication", "Fatigue", "Pressure",
+    "Distraction", "Perception"
+]
+
+_REPORTER_ROLES = [
+    "pilot", "first_officer", "flight_engineer", "cabin_crew",
+    "atc", "maintenance", "ground", "dispatcher", "safety_manager", "other"
 ]
 
 
@@ -61,23 +82,23 @@ class CorrectiveAction(BaseModel):
 
 
 class RiskAssessment(BaseModel):
-    severity: int  # 1-5 ICAO
-    probability: int  # 1-5 ICAO
-    risk_index: int  # 1-25
-    risk_level: str  # "Low" | "Medium" | "High" | "Very High"
+    severity: int
+    probability: int
+    risk_index: int
+    risk_level: str
     assessed_by: str
     assessed_at: datetime
     notes: Optional[str] = None
 
 
 class AiSuggestedAssessment(BaseModel):
-    suggested_severity: int  # 1-5
-    suggested_probability: int  # 1-5
-    suggested_risk_index: int  # 1-25
+    suggested_severity: int
+    suggested_probability: int
+    suggested_risk_index: int
     suggested_risk_level: str
-    confidence: float  # 0.0-1.0
-    severity_explanation: Optional[str] = None  # ICAO-grounded reasoning
-    probability_explanation: Optional[str] = None  # ICAO-grounded reasoning
+    confidence: float
+    severity_explanation: Optional[str] = None
+    probability_explanation: Optional[str] = None
 
 
 class ReportCreate(BaseModel):
@@ -88,17 +109,48 @@ class ReportCreate(BaseModel):
     is_anonymous: bool = False
     flight_number: Optional[str] = None
     aircraft_registration: Optional[str] = None
-    occurrence_type: Optional[str] = None
-    severity: Optional[str] = None
-    attachments: Optional[List[Attachment]] = None
-    risk_score: Optional[float] = None
-    likelihood: Optional[str] = None
-    consequence: Optional[str] = None
-    bowtie_hazard: Optional[str] = None
-    bowtie_barrier: Optional[str] = None
-    sms_category: Optional[str] = None
-    severity_level: Optional[int] = None  # 1-5 ICAO
-    probability_level: Optional[int] = None  # 1-5 ICAO
+    severity_level: Optional[int] = None
+    probability_level: Optional[int] = None
+
+    occurrence_class: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    country: Optional[str] = None
+
+    aircraft_make: Optional[str] = None
+    aircraft_model: Optional[str] = None
+    aircraft_serial_number: Optional[str] = None
+    operator: Optional[str] = None
+    operator_icao: Optional[str] = None
+    aircraft_category: Optional[str] = None
+    engine_make: Optional[str] = None
+    engine_model: Optional[str] = None
+    engine_serial_number: Optional[str] = None
+
+    flight_phase: Optional[str] = None
+    flight_type: Optional[str] = None
+    departure_airport: Optional[str] = None
+    destination_airport: Optional[str] = None
+    aircraft_utilisation_hours: Optional[float] = None
+    aircraft_utilisation_cycles: Optional[int] = None
+
+    crew_count: Optional[int] = None
+    passenger_count: Optional[int] = None
+    fatal_injuries: Optional[int] = None
+    serious_injuries: Optional[int] = None
+    minor_injuries: Optional[int] = None
+
+    occurrence_category: Optional[str] = None
+    human_factors: Optional[List[str]] = None
+    contributing_factors: Optional[List[str]] = None
+    investigation_agency: Optional[str] = None
+
+    reporter_name: Optional[str] = None
+    reporter_role: Optional[str] = None
+    reporter_email: Optional[str] = None
+    reporter_phone: Optional[str] = None
+    reporter_organisation: Optional[str] = None
+    reporting_date: Optional[datetime] = None
 
     @field_validator('narrative')
     def sanitize_narrative(cls, v: str) -> str:
@@ -108,22 +160,16 @@ class ReportCreate(BaseModel):
         v = re.sub(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', '[REDACTED_PHONE]', v)
         return v
 
-    @field_validator('occurrence_type')
-    def validate_occurrence_type(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in _OCCURRENCE_TYPES:
-            raise ValueError(f"occurrence_type must be one of: {', '.join(_OCCURRENCE_TYPES)}")
+    @field_validator('occurrence_category')
+    def validate_occurrence_category(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in _OCCURRENCE_CATEGORIES:
+            raise ValueError(f"occurrence_category must be one of: {', '.join(_OCCURRENCE_CATEGORIES)}")
         return v
 
-    @field_validator('severity')
-    def validate_severity(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in _SEVERITY_LEVELS:
-            raise ValueError(f"severity must be one of: {', '.join(_SEVERITY_LEVELS)}")
-        return v
-
-    @field_validator('risk_score')
-    def validate_risk_score(cls, v: Optional[float]) -> Optional[float]:
-        if v is not None and not (0.0 <= v <= 1.0):
-            raise ValueError("risk_score must be between 0.0 and 1.0")
+    @field_validator('occurrence_class')
+    def validate_occurrence_class(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in _OCCURRENCE_CLASSES:
+            raise ValueError(f"occurrence_class must be one of: {', '.join(_OCCURRENCE_CLASSES)}")
         return v
 
     @field_validator('severity_level')
@@ -150,6 +196,38 @@ class ReportCreate(BaseModel):
             return None
         return v.upper() if v else v
 
+    @field_validator('flight_phase')
+    def validate_flight_phase(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in _FLIGHT_PHASES:
+            raise ValueError(f"flight_phase must be one of: {', '.join(_FLIGHT_PHASES)}")
+        return v
+
+    @field_validator('flight_type')
+    def validate_flight_type(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in _FLIGHT_TYPES:
+            raise ValueError(f"flight_type must be one of: {', '.join(_FLIGHT_TYPES)}")
+        return v
+
+    @field_validator('aircraft_category')
+    def validate_aircraft_category(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in _AIRCRAFT_CATEGORIES:
+            raise ValueError(f"aircraft_category must be one of: {', '.join(_AIRCRAFT_CATEGORIES)}")
+        return v
+
+    @field_validator('reporter_role')
+    def validate_reporter_role(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in _REPORTER_ROLES:
+            raise ValueError(f"reporter_role must be one of: {', '.join(_REPORTER_ROLES)}")
+        return v
+
+    @field_validator('human_factors')
+    def validate_human_factors(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is not None:
+            for hf in v:
+                if hf not in _HUMAN_FACTORS:
+                    raise ValueError(f"human_factor '{hf}' must be one of: {', '.join(_HUMAN_FACTORS)}")
+        return v
+
 
 class AiAnalysisResult(BaseModel):
     occurrence_type: Optional[str] = None
@@ -160,10 +238,6 @@ class AiAnalysisResult(BaseModel):
     summary: Optional[str] = None
     recommendations: List[str] = []
     mandatory_check: Optional[Dict[str, Any]] = None
-    ai_model: Optional[str] = None
-    prompt_version: Optional[str] = None
-    processing_time_ms: Optional[float] = None
-    processed_at: Optional[datetime] = None
 
 
 class ReportResponse(BaseModel):
@@ -183,26 +257,54 @@ class ReportResponse(BaseModel):
     aircraft_registration: Optional[str] = None
     occurrence_type: Optional[str] = None
     severity: Optional[str] = None
-    attachments: Optional[List[Attachment]] = None
-    risk_score: Optional[float] = None
-    likelihood: Optional[str] = None
-    consequence: Optional[str] = None
-    bowtie_hazard: Optional[str] = None
-    bowtie_barrier: Optional[str] = None
-    sms_category: Optional[str] = None
     investigation_status: Optional[str] = None
-    corrective_actions: Optional[List[CorrectiveAction]] = None
-    lessons_learned: Optional[List[str]] = None
-    safety_action_required: bool = False
-    reviewed_by: Optional[str] = None
-    reviewed_at: Optional[datetime] = None
-    ai_analysis: Optional[AiAnalysisResult] = None
     severity_level: Optional[int] = None
     probability_level: Optional[int] = None
     risk_index: Optional[int] = None
     risk_level: Optional[str] = None
     risk_assessment: Optional[RiskAssessment] = None
     ai_suggested_assessment: Optional[AiSuggestedAssessment] = None
+    ai_analysis: Optional[AiAnalysisResult] = None
+
+    occurrence_class: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    country: Optional[str] = None
+
+    aircraft_make: Optional[str] = None
+    aircraft_model: Optional[str] = None
+    aircraft_serial_number: Optional[str] = None
+    operator: Optional[str] = None
+    operator_icao: Optional[str] = None
+    aircraft_category: Optional[str] = None
+    engine_make: Optional[str] = None
+    engine_model: Optional[str] = None
+    engine_serial_number: Optional[str] = None
+
+    flight_phase: Optional[str] = None
+    flight_type: Optional[str] = None
+    departure_airport: Optional[str] = None
+    destination_airport: Optional[str] = None
+    aircraft_utilisation_hours: Optional[float] = None
+    aircraft_utilisation_cycles: Optional[int] = None
+
+    crew_count: Optional[int] = None
+    passenger_count: Optional[int] = None
+    fatal_injuries: Optional[int] = None
+    serious_injuries: Optional[int] = None
+    minor_injuries: Optional[int] = None
+
+    occurrence_category: Optional[str] = None
+    human_factors: Optional[List[str]] = None
+    contributing_factors: Optional[List[str]] = None
+    investigation_agency: Optional[str] = None
+
+    reporter_name: Optional[str] = None
+    reporter_role: Optional[str] = None
+    reporter_email: Optional[str] = None
+    reporter_phone: Optional[str] = None
+    reporter_organisation: Optional[str] = None
+    reporting_date: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -224,6 +326,8 @@ class ReportListItem(BaseModel):
     risk_level: Optional[str] = None
     severity_level: Optional[int] = None
     probability_level: Optional[int] = None
-
-
-
+    occurrence_category: Optional[str] = None
+    aircraft_make: Optional[str] = None
+    aircraft_model: Optional[str] = None
+    operator: Optional[str] = None
+    flight_phase: Optional[str] = None

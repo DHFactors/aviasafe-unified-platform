@@ -1,13 +1,3 @@
-<!-- ============================================================================
-FILE: vsr.html
-PATH: public/report/vsr.html
-VERSION: 1.0.0
-DATE CREATED: 2026-07-26
-PURPOSE: Voluntary Safety Report (VSR) submission form.
-         Supports optional identification (Just Culture compliant).
-AUTHOR: AviaSAFE Systems
-============================================================================ -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,154 +9,51 @@ AUTHOR: AviaSAFE Systems
     <link rel="stylesheet" href="/css/tenant-overrides.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .report-page {
-            max-width: 800px;
-            margin: var(--spacing-2xl) auto;
-            padding: 0 var(--spacing-lg);
-        }
-        .report-container {
-            background: var(--color-white);
-            padding: var(--spacing-2xl);
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-lg);
-        }
-        .report-container h1 {
-            margin-bottom: var(--spacing-xs);
-            color: var(--color-gray-900);
-        }
-        .report-container .subtitle {
-            color: var(--color-gray-700);
-            margin-bottom: var(--spacing-xl);
-        }
-        .tenant-badge {
-            display: inline-block;
-            padding: var(--spacing-sm) var(--spacing-lg);
-            background: var(--color-info-bg);
-            color: var(--color-primary);
-            border-radius: var(--border-radius-full);
-            font-weight: 500;
-            font-size: var(--font-size-sm);
-            margin-bottom: var(--spacing-lg);
-        }
-        .tenant-badge i {
-            margin-right: var(--spacing-sm);
-        }
-        .privacy-notice {
-            background: var(--color-info-bg);
-            padding: var(--spacing-md);
-            border-radius: var(--border-radius-md);
-            border-left: 4px solid var(--color-info);
-            margin-bottom: var(--spacing-xl);
-            font-size: var(--font-size-sm);
-        }
-        .privacy-notice i {
-            color: var(--color-info);
-            margin-right: var(--spacing-sm);
-        }
-        .identification-toggle {
-            background: var(--color-gray-50);
-            padding: var(--spacing-lg);
-            border-radius: var(--border-radius-md);
-            border: 1px solid var(--color-gray-200);
-            margin-bottom: var(--spacing-xl);
-        }
-        .identification-toggle .toggle-label {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-md);
-            cursor: pointer;
-        }
-        .identification-toggle .toggle-label input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: var(--color-primary);
-        }
-        .identification-toggle .toggle-label .toggle-text {
-            font-weight: 500;
-            color: var(--color-gray-900);
-        }
-        .identification-toggle .toggle-label .toggle-subtext {
-            font-size: var(--font-size-sm);
-            color: var(--color-gray-700);
-        }
-        .identified-fields {
-            display: none;
-            margin-top: var(--spacing-lg);
-            padding-top: var(--spacing-lg);
-            border-top: 1px solid var(--color-gray-200);
-        }
-        .identified-fields.visible {
-            display: block;
-        }
-        .identified-fields .form-group {
-            margin-bottom: var(--spacing-md);
-        }
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-lg);
-        }
-        .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--color-primary);
-            cursor: pointer;
-        }
-        .checkbox-group label {
-            font-weight: 400;
-            color: var(--color-gray-800);
-            cursor: pointer;
-        }
-        .btn-submit {
-            padding: var(--spacing-md) var(--spacing-2xl);
-            background: var(--color-primary);
-            color: var(--color-white);
-            border: none;
-            border-radius: var(--border-radius-md);
-            font-size: var(--font-size-base);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-normal);
-        }
-        .btn-submit:hover {
-            background: var(--color-primary-dark);
-            transform: translateY(-2px);
-        }
-        .btn-submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .btn-back {
-            display: inline-block;
-            color: var(--color-gray-700);
-            margin-bottom: var(--spacing-lg);
-            font-size: var(--font-size-sm);
-        }
-        .btn-back:hover {
-            color: var(--color-primary);
-            text-decoration: none;
-        }
-        .success-message {
-            display: none;
-            background: var(--color-success-bg);
-            color: var(--color-success);
-            padding: var(--spacing-md);
-            border-radius: var(--border-radius-md);
-            margin-bottom: var(--spacing-lg);
-            border-left: 4px solid var(--color-success);
-        }
-        .error-message {
-            display: none;
-            background: var(--color-danger-bg);
-            color: var(--color-danger);
-            padding: var(--spacing-md);
-            border-radius: var(--border-radius-md);
-            margin-bottom: var(--spacing-lg);
-            border-left: 4px solid var(--color-danger);
-        }
+        .report-page { max-width: 860px; margin: var(--spacing-2xl) auto; padding: 0 var(--spacing-lg); }
+        .report-container { background: var(--color-white); padding: var(--spacing-2xl); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-lg); }
+        .report-container h1 { margin-bottom: var(--spacing-xs); color: var(--color-gray-900); }
+        .report-container .subtitle { color: var(--color-gray-700); margin-bottom: var(--spacing-xl); }
+        .tenant-badge { display: inline-block; padding: var(--spacing-sm) var(--spacing-lg); background: var(--color-info-bg); color: var(--color-primary); border-radius: var(--border-radius-full); font-weight: 500; font-size: var(--font-size-sm); margin-bottom: var(--spacing-lg); }
+        .tenant-badge i { margin-right: var(--spacing-sm); }
+        .privacy-notice { background: var(--color-info-bg); padding: var(--spacing-md); border-radius: var(--border-radius-md); border-left: 4px solid var(--color-info); margin-bottom: var(--spacing-xl); font-size: var(--font-size-sm); }
+        .privacy-notice i { color: var(--color-info); margin-right: var(--spacing-sm); }
+        .identification-toggle { background: var(--color-gray-50); padding: var(--spacing-lg); border-radius: var(--border-radius-md); border: 1px solid var(--color-gray-200); margin-bottom: var(--spacing-xl); }
+        .identification-toggle .toggle-label { display: flex; align-items: center; gap: var(--spacing-md); cursor: pointer; }
+        .identification-toggle .toggle-label input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: var(--color-primary); }
+        .identification-toggle .toggle-label .toggle-text { font-weight: 500; color: var(--color-gray-900); }
+        .identification-toggle .toggle-label .toggle-subtext { font-size: var(--font-size-sm); color: var(--color-gray-700); }
+        .identified-fields { display: none; margin-top: var(--spacing-lg); padding-top: var(--spacing-lg); border-top: 1px solid var(--color-gray-200); }
+        .identified-fields.visible { display: block; }
+        .form-group { margin-bottom: var(--spacing-lg); }
+        .form-group label { display: block; font-weight: 500; margin-bottom: var(--spacing-xs); color: var(--color-gray-800); }
+        .form-group .form-control { width: 100%; padding: var(--spacing-md); border: var(--border-width) solid var(--color-gray-300); border-radius: var(--border-radius-md); font-size: var(--font-size-base); transition: all var(--transition-fast); box-sizing: border-box; }
+        .form-group .form-control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+        .form-group textarea.form-control { min-height: 140px; resize: vertical; }
+        .form-group select.form-control { appearance: auto; }
+        .form-hint { font-size: var(--font-size-sm); color: var(--color-gray-700); margin-top: var(--spacing-xs); }
+        .required { color: var(--color-danger); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-lg); }
+        @media (max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+        .entity-section { background: var(--color-gray-50); padding: var(--spacing-lg); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-xl); border: 1px solid var(--color-gray-200); }
+        .entity-section h3 { margin-top: 0; margin-bottom: var(--spacing-md); color: var(--color-gray-900); font-size: var(--font-size-base); }
+        .entity-section h3 i { margin-right: var(--spacing-sm); color: var(--color-primary); }
+        .entity-section .section-hint { font-size: var(--font-size-sm); color: var(--color-gray-700); margin-bottom: var(--spacing-md); }
+        .checkbox-group { display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); }
+        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--color-primary); cursor: pointer; }
+        .checkbox-group label { font-weight: 400; color: var(--color-gray-800); cursor: pointer; }
+        .btn-submit { padding: var(--spacing-md) var(--spacing-2xl); background: var(--color-primary); color: var(--color-white); border: none; border-radius: var(--border-radius-md); font-size: var(--font-size-base); font-weight: 600; cursor: pointer; transition: all var(--transition-normal); }
+        .btn-submit:hover { background: var(--color-primary-dark); transform: translateY(-2px); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-back { display: inline-block; color: var(--color-gray-700); margin-bottom: var(--spacing-lg); font-size: var(--font-size-sm); }
+        .btn-back:hover { color: var(--color-primary); text-decoration: none; }
+        .success-message { display: none; background: var(--color-success-bg); color: var(--color-success); padding: var(--spacing-md); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-lg); border-left: 4px solid var(--color-success); }
+        .error-message { display: none; background: var(--color-danger-bg); color: var(--color-danger); padding: var(--spacing-md); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-lg); border-left: 4px solid var(--color-danger); }
+        .multi-select-group { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+        .multi-select-group label { font-weight: 400; font-size: var(--font-size-sm); display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer; padding: var(--spacing-sm) var(--spacing-md); background: var(--color-white); border: 1px solid var(--color-gray-300); border-radius: var(--border-radius-md); transition: all var(--transition-fast); }
+        .multi-select-group label:hover { border-color: var(--color-primary); }
+        .multi-select-group input[type="checkbox"]:checked + span { color: var(--color-primary); font-weight: 600; }
+        .multi-select-group input[type="checkbox"] { accent-color: var(--color-primary); }
     </style>
 </head>
 <body>
@@ -176,23 +63,21 @@ AUTHOR: AviaSAFE Systems
 
     <div class="report-container">
         <h1><i class="fas fa-file-alt"></i> Voluntary Safety Report</h1>
-        <p class="subtitle">Report a safety concern. Your report helps improve aviation safety.</p>
+        <p class="subtitle">Report a safety concern. Help improve aviation safety.</p>
 
-        <!-- Tenant Badge -->
         <div class="tenant-badge" id="tenantBadge">
             <i class="fas fa-building"></i>
             <span id="tenantName">Loading...</span>
         </div>
 
-        <!-- Privacy Notice -->
         <div class="privacy-notice">
             <i class="fas fa-shield-alt"></i>
             <strong>Just Culture Protection:</strong>
             You are protected under ICAO Annex 19 Just Culture principles.
             Reports are used for safety improvement, not blame.
+            Provide factual information only — do not analyse or assign causes.
         </div>
 
-        <!-- Success/Error Messages -->
         <div id="successMessage" class="success-message">
             <i class="fas fa-check-circle"></i>
             <span id="successText">Report submitted successfully!</span>
@@ -203,91 +88,196 @@ AUTHOR: AviaSAFE Systems
         </div>
 
         <form id="vsrForm">
-            <!-- Narrative -->
-            <div class="form-group">
-                <label for="narrative">Narrative Description <span class="required">*</span></label>
-                <textarea id="narrative" class="form-control" rows="6"
-                    placeholder="Describe the safety concern in detail. Include: What happened? What decisions were made? What was the outcome?" required></textarea>
-                <div class="form-hint">Be as detailed as possible. This helps identify and address the root cause.</div>
+
+            <!-- 1. OCCURRENCE -->
+            <div class="entity-section">
+                <h3><i class="fas fa-exclamation-circle"></i> Occurrence Details</h3>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="occurrenceDate">Date / Time (UTC) <span class="required">*</span></label>
+                        <input type="datetime-local" id="occurrenceDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location <span class="required">*</span></label>
+                        <input type="text" id="location" class="form-control" placeholder="Airport code or description" required>
+                        <div class="form-hint">Airport ICAO code, city, or nearest landmark</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="latitude">Latitude</label>
+                        <input type="number" id="latitude" class="form-control" placeholder="Decimal degrees" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label for="longitude">Longitude</label>
+                        <input type="number" id="longitude" class="form-control" placeholder="Decimal degrees" step="any">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="country">Country</label>
+                    <input type="text" id="country" class="form-control" placeholder="e.g., Nepal">
+                </div>
+                <div class="form-group">
+                    <label for="narrative">Narrative Description <span class="required">*</span></label>
+                    <textarea id="narrative" class="form-control" rows="6"
+                        placeholder="Describe the safety concern factually: What happened? What were the conditions? What was the outcome? Do NOT analyse causes or assign blame." required></textarea>
+                    <div class="form-hint">Factual description only — analysis is performed by the safety team and AI after submission.</div>
+                </div>
             </div>
 
-            <!-- Location -->
-            <div class="form-group">
-                <label for="location">Location <span class="required">*</span></label>
-                <input type="text" id="location" class="form-control" placeholder="e.g., KTM, 28°N 84°E" required>
-                <div class="form-hint">Airport code, city, or coordinates</div>
+            <!-- 2. AIRCRAFT (optional) -->
+            <div class="entity-section">
+                <h3><i class="fas fa-plane"></i> Aircraft Details (Optional)</h3>
+                <div class="section-hint">Provide aircraft details only if relevant to the safety concern.</div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="aircraftMake">Aircraft Make</label>
+                        <input type="text" id="aircraftMake" class="form-control" placeholder="e.g., Boeing">
+                    </div>
+                    <div class="form-group">
+                        <label for="aircraftModel">Aircraft Model</label>
+                        <input type="text" id="aircraftModel" class="form-control" placeholder="e.g., 737-800">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="aircraftReg">Aircraft Registration</label>
+                        <input type="text" id="aircraftReg" class="form-control" placeholder="e.g., 9N-ABX">
+                    </div>
+                    <div class="form-group">
+                        <label for="operator">Operator</label>
+                        <input type="text" id="operator" class="form-control" placeholder="e.g., Buddha Air">
+                    </div>
+                </div>
             </div>
 
-            <!-- Date -->
-            <div class="form-group">
-                <label for="date">Date of Occurrence <span class="required">*</span></label>
-                <input type="date" id="date" class="form-control" required>
+            <!-- 3. FLIGHT (optional) -->
+            <div class="entity-section">
+                <h3><i class="fas fa-route"></i> Flight Details (Optional)</h3>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="flightPhase">Flight Phase</label>
+                        <select id="flightPhase" class="form-control">
+                            <option value="">Select phase...</option>
+                            <option value="Standing">Standing</option>
+                            <option value="Taxi">Taxi</option>
+                            <option value="Takeoff">Takeoff</option>
+                            <option value="Climb">Climb</option>
+                            <option value="Cruise">Cruise</option>
+                            <option value="Descent">Descent</option>
+                            <option value="Approach">Approach</option>
+                            <option value="Landing">Landing</option>
+                            <option value="Go-Around">Go-Around</option>
+                            <option value="Emergency">Emergency</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="flightNumber">Flight Number</label>
+                        <input type="text" id="flightNumber" class="form-control" placeholder="e.g., AA123">
+                    </div>
+                </div>
             </div>
 
-            <!-- Flight Number -->
-            <div class="form-group">
-                <label for="flightNumber">Flight / Aircraft Registration</label>
-                <input type="text" id="flightNumber" class="form-control" placeholder="e.g., AA123 or N12345">
-                <div class="form-hint">Optional - provide if relevant</div>
+            <!-- 4. OCCURRENCE CATEGORY (optional) -->
+            <div class="entity-section">
+                <h3><i class="fas fa-tags"></i> Occurrence Category (Optional)</h3>
+                <div class="form-group">
+                    <label for="occurrenceCategory">ICAO ADREP Occurrence Category</label>
+                    <select id="occurrenceCategory" class="form-control">
+                        <option value="">— Not specified —</option>
+                        <option value="ARC">Abnormal Runway Contact</option>
+                        <option value="MAC">Airborne Conflict</option>
+                        <option value="BIRD">Bird Strike / Wildlife</option>
+                        <option value="CABIN">Cabin Safety Event</option>
+                        <option value="CFIT">Controlled Flight Into Terrain</option>
+                        <option value="ENG">Engine / Powerplant</option>
+                        <option value="FIRE">Fire / Smoke</option>
+                        <option value="GCOL">Ground Collision</option>
+                        <option value="LOCI">Loss of Control</option>
+                        <option value="PRO">Procedural Deviation</option>
+                        <option value="RE">Runway Excursion</option>
+                        <option value="RI">Runway Incursion</option>
+                        <option value="SYS">System / Component Failure</option>
+                        <option value="WX">Weather Encounter</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Human Factors (select all that apply)</label>
+                    <div class="multi-select-group">
+                        <label><input type="checkbox" class="hf-checkbox" value="Decision Making Error"> <span>Decision Making Error</span></label>
+                        <label><input type="checkbox" class="hf-checkbox" value="Situational Awareness"> <span>Situational Awareness</span></label>
+                        <label><input type="checkbox" class="hf-checkbox" value="Skill-Based Error"> <span>Skill-Based Error</span></label>
+                        <label><input type="checkbox" class="hf-checkbox" value="Procedural Error"> <span>Procedural Error</span></label>
+                        <label><input type="checkbox" class="hf-checkbox" value="Communication"> <span>Communication</span></label>
+                        <label><input type="checkbox" class="hf-checkbox" value="Fatigue"> <span>Fatigue</span></label>
+                        <label><input type="checkbox" class="hf-checkbox" value="Pressure"> <span>Pressure</span></label>
+                        <label><input type="checkbox" class="hf-checkbox" value="Distraction"> <span>Distraction</span></label>
+                        <label><input type="checkbox" class="hf-checkbox" value="Perception"> <span>Perception</span></label>
+                    </div>
+                </div>
             </div>
 
-            <!-- Optional Identification -->
+            <!-- 5. REPORTER (optional) -->
             <div class="identification-toggle">
                 <div class="toggle-label">
                     <input type="checkbox" id="toggleIdentification">
                     <div>
                         <div class="toggle-text">
-                            <i class="fas fa-user"></i> I want to be identified (optional)
+                            <i class="fas fa-user"></i> I wish to be identified (optional)
                         </div>
                         <div class="toggle-subtext">
-                            By checking this, you allow the safety team to follow up with you.
-                            Otherwise, your report will be anonymous.
+                            By identifying yourself, the safety team can follow up with you.
+                            Otherwise, your report remains anonymous under Just Culture protection.
                         </div>
                     </div>
                 </div>
-
-                <!-- Identified Fields -->
                 <div class="identified-fields" id="identifiedFields">
-                    <div class="form-group">
-                        <label for="reporterName">Your Name</label>
-                        <input type="text" id="reporterName" class="form-control" placeholder="e.g., Capt. John Doe">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="reporterName">Your Name</label>
+                            <input type="text" id="reporterName" class="form-control" placeholder="e.g., Capt. John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="reporterRole">Your Role</label>
+                            <select id="reporterRole" class="form-control">
+                                <option value="">Select role...</option>
+                                <option value="pilot">Pilot</option>
+                                <option value="first_officer">First Officer</option>
+                                <option value="flight_engineer">Flight Engineer</option>
+                                <option value="cabin_crew">Cabin Crew</option>
+                                <option value="atc">Air Traffic Controller</option>
+                                <option value="maintenance">Maintenance Engineer</option>
+                                <option value="ground">Ground Operations</option>
+                                <option value="dispatcher">Dispatcher</option>
+                                <option value="safety_manager">Safety Manager</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="reporterRole">Your Role / Department</label>
-                        <select id="reporterRole" class="form-control">
-                            <option value="">Select your role...</option>
-                            <option value="pilot">Pilot</option>
-                            <option value="first_officer">First Officer</option>
-                            <option value="flight_engineer">Flight Engineer</option>
-                            <option value="cabin_crew">Cabin Crew</option>
-                            <option value="atc">Air Traffic Controller</option>
-                            <option value="maintenance">Maintenance Engineer</option>
-                            <option value="ground">Ground Operations</option>
-                            <option value="dispatcher">Dispatcher</option>
-                            <option value="manager">Safety Manager</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="reporterEmail">Email (for follow-up)</label>
-                        <input type="email" id="reporterEmail" class="form-control" placeholder="your@email.com">
-                        <div class="form-hint">Your email will only be used for safety follow-up</div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="reporterOrganisation">Organisation</label>
+                            <input type="text" id="reporterOrganisation" class="form-control" placeholder="e.g., Buddha Air">
+                        </div>
+                        <div class="form-group">
+                            <label for="reporterEmail">Email (for follow-up)</label>
+                            <input type="email" id="reporterEmail" class="form-control" placeholder="your@email.com">
+                        </div>
                     </div>
                     <div style="background: var(--color-warning-bg); padding: var(--spacing-md); border-radius: var(--border-radius-md); border-left: 4px solid var(--color-warning);">
                         <i class="fas fa-info-circle" style="color: var(--color-warning);"></i>
                         <span style="font-size: var(--font-size-sm);">
-                            Your identity will be protected and only shared with your organization's safety team.
+                            Your identity is protected under Just Culture and shared only with your organisation's safety team.
                         </span>
                     </div>
                 </div>
             </div>
 
-            <!-- ICAO Risk Assessment (Optional) -->
-            <div style="background: var(--color-gray-50); padding: var(--spacing-lg); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-xl); border: 1px solid var(--color-gray-200);">
-                <h4><i class="fas fa-th-large"></i> ICAO Risk Assessment (Optional)</h4>
-                <p style="font-size: var(--font-size-sm); color: var(--color-gray-700); margin-bottom: var(--spacing-md);">
-                    Provide your initial assessment. Leave blank for AI-assisted classification.
-                </p>
+            <!-- 6. ICAO RISK ASSESSMENT (Optional) -->
+            <div class="entity-section">
+                <h3><i class="fas fa-th-large"></i> ICAO Risk Assessment (Optional)</h3>
+                <p class="section-hint">Provide your initial assessment. Leave blank for AI-assisted classification.</p>
                 <div class="grid-2">
                     <div class="form-group">
                         <label for="severityLevel">Severity (1-5)</label>
@@ -314,11 +304,20 @@ AUTHOR: AviaSAFE Systems
                 </div>
             </div>
 
+            <!-- AI Notice -->
+            <div style="background: var(--color-info-bg); padding: var(--spacing-md); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-lg);">
+                <i class="fas fa-robot" style="color: var(--color-info); margin-right: var(--spacing-sm);"></i>
+                <span style="font-size: var(--font-size-sm);">
+                    <strong>AI-Assisted Classification:</strong>
+                    After submission, the system will automatically classify this report using the ICAO taxonomy and suggest a risk assessment.
+                </span>
+            </div>
+
             <!-- Consent -->
             <div class="checkbox-group">
                 <input type="checkbox" id="confirmGoodFaith" required>
                 <label for="confirmGoodFaith">
-                    I confirm this report is submitted in good faith <span class="required">*</span>
+                    I confirm this report is submitted in good faith and the information is accurate to the best of my knowledge. <span class="required">*</span>
                 </label>
             </div>
 
@@ -333,44 +332,32 @@ AUTHOR: AviaSAFE Systems
 <script src="/js/tenant.js"></script>
 <script src="/js/report.js"></script>
 <script>
-// ============================================================================
-// VSR FORM - Tenant from Auth ONLY
-// ============================================================================
-
 document.addEventListener('DOMContentLoaded', async function() {
-    // Check authentication
     const user = await getCurrentUser();
     if (!user) {
         window.location.href = '/login.html';
         return;
     }
 
-    // Get tenant from auth
     const tenantId = user.tenantId || getTenantFromSubdomain();
     if (!tenantId) {
-        document.getElementById('tenantName').textContent = '❌ No Tenant Assigned';
+        document.getElementById('tenantName').textContent = 'No Tenant Assigned';
         document.getElementById('tenantBadge').style.background = 'var(--color-danger-bg)';
         document.getElementById('tenantBadge').style.color = 'var(--color-danger)';
         return;
     }
-
-    // Display tenant
     document.getElementById('tenantName').textContent = tenantId.replace('-', ' ').toUpperCase();
 
-    // Set default date
-    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    document.getElementById('occurrenceDate').value =
+        `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-    // Toggle identification fields
     document.getElementById('toggleIdentification').addEventListener('change', function() {
         const fields = document.getElementById('identifiedFields');
-        if (this.checked) {
-            fields.classList.add('visible');
-        } else {
-            fields.classList.remove('visible');
-        }
+        fields.classList.toggle('visible', this.checked);
     });
 
-    // Form submission
     document.getElementById('vsrForm').addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -380,7 +367,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const errorText = document.getElementById('errorText');
         const successText = document.getElementById('successText');
 
-        // Reset
         errorDiv.style.display = 'none';
         successDiv.style.display = 'none';
         submitBtn.disabled = true;
@@ -388,41 +374,52 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         try {
             const isIdentified = document.getElementById('toggleIdentification').checked;
-            const sevEl = document.getElementById('severityLevel');
-            const probEl = document.getElementById('probabilityLevel');
+            const hfChecks = document.querySelectorAll('.hf-checkbox:checked');
+            const humanFactors = Array.from(hfChecks).map(cb => cb.value);
 
-            // Build report data - NO tenant from user input
             const reportData = {
                 narrative: document.getElementById('narrative').value.trim(),
                 location: document.getElementById('location').value.trim(),
-                date: document.getElementById('date').value,
-                flightNumber: document.getElementById('flightNumber').value.trim(),
+                occurrenceDate: document.getElementById('occurrenceDate').value,
                 isAnonymous: !isIdentified,
+
+                country: document.getElementById('country').value.trim() || null,
+                latitude: document.getElementById('latitude').value ? parseFloat(document.getElementById('latitude').value) : null,
+                longitude: document.getElementById('longitude').value ? parseFloat(document.getElementById('longitude').value) : null,
+
+                aircraftMake: document.getElementById('aircraftMake').value.trim() || null,
+                aircraftModel: document.getElementById('aircraftModel').value.trim() || null,
+                aircraftReg: document.getElementById('aircraftReg').value.trim() || null,
+                operator: document.getElementById('operator').value.trim() || null,
+
+                flightPhase: document.getElementById('flightPhase').value || null,
+                flightNumber: document.getElementById('flightNumber').value.trim() || null,
+
+                occurrenceCategory: document.getElementById('occurrenceCategory').value || null,
+                humanFactors: humanFactors.length > 0 ? humanFactors : null,
+
                 reporterName: isIdentified ? document.getElementById('reporterName').value.trim() : null,
                 reporterRole: isIdentified ? document.getElementById('reporterRole').value : null,
                 reporterEmail: isIdentified ? document.getElementById('reporterEmail').value.trim() : null,
-                severityLevel: sevEl.value ? parseInt(sevEl.value, 10) : null,
-                probabilityLevel: probEl.value ? parseInt(probEl.value, 10) : null,
+                reporterOrganisation: isIdentified ? document.getElementById('reporterOrganisation').value.trim() : null,
+
+                severityLevel: document.getElementById('severityLevel').value ? parseInt(document.getElementById('severityLevel').value) : null,
+                probabilityLevel: document.getElementById('probabilityLevel').value ? parseInt(document.getElementById('probabilityLevel').value) : null,
             };
 
-            // Validate required fields
             if (!reportData.narrative) throw new Error('Narrative is required.');
             if (!reportData.location) throw new Error('Location is required.');
-            if (!reportData.date) throw new Error('Date is required.');
+            if (!reportData.occurrenceDate) throw new Error('Date/Time is required.');
             if (isIdentified && !reportData.reporterEmail) {
                 throw new Error('Email is required when you choose to be identified.');
             }
 
-            // Submit - tenant comes from auth internally
             const result = await submitVSR(reportData);
 
-            successText.textContent = `✅ Report submitted successfully! Reference: ${result.id}`;
+            successText.textContent = 'Report submitted successfully! Reference: ' + result.id;
             successDiv.style.display = 'block';
-
-            // Reset form
             document.getElementById('vsrForm').reset();
-            document.getElementById('date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('identifiedFields').classList.remove('visible');
+            document.getElementById('occurrenceDate').value = new Date().toISOString().slice(0, 16);
 
         } catch (error) {
             errorText.textContent = error.message || 'Error submitting report. Please try again.';

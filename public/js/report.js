@@ -10,20 +10,57 @@ async function submitReport(data, reportType) {
     const payload = {
         narrative: data.narrative,
         location: data.location,
-        occurrence_date: new Date(data.date).toISOString(),
+        occurrence_date: new Date(data.occurrenceDate || data.date).toISOString(),
         report_type: reportType,
         is_anonymous: data.isAnonymous || false,
         flight_number: data.flightNumber || null,
         aircraft_registration: data.aircraftReg || null,
         severity_level: data.severityLevel ?? null,
         probability_level: data.probabilityLevel ?? null,
+
+        occurrence_class: data.occurrenceClass || null,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        country: data.country || null,
+
+        aircraft_make: data.aircraftMake || null,
+        aircraft_model: data.aircraftModel || null,
+        aircraft_serial_number: data.aircraftSerial || null,
+        operator: data.operator || null,
+        operator_icao: data.operatorIcao || null,
+        aircraft_category: data.aircraftCategory || null,
+        engine_make: data.engineMake || null,
+        engine_model: data.engineModel || null,
+        engine_serial_number: data.engineSerial || null,
+
+        flight_phase: data.flightPhase || null,
+        flight_type: data.flightType || null,
+        departure_airport: data.departureAirport || null,
+        destination_airport: data.destinationAirport || null,
+        aircraft_utilisation_hours: data.aircraftUtilHours ?? null,
+        aircraft_utilisation_cycles: data.aircraftUtilCycles ?? null,
+
+        crew_count: data.crewCount ?? null,
+        passenger_count: data.passengerCount ?? null,
+        fatal_injuries: data.fatalInjuries ?? null,
+        serious_injuries: data.seriousInjuries ?? null,
+        minor_injuries: data.minorInjuries ?? null,
+
+        occurrence_category: data.occurrenceCategory || null,
+        human_factors: data.humanFactors || null,
+        contributing_factors: data.contributingFactors || null,
+        investigation_agency: data.investigationAgency || null,
+
+        reporter_name: data.reporterName || null,
+        reporter_role: data.reporterRole || null,
+        reporter_email: data.reporterEmail || null,
+        reporter_phone: data.reporterPhone || null,
+        reporter_organisation: data.reporterOrganisation || null,
+        reporting_date: data.reportingDate || new Date().toISOString(),
     };
 
     if (data.occurrence_type) {
         payload.occurrence_type = data.occurrence_type;
-    }
-    if (data.severity) {
-        payload.severity = data.severity;
     }
 
     const response = await fetch(`${baseUrl}/api/v1/reports/`, {
