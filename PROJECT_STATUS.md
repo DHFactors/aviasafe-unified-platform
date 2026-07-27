@@ -3,7 +3,7 @@
 **Project:** AviaSAFE SMS Platform  
 **Status:** Prototype Development (Beta)  
 **Version:** Beta 1.0  
-**Last Updated:** July 2026
+**Last Updated:** 27 July 2026
 
 ---
 
@@ -28,6 +28,12 @@ Current implementation includes:
 - **AI-grounded risk assessment with explanations**
 - **Safety Manager Override workflow**
 - **14/14 end-to-end tests passing**
+- **Firebase static CDN loading (eliminated race condition across all pages)**
+- **ICAO Doc 9859 color-coded heat map on CAAN dashboard**
+- **Cross-tenant collectionGroup aggregation on CAAN dashboard**
+- **Top Risks by ADREP category on CAAN dashboard**
+- **Survey tenant context (airline name, period dates, days remaining)**
+- **Survey Period Management Dashboard (`/dashboard/`)**
 
 The project has completed Product Charter Alignment, ICAO Risk Assessment implementation, and is now entering live deployment.
 
@@ -310,6 +316,22 @@ Implemented
 - CORS configured for cross-origin frontend-backend communication
 - Firebase Hosting rewrites configured for SPA routing
 
+### Platform Hardening & Feature Delivery (July 27)
+
+Completed
+
+Implemented
+
+- **Firebase initialization race condition eliminated** — All pages now load Firebase SDK via static CDN script tags (removed dynamic async loading)
+- **Firestore persistence removed** — `enablePersistence()` removed to prevent multi-tab conflicts across all pages
+- **CAAN dashboard aggregation** — Switched from per-tenant N+1 queries to `collectionGroup` for all reports/responses
+- **CAAN heat map** — ICAO Doc 9859 color coding (green 1-3, yellow 4-6, orange 8-12, red 15-25)
+- **CAAN Top Risks** — Ranked ADREP category table added
+- **Survey tenant context** — Airline name displayed in header, period dates shown, days remaining countdown
+- **Survey live saving** — Responses saved to `tenants/{id}/responses` (was demo-only)
+- **Survey Period admin dashboard** — `/dashboard/` page for SUPER_ADMIN and AIRLINE_ADMIN to set open/close dates
+- **All 7 pages consistent** — CDN-first loading on caan, safety, login, vsr, mor, detail, admin
+
 Status
 
 ✅ Complete
@@ -412,7 +434,7 @@ Primary Objectives
 
 ## CAAN SSP Dashboard
 
-Working
+Working — **Updated with cross-tenant aggregation**
 
 Primary Objectives
 
@@ -423,6 +445,13 @@ Primary Objectives
 3. Measure SSP effectiveness in real time
 
 4. **Cross-tenant risk assessment oversight**
+
+Recent Improvements
+
+- **Cross-tenant aggregation** using `collectionGroup` queries (replaced N+1 per-tenant loop)
+- **ICAO Doc 9859 color-coded heat map** (green/yellow/orange/red by risk index)
+- **Top Risks by ADREP category** with ranked horizontal bar chart
+- **Status column removed** (CAAN monitors safety data, not tenant login status)
 
 ---
 
@@ -503,23 +532,23 @@ Pending
 
 Priority 1
 
-Operational beta deployment — complete
+Airline pilot implementation
 
 Priority 2
 
-Airline pilot implementation
+CAAN SSP pilot implementation
 
 Priority 3
 
-CAAN SSP pilot implementation
+User Acceptance Testing — begin with seed data validation
 
 Priority 4
 
-User Acceptance Testing
+Production hardening for commercial deployment
 
 Priority 5
 
-Production hardening for commercial deployment
+Survey results visualization on airline dashboard
 
 ---
 
