@@ -5,6 +5,8 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /live
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
       - key: ALLOWED_ORIGINS
         value: http://localhost:3000,http://localhost:8000,https://gap-analysis-ssp.web.app
       - key: FIREBASE_PROJECT_ID
