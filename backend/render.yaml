@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: aviasafe-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /live
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:3000,http://localhost:8000,https://gap-analysis-ssp.web.app
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DEBUG
+        value: "false"
+      - key: API_VERSION
+        value: "1.0.0"

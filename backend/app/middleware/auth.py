@@ -12,40 +12,42 @@
 
 from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Optional, Dict, Any
+from typing import Dict, Any
+
+from app.core.config import settings
 from app.firebase import verify_firebase_token
 
 security = HTTPBearer()
 
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Security(security)
 ) -> Dict[str, Any]:
-    """Get current user from Firebase ID token."""
     token = credentials.credentials
     decoded_token = verify_firebase_token(token)
-    
+
     if not decoded_token:
         raise HTTPException(
             status_code=401,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    # Extract custom claims
-    claims = decoded_token.get('claims', {})
-    
+
+    role = decoded_token.get('role', settings.ROLE_DEFAULT)
+    tenant_id = decoded_token.get('tenant_id')
+
     return {
         "uid": decoded_token['uid'],
         "email": decoded_token.get('email', ''),
-        "role": claims.get('role', 'USER'),
-        "tenant_id": claims.get('tenant_id'),
-        "claims": claims
+        "role": role,
+        "tenant_id": tenant_id,
+        "claims": {"role": role, "tenant_id": tenant_id}
     }
+
 
 async def get_tenant_user(
     user: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """Get current user and ensure they have a tenant."""
     if not user.get('tenant_id'):
         raise HTTPException(
             status_code=403,
@@ -53,24 +55,40 @@ async def get_tenant_user(
         )
     return user
 
+
 async def get_caan_user(
     user: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """Get current user and ensure they have CAAN_SMD role."""
-    if user.get('role') not in ['CAAN_SMD', 'SUPER_ADMIN']:
+    if user.get('role') not in settings.CROSS_TENANT_ROLES:
         raise HTTPException(
             status_code=403,
             detail="CAAN_SMD role required"
         )
     return user
 
+
 async def get_admin_user(
     user: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """Get current user and ensure they have SUPER_ADMIN role."""
-    if user.get('role') != 'SUPER_ADMIN':
+    if user.get('role') not in settings.SUPER_ADMIN_ROLES:
         raise HTTPException(
             status_code=403,
             detail="SUPER_ADMIN role required"
+        )
+    return user
+
+
+async def get_safety_manager(
+    user: Dict[str, Any] = Depends(get_current_user)
+) -> Dict[str, Any]:
+    if user.get('role') not in settings.CROSS_TENANT_ROLES and user.get('role') != "AIRLINE_ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Safety Manager or CAAN_SMD role required"
+        )
+    if user.get('role') == "AIRLINE_ADMIN" and not user.get('tenant_id'):
+        raise HTTPException(
+            status_code=403,
+            detail="Tenant access required for AIRLINE_ADMIN"
         )
     return user

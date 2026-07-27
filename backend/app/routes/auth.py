@@ -12,78 +12,85 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+
+from app.core.config import settings
 from app.firebase import get_auth, verify_firebase_token, create_custom_claims
 
 router = APIRouter()
 
+
 class LoginRequest(BaseModel):
-    """Login request model."""
-    id_token: str  # Firebase ID token from client
+    id_token: str
+
 
 class LoginResponse(BaseModel):
-    """Login response model."""
     uid: str
     email: str
     role: str
     tenant_id: Optional[str]
     custom_claims: dict
 
+
 class RegisterRequest(BaseModel):
-    """Registration request model."""
     email: EmailStr
     password: str
     full_name: str
     organization: str
-    role: str = "AIRLINE_ADMIN"
+    role: str = settings.ROLE_DEFAULT_REGISTRATION
     tenant_id: Optional[str] = None
+
 
 @router.post("/verify", response_model=LoginResponse)
 async def verify_token(request: LoginRequest):
-    """Verify Firebase ID token and return user info."""
-    # Verify the token
     decoded_token = verify_firebase_token(request.id_token)
     if not decoded_token:
         raise HTTPException(status_code=401, detail="Invalid token")
-    
-    # Get custom claims
-    custom_claims = decoded_token.get('claims', {})
-    
+
+    role = decoded_token.get('role', settings.ROLE_DEFAULT)
+    tenant_id = decoded_token.get('tenant_id')
+
     return LoginResponse(
         uid=decoded_token['uid'],
         email=decoded_token.get('email', ''),
-        role=custom_claims.get('role', 'USER'),
-        tenant_id=custom_claims.get('tenant_id'),
-        custom_claims=custom_claims
+        role=role,
+        tenant_id=tenant_id,
+        custom_claims={"role": role, "tenant_id": tenant_id}
     )
 
 @router.post("/register")
 async def register_user(request: RegisterRequest):
-    """Create a new user in Firebase Auth with custom claims."""
     try:
-        # Create user in Firebase Auth
+        allowed_roles = {settings.ROLE_DEFAULT_REGISTRATION}
+        if request.role not in allowed_roles:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Registration role must be one of: {', '.join(allowed_roles)}"
+            )
+
         auth = get_auth()
         user = auth.create_user(
             email=request.email,
             password=request.password,
             display_name=request.full_name,
-            email_verified=False
+            email_verified=False,
         )
-        
-        # Set custom claims (role and tenant)
+
         claims = {"role": request.role}
         if request.tenant_id:
             claims["tenant_id"] = request.tenant_id
-        
+
         auth.set_custom_user_claims(user.uid, claims)
-        
+
         return {
             "success": True,
             "uid": user.uid,
             "email": user.email,
             "role": request.role,
-            "tenant_id": request.tenant_id
+            "tenant_id": request.tenant_id,
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -1,271 +1,394 @@
-<!-- 
-  FOLDER/FILE PATH: public/dashboards/safety.html
-  VERSION NO: 1.0.0
-  DATE: 2026-07-17
-  PURPOSE OF THE FILE: Secure access portal for Airline Safety Managers. 
-  Provides the authentication gateway and the structural framework to render 
-  isolated, tenant-specific Annex 19 safety culture metrics.
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Safety Manager Dashboard | SSP</title>
-    
-    <!-- ICAO Official Typography -->
+    <title>Safety Dashboard — AviaSAFE SSP</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <style>
-        :root {
-            --navy: #002F6C;
-            --sky: #00A3E0;
-            --white: #FFFFFF;
-            --light: #F8FAFC;
-            --text: #1E293B;
-            --border: #E2E8F0;
-            --alert: #D32F2F;
-            --success: #388E3C;
-        }
-        
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: var(--light);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
         }
 
-        /* ── TOP NAVIGATION ── */
-        .admin-nav {
-            background-color: var(--navy);
-            color: var(--white);
-            padding: 1rem 2rem;
+        .nav {
+            background: #002f6c;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-
-        .admin-nav h2 {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            font-size: 1.2rem;
-            letter-spacing: 0.5px;
-        }
-
+        .nav h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.3px; }
+        .nav h1 i { margin-right: 0.5rem; }
+        .nav-actions { display: flex; align-items: center; gap: 1rem; }
+        .nav-actions span { font-size: 0.8rem; opacity: 0.8; }
         .btn-logout {
             background: transparent;
-            border: 1px solid var(--sky);
-            color: var(--white);
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+
+        .container { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
+
+        #dashboardSection { display: none; }
+
+        .section-title {
+            font-size: 1.25rem;
             font-weight: 600;
-            display: none; /* Hidden until authenticated */
-        }
-
-        .btn-logout:hover {
-            background: var(--sky);
-            color: var(--navy);
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 3rem auto;
-            padding: 0 1.5rem;
-        }
-
-        /* ── AUTHENTICATION GATEWAY ── */
-        #authSection {
-            background: var(--white);
-            padding: 2.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            max-width: 400px;
-            margin: 0 auto;
-            border-top: 5px solid var(--navy);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
+            color: #002f6c;
+            margin: 1.5rem 0 1rem;
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
         }
+        .section-title:first-of-type { margin-top: 0; }
 
-        .form-group label {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .form-group input {
-            padding: 0.8rem;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-
-        .btn-login {
-            background: var(--navy);
-            color: var(--white);
-            border: none;
-            width: 100%;
-            padding: 1rem;
-            font-size: 1rem;
-            font-weight: 700;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-login:hover {
-            background: #004080;
-        }
-        
-        .auth-error {
-            color: var(--alert);
-            font-size: 0.9rem;
-            margin-top: 1rem;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        /* ── DASHBOARD DATA VIEW (Hidden by default) ── */
-        #dashboardSection {
-            display: none;
-        }
-
-        .metrics-grid {
+        /* ── KPI Grid ── */
+        .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 1rem;
         }
-
-        .metric-card {
-            background: var(--white);
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            border-left: 4px solid var(--sky);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        .kpi-card {
+            background: #fff;
+            padding: 1.25rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border-left: 4px solid #1a73e8;
+            transition: transform 0.15s;
         }
-
-        .metric-card h3 {
-            margin: 0 0 0.5rem 0;
-            font-size: 0.9rem;
-            color: var(--navy);
+        .kpi-card:hover { transform: translateY(-2px); }
+        .kpi-card.high { border-left-color: #dc3545; }
+        .kpi-card h3 {
+            font-size: 0.75rem;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 0.4rem;
         }
-
-        .metric-score {
-            font-size: 2rem;
+        .kpi-value {
+            font-size: 1.8rem;
             font-weight: 700;
-            color: var(--text);
+            color: #1e293b;
         }
 
-        .data-table-container {
-            background: var(--white);
-            border-radius: 8px;
-            border: 1px solid var(--border);
+        /* ── Chart Grid ── */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 860px) { .chart-grid { grid-template-columns: 1fr; } }
+
+        .chart-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            padding: 1.25rem;
+        }
+        .chart-card h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #002f6c;
+            margin-bottom: 1rem;
+        }
+        .chart-wrapper { position: relative; height: 260px; }
+
+        /* ── Full-width charts ── */
+        .chart-full { grid-column: 1 / -1; }
+        .chart-full .chart-wrapper { height: 280px; }
+
+        /* ── Reports Table ── */
+        .table-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
             overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         }
-
-        table {
+        .table-card table {
             width: 100%;
             border-collapse: collapse;
         }
-
-        th, td {
-            padding: 1rem;
+        .table-card th {
+            background: #f8fafc;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            padding: 0.85rem 1rem;
             text-align: left;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 2px solid #e2e8f0;
         }
+        .table-card td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+        }
+        .table-card tbody tr:hover { background: #f8fafc; }
 
-        th {
-            background: var(--light);
+        /* ── Badges ── */
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
             font-weight: 600;
-            color: var(--navy);
+        }
+        .badge-critical { background: #fde8e8; color: #dc3545; }
+        .badge-high { background: #fff3e0; color: #e65100; }
+        .badge-medium { background: #fff8e1; color: #f9a825; }
+        .badge-low { background: #e8f5e9; color: #2e7d32; }
+        .badge-default { background: #f1f5f9; color: #64748b; }
+        .badge-new { background: #e3f2fd; color: #1565c0; }
+        .badge-processing { background: #fff3e0; color: #e65100; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-failed { background: #fde8e8; color: #dc3545; }
+        .badge-archived { background: #f1f5f9; color: #64748b; }
+
+        /* ── Pagination ── */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .page-btn {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+        .page-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #1a73e8; color: #1a73e8; }
+        .page-btn:disabled { opacity: 0.4; cursor: default; }
+        .page-info { font-size: 0.85rem; color: #64748b; }
+
+        /* ── States ── */
+        .state-container { position: relative; min-height: 100px; }
+        .state-loading::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+        .state-loading::after {
+            content: 'Loading...';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            z-index: 2;
+        }
+        .state-empty, .state-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+        }
+        .state-empty .empty-msg, .state-error .error-msg {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+        .state-error .error-msg { color: #dc3545; }
+
+        /* ── Filter Bar ── */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            background: #fff;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .filter-bar label { font-size: 0.85rem; font-weight: 500; color: #002f6c; }
+        .filter-bar select {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            background: #fff;
+            cursor: pointer;
+        }
+        .btn-refresh {
+            margin-left: auto;
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        .btn-refresh:hover { background: #1557b0; }
+
+        .kpi-grid.state-loading,
+        .chart-card .state-loading,
+        .table-card .state-loading {
+            min-height: 120px;
         }
     </style>
 </head>
 <body>
 
-    <nav class="admin-nav">
-        <h2>✈️ Airline Safety Management Portal</h2>
-        <button id="logoutBtn" class="btn-logout">Secure Logout</button>
-    </nav>
+<nav class="nav">
+    <h1><i class="fas fa-shield-alt"></i> AviaSAFE — Safety Dashboard</h1>
+    <div class="nav-actions">
+        <span id="tenantTitle">Initializing...</span>
+        <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+</nav>
 
-    <div class="container">
-        
-        <!-- LOGIN GATEWAY -->
-        <div id="authSection">
-            <h3 style="text-align: center; color: var(--navy); margin-top: 0;">Authorized Access Only</h3>
-            <div class="form-group">
-                <label>Safety Officer Email</label>
-                <input type="email" id="emailInput" placeholder="safety@airline.com">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="passwordInput" placeholder="••••••••">
-            </div>
-            <button id="loginBtn" class="btn-login">AUTHENTICATE</button>
-            <div id="authMessage" class="auth-error"></div>
+<div class="container">
+    <div id="dashboardSection">
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <label for="daysFilter"><i class="fas fa-calendar-alt"></i> Period:</label>
+            <select id="daysFilter">
+                <option value="30">Last 30 Days</option>
+                <option value="90" selected>Last 90 Days</option>
+                <option value="180">Last 180 Days</option>
+                <option value="365">Last 365 Days</option>
+            </select>
+            <button id="refreshBtn" class="btn-refresh"><i class="fas fa-rotate"></i> Refresh</button>
         </div>
 
-        <!-- ISOLATED TENANT DASHBOARD -->
-        <div id="dashboardSection">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 id="tenantTitle" style="color: var(--navy);">Tenant Safety Overview</h2>
-                <span style="background: var(--sky); color: var(--white); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">Live Cloud Sync</span>
-            </div>
+        <!-- Section 1: KPI Cards -->
+        <div class="section-title"><i class="fas fa-chart-simple"></i> Key Performance Indicators</div>
+        <div id="kpiGrid" class="kpi-grid state-container"></div>
 
-            <!-- Annex 19 Pillar Metrics -->
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <h3>Policy & Objectives</h3>
-                    <div class="metric-score" id="scorePillar1">--%</div>
-                </div>
-                <div class="metric-card">
-                    <h3>Risk Management</h3>
-                    <div class="metric-score" id="scorePillar2">--%</div>
-                </div>
-                <div class="metric-card">
-                    <h3>Safety Assurance</h3>
-                    <div class="metric-score" id="scorePillar3">--%</div>
-                </div>
-                <div class="metric-card">
-                    <h3>Safety Promotion</h3>
-                    <div class="metric-score" id="scorePillar4">--%</div>
+        <!-- Section 2: Charts -->
+        <div class="section-title"><i class="fas fa-chart-bar"></i> Risk & Trends</div>
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3>Risk Distribution</h3>
+                <div id="riskChart" class="chart-wrapper state-container">
+                    <canvas id="riskChartCanvas"></canvas>
                 </div>
             </div>
+            <div class="chart-card">
+                <h3>Monthly Trends</h3>
+                <div id="trendChart" class="chart-wrapper state-container">
+                    <canvas id="trendChartCanvas"></canvas>
+                </div>
+            </div>
+        </div>
 
-            <!-- Raw Data Ingestion Stream -->
-            <h3 style="color: var(--navy); margin-bottom: 1rem;">Recent Survey Submissions</h3>
-            <div class="data-table-container">
-                <table id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>Timestamp</th>
-                            <th>Department</th>
-                            <th>Experience</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataBody">
-                        <!-- Javascript will inject cloud data here -->
-                    </tbody>
-                </table>
+        <!-- Section 2b: 5x5 Risk Heat Map -->
+        <div class="section-title"><i class="fas fa-th"></i> ICAO 5×5 Risk Heat Map</div>
+        <div class="chart-grid">
+            <div class="chart-card chart-full">
+                <h3>Risk Index Heat Map (Severity × Probability)</h3>
+                <div id="heatMapContainer" class="state-container" style="min-height:320px;">
+                    <div id="heatMapCanvas" style="overflow-x:auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Hazard Frequency -->
+        <div class="section-title"><i class="fas fa-triangle-exclamation"></i> Top Hazards</div>
+        <div class="chart-grid">
+            <div class="chart-card chart-full">
+                <h3>Hazard Occurrence Frequency</h3>
+                <div id="hazardChart" class="chart-wrapper state-container">
+                    <canvas id="hazardChartCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Recent Reports -->
+        <div class="section-title"><i class="fas fa-table-list"></i> Recent Reports</div>
+        <div id="reportsTable" class="table-card state-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Occurrence</th>
+                        <th>Location</th>
+                        <th>Risk Index</th>
+                        <th>Risk Level</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="reportsBody"></tbody>
+            </table>
+            <div id="pagination" class="pagination"></div>
+        </div>
+
+        <!-- Section 5: Risk Matrix Settings (Safety Manager only) -->
+        <div id="riskMatrixSection" style="display:none;">
+            <div class="section-title"><i class="fas fa-sliders-h"></i> ICAO Risk Matrix Configuration</div>
+            <div class="chart-card" style="background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);padding:1.25rem;">
+                <p style="font-size:0.85rem;color:#64748b;margin-bottom:1rem;">
+                    Configure the thresholds that define Low, Medium, High, and Very High risk levels.
+                    Changes apply to your organization only.
+                </p>
+                <form id="riskMatrixForm" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;align-items:end;max-width:500px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">Low Max</label>
+                        <input type="number" id="rmLowMax" min="1" max="25" value="5" style="width:100%;padding:0.5rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">Medium Max</label>
+                        <input type="number" id="rmMediumMax" min="1" max="25" value="9" style="width:100%;padding:0.5rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">High Max</label>
+                        <input type="number" id="rmHighMax" min="1" max="25" value="15" style="width:100%;padding:0.5rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <button type="submit" class="btn-refresh" id="rmSaveBtn"><i class="fas fa-save"></i> Save Thresholds</button>
+                        <span id="rmStatus" style="margin-left:0.75rem;font-size:0.85rem;display:none;"></span>
+                    </div>
+                </form>
             </div>
         </div>
 
     </div>
+</div>
 
-    <!-- The logic script will be built in the next step -->
-    <script type="module" src="dashboard.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/api/dashboard.js"></script>
+<script src="/js/report.js"></script>
+<script src="/js/dashboard.js"></script>
+
 </body>
 </html>

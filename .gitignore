@@ -3,6 +3,10 @@
 backend/.env
 *.env
 
+# Firebase service account key
+service-account.json
+*.service-account.json
+
 # Python Virtual Environments
 .venv/
 venv/

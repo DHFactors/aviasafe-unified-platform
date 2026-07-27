@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Detail - AviaSAFE SSP</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .detail-field { margin-bottom: 0.5rem; }
+        .detail-field .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
+        .detail-field .value { font-size: 0.95rem; color: #1e293b; margin-top: 0.15rem; word-break: break-word; }
+        .detail-field.full-width { grid-column: 1 / -1; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-critical { background: #fde8e8; color: #dc3545; }
+        .badge-high { background: #fff3e0; color: #e65100; }
+        .badge-medium { background: #fff8e1; color: #f9a825; }
+        .badge-low { background: #e8f5e9; color: #2e7d32; }
+        .badge-default { background: #f1f5f9; color: #64748b; }
+        .badge-new { background: #e3f2fd; color: #1565c0; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-failed { background: #fde8e8; color: #dc3545; }
+
+        .ai-panel { background: linear-gradient(135deg, #f0f4ff, #e8f0fe); border-left: 4px solid #1a73e8; border-radius: 0 10px 10px 0; }
+        .ai-panel h2 { color: #1a73e8; }
+        .ai-assessment-card { background: #fff; border-radius: 8px; padding: 1rem; margin-top: 0.75rem; border: 1px solid #d2e3fc; }
+        .ai-assessment-card .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .ai-assessment-card .head .sev-prob { display: flex; gap: 1rem; font-size: 1.25rem; font-weight: 700; }
+        .ai-assessment-card .head .sev-prob span { display: flex; align-items: center; gap: 0.35rem; }
+        .ai-assessment-card .explanation { font-size: 0.85rem; color: #475569; line-height: 1.5; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #e2e8f0; }
+        .ai-assessment-card .explanation strong { color: #1e293b; }
+
+        .risk-index-display { text-align: center; padding: 1rem; border-radius: 10px; margin-bottom: 1rem; }
+        .risk-index-display .value { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+        .risk-index-display .label { font-size: 0.85rem; font-weight: 600; margin-top: 0.25rem; }
+        .risk-index-display .sub { font-size: 0.75rem; opacity: 0.8; margin-top: 0.15rem; }
+        .bg-very-high { background: #7f1d1d; color: #fff; }
+        .bg-high { background: #dc3545; color: #fff; }
+        .bg-medium { background: #f9a825; color: #1e293b; }
+        .bg-low { background: #2e7d32; color: #fff; }
+        .bg-na { background: #f1f5f9; color: #64748b; }
+
+        .sm-module { border: 2px solid #002f6c; border-radius: 10px; }
+        .sm-module h2 { color: #002f6c; }
+        .sm-module .sm-badge { display: inline-block; background: #002f6c; color: #fff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sm-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; align-items: end; }
+        .sm-form .form-group { margin-bottom: 0; }
+        .sm-form .form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem; }
+        .sm-form .form-group select, .sm-form .form-group input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: #fff; }
+        .sm-form .form-group select:focus, .sm-form .form-group input:focus { outline: none; border-color: #002f6c; box-shadow: 0 0 0 3px rgba(0,47,108,0.1); }
+        .btn-sm { background: #002f6c; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+        .btn-sm:hover { opacity: 0.9; }
+        .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .narrative-text { white-space: pre-wrap; font-size: 0.9rem; line-height: 1.6; color: #334155; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; }
+
+        .loading-state { display: flex; align-items: center; justify-content: center; padding: 4rem; color: #64748b; }
+        .loading-state i { font-size: 2rem; margin-right: 0.75rem; }
+        .error-state { text-align: center; padding: 4rem; color: #dc3545; }
+
+        .risk-kv { display: flex; gap: 2rem; margin-top: 0.75rem; }
+        .risk-kv .item { text-align: center; }
+        .risk-kv .item .num { font-size: 1.5rem; font-weight: 700; }
+        .risk-kv .item .lbl { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
+
+        .official-badge { background: #002f6c; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin-left: 0.5rem; }
+
+        @media (max-width: 600px) {
+            .detail-grid { grid-template-columns: 1fr; }
+            .sm-form { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/safety.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+    <div id="loadingIndicator" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i> Loading report...
+    </div>
+    <div id="errorIndicator" class="error-state" style="display:none;">
+        <i class="fas fa-exclamation-circle" style="font-size:2rem;"></i>
+        <p id="errorText" style="margin-top:0.5rem;"></p>
+    </div>
+
+    <div id="reportContent" style="display:none;">
+
+        <!-- Report Details -->
+        <div class="card">
+            <h2><i class="fas fa-file-alt"></i> Report Details</h2>
+            <div class="detail-grid" id="reportDetailGrid"></div>
+        </div>
+
+        <!-- Narrative -->
+        <div class="card">
+            <h2><i class="fas fa-align-left"></i> Narrative</h2>
+            <div id="narrativeDisplay" class="narrative-text"></div>
+        </div>
+
+        <!-- Risk Index Display -->
+        <div id="riskIndexCard" class="card" style="display:none;">
+            <h2><i class="fas fa-th-large"></i> ICAO Risk Index</h2>
+            <div id="riskIndexDisplay"></div>
+        </div>
+
+        <!-- AI Assistant Panel -->
+        <div class="card ai-panel" id="aiPanel" style="display:none;">
+            <h2><i class="fas fa-robot"></i> AI Assistant — Suggested Assessment</h2>
+            <div id="aiContent"></div>
+        </div>
+
+        <!-- Safety Manager Assessment -->
+        <div class="card sm-module" id="smModule" style="display:none;">
+            <h2>
+                <i class="fas fa-user-shield"></i> Official Risk Assessment
+                <span class="sm-badge">Safety Manager</span>
+            </h2>
+            <p style="font-size:0.85rem;color:#64748b;margin:0 0 1rem;">
+                Confirm or override the AI-suggested assessment. This becomes the official risk record.
+            </p>
+
+            <div id="officialAssessmentDisplay" style="display:none;" class="risk-index-display"></div>
+
+            <form id="riskAssessmentForm">
+                <div class="sm-form">
+                    <div class="form-group">
+                        <label>Severity (1-5)</label>
+                        <select id="smSeverity" required>
+                            <option value="">Select...</option>
+                            <option value="5">5 — Catastrophic</option>
+                            <option value="4">4 — Hazardous</option>
+                            <option value="3">3 — Major</option>
+                            <option value="2">2 — Minor</option>
+                            <option value="1">1 — Negligible</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Probability (1-5)</label>
+                        <select id="smProbability" required>
+                            <option value="">Select...</option>
+                            <option value="5">5 — Frequent</option>
+                            <option value="4">4 — Occasional</option>
+                            <option value="3">3 — Remote</option>
+                            <option value="2">2 — Improbable</option>
+                            <option value="1">1 — Extremely Improbable</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#475569;margin-bottom:0.25rem;">&nbsp;</label>
+                        <button type="submit" class="btn-sm" id="smSubmitBtn"><i class="fas fa-check"></i> Confirm Assessment</button>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:0.75rem;">
+                    <label style="font-size:0.75rem;font-weight:600;color:#475569;">Notes (optional)</label>
+                    <input type="text" id="smNotes" placeholder="Rationale for this assessment..." style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem;margin-top:0.25rem;">
+                </div>
+                <div id="smMessage" style="margin-top:0.75rem;font-size:0.85rem;display:none;"></div>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script src="/js/firebase.js"></script>
+<script src="/js/report.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const user = await getCurrentUser();
+    if (!user) { window.location.href = '/login.html'; return; }
+
+    const params = new URLSearchParams(window.location.search);
+    const reportId = params.get('id');
+    if (!reportId) { showError('No report ID specified.'); return; }
+
+    const role = user.role || 'USER';
+    const isSafetyManager = role === 'AIRLINE_ADMIN' || role === 'CAAN_SMD' || role === 'SUPER_ADMIN';
+
+    try {
+        const report = await getReport(reportId);
+        renderReport(report, isSafetyManager, user);
+    } catch (err) {
+        showError(err.message);
+    }
+});
+
+function renderReport(report, isSafetyManager, user) {
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('reportContent').style.display = 'block';
+
+    // Report details grid
+    const detailGrid = document.getElementById('reportDetailGrid');
+    const sevClass = getBadgeClass(report.severity_level);
+    const probClass = getBadgeClass(report.probability_level);
+    const statusClass = report.status === 'COMPLETED' ? 'badge-completed' : report.status === 'FAILED' ? 'badge-failed' : 'badge-new';
+    const aiStatusClass = report.ai_status === 'COMPLETED' ? 'badge-completed' : report.ai_status === 'FAILED' ? 'badge-failed' : 'badge-new';
+
+    detailGrid.innerHTML = `
+        <div class="detail-field"><div class="label">Report Type</div><div class="value">${report.report_type === 'mandatory' ? 'MOR' : 'VSR'}</div></div>
+        <div class="detail-field"><div class="label">Status</div><div class="value"><span class="badge ${statusClass}">${report.status || 'NEW'}</span></div></div>
+        <div class="detail-field"><div class="label">AI Status</div><div class="value"><span class="badge ${aiStatusClass}">${report.ai_status || 'PENDING'}</span></div></div>
+        <div class="detail-field"><div class="label">Location</div><div class="value">${report.location || '-'}</div></div>
+        <div class="detail-field"><div class="label">Date</div><div class="value">${report.occurrence_date ? new Date(report.occurrence_date).toLocaleDateString() : '-'}</div></div>
+        <div class="detail-field"><div class="label">Occurrence Type</div><div class="value">${report.occurrence_type || '-'}</div></div>
+        <div class="detail-field"><div class="label">Flight Number</div><div class="value">${report.flight_number || '-'}</div></div>
+        <div class="detail-field"><div class="label">Aircraft Reg</div><div class="value">${report.aircraft_registration || '-'}</div></div>
+        <div class="detail-field"><div class="label">Severity Level</div><div class="value">${report.severity_level ? `<span class="badge ${sevClass}">${report.severity_level}</span>` : '-'}</div></div>
+        <div class="detail-field"><div class="label">Probability Level</div><div class="value">${report.probability_level ? `<span class="badge ${probClass}">${report.probability_level}</span>` : '-'}</div></div>
+        <div class="detail-field"><div class="label">Created By</div><div class="value">${report.is_anonymous ? 'Anonymous' : (report.created_by || '-')}</div></div>
+        <div class="detail-field"><div class="label">Created At</div><div class="value">${report.created_at ? new Date(report.created_at).toLocaleString() : '-'}</div></div>
+    `;
+
+    // Narrative
+    document.getElementById('narrativeDisplay').textContent = report.narrative || 'No narrative provided.';
+
+    // Risk Index
+    const riskIndexCard = document.getElementById('riskIndexCard');
+    const riskIndexDisplay = document.getElementById('riskIndexDisplay');
+    if (report.risk_index !== null && report.risk_index !== undefined) {
+        riskIndexCard.style.display = 'block';
+        const index = report.risk_index;
+        const level = report.risk_level || getRiskLevelLabel(index).text;
+        const levelClass = level === 'Very High' ? 'bg-very-high' : level === 'High' ? 'bg-high' : level === 'Medium' ? 'bg-medium' : level === 'Low' ? 'bg-low' : 'bg-na';
+        const isOfficial = report.risk_assessment ? true : false;
+        riskIndexDisplay.innerHTML = `
+            <div class="risk-index-display ${levelClass}">
+                <div class="value">${index} <span style="font-size:1rem;font-weight:400;">/ 25</span></div>
+                <div class="label">${level.toUpperCase()}${isOfficial ? ' <span class="official-badge">Official</span>' : ''}</div>
+                <div class="sub">${report.severity_level || '?'} (Severity) × ${report.probability_level || '?'} (Probability)</div>
+            </div>
+            ${isOfficial ? `
+            <div class="risk-kv">
+                <div class="item"><div class="num">${report.risk_assessment.severity}</div><div class="lbl">Assessed Severity</div></div>
+                <div class="item"><div class="num">${report.risk_assessment.probability}</div><div class="lbl">Assessed Probability</div></div>
+                <div class="item"><div class="num">${report.risk_assessment.risk_index}</div><div class="lbl">Risk Index</div></div>
+                <div class="item"><div class="num" style="font-size:0.85rem;">${report.risk_assessment.assessed_by ? report.risk_assessment.assessed_by.substring(0,8) : '-'}</div><div class="lbl">Assessed By</div></div>
+            </div>` : ''}
+        `;
+    }
+
+    // AI Assistant Panel
+    if (report.ai_suggested_assessment || report.ai_analysis) {
+        const aiPanel = document.getElementById('aiPanel');
+        aiPanel.style.display = 'block';
+        const aiContent = document.getElementById('aiContent');
+        let html = '';
+
+        if (report.ai_suggested_assessment) {
+            const ai = report.ai_suggested_assessment;
+            const aiLevelClass = ai.suggested_risk_level === 'Very High' ? 'bg-very-high' : ai.suggested_risk_level === 'High' ? 'bg-high' : ai.suggested_risk_level === 'Medium' ? 'bg-medium' : ai.suggested_risk_level === 'Low' ? 'bg-low' : 'bg-na';
+            const confidencePct = ai.confidence ? Math.round(ai.confidence * 100) : 'N/A';
+
+            html += `
+            <div class="ai-assessment-card">
+                <div class="head">
+                    <div class="sev-prob">
+                        <span><i class="fas fa-exclamation-triangle" style="color:#dc3545;"></i> S: ${ai.suggested_severity}</span>
+                        <span><i class="fas fa-chart-line" style="color:#f9a825;"></i> P: ${ai.suggested_probability}</span>
+                    </div>
+                    <div>
+                        <span class="badge ${aiLevelClass}">${ai.suggested_risk_level || 'N/A'}</span>
+                        <span style="font-size:0.75rem;color:#64748b;margin-left:0.5rem;">RI: ${ai.suggested_risk_index || '?'}</span>
+                    </div>
+                </div>
+                ${ai.severity_explanation ? `<div class="explanation"><strong>Severity Basis:</strong> ${ai.severity_explanation}</div>` : ''}
+                ${ai.probability_explanation ? `<div class="explanation"><strong>Probability Basis:</strong> ${ai.probability_explanation}</div>` : ''}
+                <div style="font-size:0.75rem;color:#64748b;margin-top:0.5rem;">Confidence: ${confidencePct}%</div>
+            </div>`;
+        }
+
+        if (report.ai_analysis) {
+            const a = report.ai_analysis;
+            if (a.summary || a.recommendations || a.human_factors) {
+                html += `<div style="margin-top:0.75rem;font-size:0.85rem;color:#475569;">`;
+                if (a.summary) html += `<p><strong>Summary:</strong> ${a.summary}</p>`;
+                if (a.recommendations && a.recommendations.length) {
+                    html += `<p><strong>Recommendations:</strong></p><ul style="margin:0.25rem 0 0 1.25rem;">`;
+                    a.recommendations.forEach(r => { html += `<li>${r}</li>`; });
+                    html += `</ul>`;
+                }
+                if (a.human_factors && a.human_factors.length) {
+                    html += `<p style="margin-top:0.5rem;"><strong>Human Factors:</strong> ${a.human_factors.join(', ')}</p>`;
+                }
+                html += `</div>`;
+            }
+        }
+
+        aiContent.innerHTML = html || '<p style="color:#64748b;font-size:0.85rem;">AI analysis pending or unavailable.</p>';
+    }
+
+    // Safety Manager Assessment Module
+    const smModule = document.getElementById('smModule');
+    if (isSafetyManager) {
+        smModule.style.display = 'block';
+
+        // If official assessment already exists, show it
+        if (report.risk_assessment) {
+            const oa = report.risk_assessment;
+            const oaLevelClass = oa.risk_level === 'Very High' ? 'bg-very-high' : oa.risk_level === 'High' ? 'bg-high' : oa.risk_level === 'Medium' ? 'bg-medium' : oa.risk_level === 'Low' ? 'bg-low' : 'bg-na';
+            document.getElementById('officialAssessmentDisplay').style.display = 'block';
+            document.getElementById('officialAssessmentDisplay').className = `risk-index-display ${oaLevelClass}`;
+            document.getElementById('officialAssessmentDisplay').innerHTML = `
+                <div class="value">${oa.risk_index} <span style="font-size:1rem;font-weight:400;">/ 25</span></div>
+                <div class="label">OFFICIAL — ${oa.risk_level.toUpperCase()}</div>
+                <div class="sub">Assessed by: ${oa.assessed_by || 'Unknown'} on ${oa.assessed_at ? new Date(oa.assessed_at).toLocaleString() : 'Unknown'}</div>
+                ${oa.notes ? `<div class="sub" style="margin-top:0.25rem;">Note: ${oa.notes}</div>` : ''}
+            `;
+
+            // Pre-fill form with current values
+            document.getElementById('smSeverity').value = oa.severity;
+            document.getElementById('smProbability').value = oa.probability;
+        } else if (report.ai_suggested_assessment) {
+            // Pre-fill from AI suggested
+            document.getElementById('smSeverity').value = report.ai_suggested_assessment.suggested_severity;
+            document.getElementById('smProbability').value = report.ai_suggested_assessment.suggested_probability;
+        }
+
+        // Handle form submission
+        document.getElementById('riskAssessmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('smSubmitBtn');
+            const msgEl = document.getElementById('smMessage');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming...';
+            msgEl.style.display = 'none';
+
+            try {
+                const sev = parseInt(document.getElementById('smSeverity').value, 10);
+                const prob = parseInt(document.getElementById('smProbability').value, 10);
+                const notes = document.getElementById('smNotes').value.trim() || null;
+
+                if (!sev || !prob || sev < 1 || sev > 5 || prob < 1 || prob > 5) {
+                    throw new Error('Severity and Probability must be between 1 and 5.');
+                }
+
+                const params = new URLSearchParams(window.location.search);
+                const reportId = params.get('id');
+                await confirmRiskAssessment(reportId, sev, prob, notes);
+
+                msgEl.className = '';
+                msgEl.style.color = '#2e7d32';
+                msgEl.innerHTML = '<i class="fas fa-check-circle"></i> Risk assessment confirmed. Refreshing...';
+                msgEl.style.display = 'block';
+
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (err) {
+                msgEl.className = '';
+                msgEl.style.color = '#dc3545';
+                msgEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + err.message;
+                msgEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirm Assessment';
+            }
+        });
+    }
+
+    // Toggle link from safety dashboard - reload button
+    const reportType = report.report_type === 'mandatory' ? 'MOR' : 'VSR';
+    document.title = `${reportType} #${report.id.substring(0,8)} — AviaSAFE SSP`;
+}
+
+function getBadgeClass(level) {
+    if (level === null || level === undefined) return 'badge-default';
+    if (level >= 5) return 'badge-critical';
+    if (level >= 4) return 'badge-high';
+    if (level >= 3) return 'badge-medium';
+    return 'badge-low';
+}
+
+function getRiskLevelLabel(index) {
+    if (index === null || index === undefined) return { text: 'N/A', class: 'badge-default' };
+    if (index <= 5) return { text: 'Low', class: 'badge-low' };
+    if (index <= 9) return { text: 'Medium', class: 'badge-medium' };
+    if (index <= 15) return { text: 'High', class: 'badge-high' };
+    return { text: 'Very High', class: 'badge-critical' };
+}
+
+function showError(msg) {
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'block';
+    document.getElementById('errorText').textContent = msg;
+}
+</script>
+</body>
+</html>

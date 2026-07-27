@@ -19,6 +19,7 @@ AUTHOR: AviaSAFE Systems
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/tenant-overrides.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         .caan-page {
             max-width: 1200px;
@@ -206,21 +207,23 @@ AUTHOR: AviaSAFE Systems
     <!-- Charts -->
     <div class="chart-grid">
         <div class="chart-card">
-            <h3><i class="fas fa-chart-pie"></i> Risk Distribution</h3>
-            <div class="chart-placeholder" id="riskChart">
-                <i class="fas fa-chart-pie"></i>
-                <span>Risk distribution visualization</span>
-                <span style="font-size: var(--font-size-xs); color: var(--color-gray-500);">(Coming soon)</span>
+            <h3><i class="fas fa-chart-bar"></i> Risk Level Distribution</h3>
+            <div class="chart-wrapper" style="position:relative;height:220px;">
+                <canvas id="caanRiskChartCanvas"></canvas>
             </div>
         </div>
         <div class="chart-card">
             <h3><i class="fas fa-chart-bar"></i> Hazard Frequency</h3>
-            <div class="chart-placeholder" id="hazardChart">
-                <i class="fas fa-chart-bar"></i>
-                <span>Hazard frequency by type</span>
-                <span style="font-size: var(--font-size-xs); color: var(--color-gray-500);">(Coming soon)</span>
+            <div class="chart-wrapper" style="position:relative;height:220px;">
+                <canvas id="caanHazardChartCanvas"></canvas>
             </div>
         </div>
+    </div>
+
+    <!-- ICAO 5x5 Heat Map -->
+    <h2 style="margin-bottom:var(--spacing-md);"><i class="fas fa-th"></i> ICAO 5×5 Industry Risk Heat Map</h2>
+    <div style="background:var(--color-white);padding:var(--spacing-lg);border-radius:var(--border-radius-md);box-shadow:var(--shadow-sm);margin-bottom:var(--spacing-xl);overflow-x:auto;">
+        <div id="caanHeatMapContainer"></div>
     </div>
 
     <!-- Tenants List -->
@@ -234,6 +237,8 @@ AUTHOR: AviaSAFE Systems
                         <th>ICAO</th>
                         <th>Country</th>
                         <th>Reports</th>
+                        <th>High Risk</th>
+                        <th>V.High Risk</th>
                         <th>Survey Responses</th>
                         <th>Status</th>
                     </tr>
@@ -258,6 +263,15 @@ AUTHOR: AviaSAFE Systems
 // CAAN SMD DASHBOARD
 // ============================================================================
 
+let caanChartInstances = {};
+
+function destroyCaanChart(key) {
+    if (caanChartInstances[key]) {
+        caanChartInstances[key].destroy();
+        delete caanChartInstances[key];
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     // Check authentication
     const user = await getCurrentUser();
@@ -279,13 +293,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function loadIndustryData() {
     try {
-        // Get all tenants
         const tenantsSnapshot = await db.collection('tenants').get();
 
         if (tenantsSnapshot.empty) {
             document.getElementById('tenantsTableBody').innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; color: var(--color-gray-700); padding: var(--spacing-xl);">
+                    <td colspan="8" style="text-align: center; color: var(--color-gray-700); padding: var(--spacing-xl);">
                         <i class="fas fa-inbox"></i> No tenants found.
                     </td>
                 </tr>
@@ -296,8 +309,18 @@ async function loadIndustryData() {
         let totalReports = 0;
         let totalResponses = 0;
         let highRiskCount = 0;
+        let veryHighRiskCount = 0;
         let activeTenants = 0;
         let html = '';
+
+        // Aggregate risk level counts for chart + heat map
+        const riskLevelCounts = { 'Low': 0, 'Medium': 0, 'High': 0, 'Very High': 0 };
+        const heatMapData = [];
+        for (let s = 1; s <= 5; s++) {
+            for (let p = 1; p <= 5; p++) {
+                heatMapData.push({ severity: s, probability: p, count: 0 });
+            }
+        }
 
         for (const tenantDoc of tenantsSnapshot.docs) {
             const tenantId = tenantDoc.id;
@@ -306,7 +329,6 @@ async function loadIndustryData() {
 
             if (isActive) activeTenants++;
 
-            // Get report count
             const reportsSnapshot = await db.collection('tenants')
                 .doc(tenantId)
                 .collection('reports')
@@ -314,7 +336,6 @@ async function loadIndustryData() {
             const reportCount = reportsSnapshot.size;
             totalReports += reportCount;
 
-            // Get survey response count
             const responsesSnapshot = await db.collection('tenants')
                 .doc(tenantId)
                 .collection('responses')
@@ -322,11 +343,25 @@ async function loadIndustryData() {
             const responseCount = responsesSnapshot.size;
             totalResponses += responseCount;
 
-            // Count high risk (if classification exists)
+            let tenantHigh = 0;
+            let tenantVeryHigh = 0;
+
             reportsSnapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.riskLevel === 'High' || data.riskLevel === 'Critical') {
-                    highRiskCount++;
+                const rl = data.risk_level || data.riskLevel || '';
+                if (rl === 'High' || rl === 'Critical') {
+                    if (rl === 'Critical') rl = 'Very High';
+                }
+                if (rl === 'High') { highRiskCount++; tenantHigh++; }
+                if (rl === 'Very High' || rl === 'Critical') { veryHighRiskCount++; tenantVeryHigh++; }
+                if (riskLevelCounts.hasOwnProperty(rl)) riskLevelCounts[rl]++;
+
+                // Heat map: use severity_level and probability_level if available
+                const s = data.severity_level;
+                const p = data.probability_level;
+                if (s >= 1 && s <= 5 && p >= 1 && p <= 5) {
+                    const hmItem = heatMapData.find(d => d.severity === s && d.probability === p);
+                    if (hmItem) hmItem.count++;
                 }
             });
 
@@ -336,6 +371,8 @@ async function loadIndustryData() {
                     <td>${tenantData.icao || '-'}</td>
                     <td>${tenantData.country || 'Nepal'}</td>
                     <td>${reportCount}</td>
+                    <td>${tenantHigh}</td>
+                    <td>${tenantVeryHigh}</td>
                     <td>${responseCount}</td>
                     <td>
                         <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
@@ -346,20 +383,20 @@ async function loadIndustryData() {
             `;
         }
 
-        // Update stats
         document.getElementById('totalTenants').textContent = activeTenants;
         document.getElementById('totalReports').textContent = totalReports;
         document.getElementById('totalResponses').textContent = totalResponses;
-        document.getElementById('highRiskCount').textContent = highRiskCount;
-
-        // Update table
+        document.getElementById('highRiskCount').textContent = highRiskCount + veryHighRiskCount;
         document.getElementById('tenantsTableBody').innerHTML = html;
+
+        renderCaanRiskChart(riskLevelCounts);
+        renderCaanHeatMap(heatMapData);
 
     } catch (error) {
         console.error('Error loading industry data:', error);
         document.getElementById('tenantsTableBody').innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; color: var(--color-danger); padding: var(--spacing-xl);">
+                <td colspan="8" style="text-align: center; color: var(--color-danger); padding: var(--spacing-xl);">
                     <i class="fas fa-exclamation-circle"></i> Error loading data: ${error.message}
                 </td>
             </tr>
@@ -367,9 +404,85 @@ async function loadIndustryData() {
     }
 }
 
+function renderCaanRiskChart(counts) {
+    destroyCaanChart('caanRiskChartCanvas');
+    const ctx = document.getElementById('caanRiskChartCanvas');
+    if (!ctx) return;
+
+    const labels = ['Low', 'Medium', 'High', 'Very High'];
+    const data = labels.map(l => counts[l] || 0);
+    const colors = ['#28a745', '#f9a825', '#fd7e14', '#dc3545'];
+
+    caanChartInstances.risk = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Reports',
+                data: data,
+                backgroundColor: colors,
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        },
+    });
+}
+
+function renderCaanHeatMap(data) {
+    const container = document.getElementById('caanHeatMapContainer');
+    const maxCount = Math.max(...data.map(d => d.count), 1);
+
+    const getColor = (count) => {
+        if (count === 0) return '#f1f5f9';
+        const ratio = count / maxCount;
+        if (ratio < 0.25) return '#e8f5e9';
+        if (ratio < 0.5) return '#fff8e1';
+        if (ratio < 0.75) return '#fff3e0';
+        return '#fde8e8';
+    };
+
+    const getRiskClass = (index) => {
+        if (index <= 5) return 'badge badge-low';
+        if (index <= 9) return 'badge badge-medium';
+        if (index <= 15) return 'badge badge-high';
+        return 'badge badge-critical';
+    };
+
+    let html = '<table style="border-collapse:collapse;margin:0 auto;font-size:0.85rem;">';
+    html += '<tr><td style="padding:0.5rem;font-weight:700;color:#475569;text-align:right;">P\\S</td>';
+    for (let s = 1; s <= 5; s++) {
+        html += `<td style="padding:0.5rem 0.75rem;font-weight:700;color:#1a73e8;text-align:center;">S=${s}</td>`;
+    }
+    html += '</tr>';
+
+    for (let p = 5; p >= 1; p--) {
+        html += `<tr><td style="padding:0.5rem;font-weight:700;color:#475569;text-align:right;">P=${p}</td>`;
+        for (let s = 1; s <= 5; s++) {
+            const item = data.find(d => d.severity === s && d.probability === p);
+            const count = item ? item.count : 0;
+            const index = s * p;
+            const color = getColor(count);
+            html += `<td style="padding:0.5rem;text-align:center;background:${color};border:1px solid #e2e8f0;border-radius:4px;min-width:70px;">
+                <div style="font-weight:700;font-size:1.1rem;">${index}</div>
+                <div style="font-size:0.65rem;margin-top:0.1rem;"><span class="${getRiskClass(index)}">${index <= 5 ? 'Low' : index <= 9 ? 'Medium' : index <= 15 ? 'High' : 'V.High'}</span></div>
+                <div style="font-size:0.75rem;margin-top:0.15rem;">${count}</div>
+            </td>`;
+        }
+        html += '</tr>';
+    }
+    html += '</table>';
+    html += '<p style="text-align:center;font-size:0.75rem;color:#94a3b8;margin-top:0.75rem;">Severity × Probability — Industry-wide report distribution</p>';
+
+    container.innerHTML = html;
+}
+
 async function logout() {
     try {
-        await signOut();
+        await firebase.auth().signOut();
         window.location.href = '/';
     } catch (error) {
         console.error('Logout error:', error);

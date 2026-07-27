@@ -187,26 +187,11 @@ AUTHOR: AviaSAFE Systems
         </form>
 
         <div class="role-hint">
-            <p><strong><i class="fas fa-users"></i> Test Accounts</strong></p>
-            <div class="hint-row">
-                <span><i class="fas fa-user-cog"></i> Super Admin</span>
-                <span><code>admin@aviasafesystems.com</code> <span class="badge badge-admin">SUPER_ADMIN</span></span>
-            </div>
-            <div class="hint-row">
-                <span><i class="fas fa-building"></i> CAAN SMD</span>
-                <span><code>smd@caanepal.gov.np</code> <span class="badge badge-caan">CAAN_SMD</span></span>
-            </div>
-            <div class="hint-row">
-                <span><i class="fas fa-plane"></i> Airline Admin (MOR)</span>
-                <span><code>sal@aviasafesystems.com</code> <span class="badge badge-airline">AIRLINE_ADMIN</span></span>
-            </div>
-            <div class="hint-row">
-                <span><i class="fas fa-chart-line"></i> Safety User</span>
-                <span><code>salsafety@aviasafesystems.com</code> <span class="badge badge-airline">AIRLINE_ADMIN</span></span>
-            </div>
-            <div style="margin-top: var(--spacing-sm); font-size: var(--font-size-xs); color: var(--color-gray-600);">
-                <i class="fas fa-lock"></i> Passwords: <code>Admin123!</code>, <code>Sal123!</code>, <code>Safety123!</code>, <code>Smd123!</code>
-            </div>
+            <p><strong><i class="fas fa-shield-alt"></i> Authorized Personnel Only</strong></p>
+            <p style="font-size: var(--font-size-xs); color: var(--color-gray-600); margin-top: var(--spacing-sm);">
+                This portal is restricted to registered aviation safety personnel.
+                Contact your system administrator for access.
+            </p>
         </div>
 
         <div class="footer-links">
@@ -215,36 +200,44 @@ AUTHOR: AviaSAFE Systems
     </div>
 </div>
 
-<!-- ===== FIREBASE SDK ===== -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
-<!-- ===== FIREBASE CONFIG ===== -->
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
-        authDomain: "gap-analysis-ssp.firebaseapp.com",
-        projectId: "gap-analysis-ssp",
-        storageBucket: "gap-analysis-ssp.appspot.com",
-        messagingSenderId: "817614332543",
-        appId: "1:817614332543:web:01224a312e8478b24d554a"
-    };
-    firebase.initializeApp(firebaseConfig);
-</script>
+<!-- ===== SHARED FIREBASE CONFIG ===== -->
+<script src="/js/firebase.js"></script>
 
 <!-- ===== LOGIN LOGIC ===== -->
 <script>
 // ============================================================================
-// SIGN IN FUNCTION
+// WAIT FOR FIREBASE SDK
+// ============================================================================
+
+function waitForFirebase() {
+    return new Promise(function(resolve) {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            resolve();
+            return;
+        }
+        var check = setInterval(function() {
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                clearInterval(check);
+                resolve();
+            }
+        }, 30);
+        setTimeout(function() {
+            clearInterval(check);
+            resolve();
+        }, 10000);
+    });
+}
+
+// ============================================================================
+// SIGN IN FUNCTION — force token refresh for fresh claims
 // ============================================================================
 
 async function signIn(email, password) {
     try {
-        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        const tokenResult = await user.getIdTokenResult();
-        const claims = tokenResult.claims || {};
+        var userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        var user = userCredential.user;
+        var tokenResult = await user.getIdTokenResult(true);
+        var claims = tokenResult.claims || {};
         
         return {
             uid: user.uid,
@@ -260,46 +253,17 @@ async function signIn(email, password) {
 }
 
 // ============================================================================
-// GET CURRENT USER
-// ============================================================================
-
-function getCurrentUser() {
-    return new Promise((resolve) => {
-        const unsubscribe = firebase.auth().onAuthStateChanged(async (user) => {
-            unsubscribe();
-            if (user) {
-                try {
-                    const tokenResult = await user.getIdTokenResult();
-                    const claims = tokenResult.claims || {};
-                    resolve({
-                        uid: user.uid,
-                        email: user.email,
-                        role: claims.role || 'USER',
-                        tenantId: claims.tenant_id || null,
-                        claims: claims
-                    });
-                } catch (error) {
-                    resolve(null);
-                }
-            } else {
-                resolve(null);
-            }
-        });
-    });
-}
-
-// ============================================================================
 // TENANT RESOLUTION
 // ============================================================================
 
 function getTenantFromSubdomain() {
-    const hostname = window.location.hostname;
-    const parts = hostname.split('.');
+    var hostname = window.location.hostname;
+    var parts = hostname.split('.');
     
     if (parts.length >= 2 && parts[1] === 'aviasafesystems') {
-        const subdomain = parts[0];
-        const reserved = ['www', 'app', 'api', 'caan', 'admin', 'auth', 'docs'];
-        if (!reserved.includes(subdomain)) {
+        var subdomain = parts[0];
+        var reserved = ['www', 'app', 'api', 'caan', 'admin', 'auth', 'docs'];
+        if (reserved.indexOf(subdomain) === -1) {
             return subdomain;
         }
     }
@@ -311,8 +275,8 @@ function getTenantFromSubdomain() {
 // ============================================================================
 
 function redirectBasedOnRole(user) {
-    const role = user.role || 'USER';
-    let redirectUrl = '/safety.html';
+    var role = user.role || 'USER';
+    var redirectUrl = '/safety.html';
     
     if (role === 'SUPER_ADMIN') {
         redirectUrl = '/admin/';
@@ -320,16 +284,62 @@ function redirectBasedOnRole(user) {
         redirectUrl = '/caan.html';
     }
     
+    console.log('Redirecting to ' + redirectUrl + ' (role=' + role + ')');
     window.location.href = redirectUrl;
+}
+
+// ============================================================================
+// PERSISTENT AUTH LISTENER — handles all auth transitions
+// ============================================================================
+
+var authRedirectInProgress = false;
+
+function onAuthStateChanged(user) {
+    // Prevent multiple simultaneous redirects
+    if (authRedirectInProgress) return;
+    
+    var statusBox = document.getElementById('statusBox');
+    var errorDiv = document.getElementById('errorMessage');
+    var loginBtn = document.getElementById('loginBtn');
+    var loginForm = document.getElementById('loginForm');
+    
+    if (!user) {
+        // Show login form, hide any errors
+        if (loginForm) loginForm.style.display = 'block';
+        if (errorDiv) errorDiv.style.display = 'none';
+        if (loginBtn) loginBtn.disabled = false;
+        return;
+    }
+    
+    // User is signed in — fetch fresh claims before redirecting
+    authRedirectInProgress = true;
+    user.getIdTokenResult(true).then(function(tokenResult) {
+        var claims = tokenResult.claims || {};
+        var role = claims.role || 'USER';
+        var tenantId = claims.tenant_id || null;
+        
+        console.log('Authenticated as:', user.email, 'role:', role, 'tenant:', tenantId);
+        
+        // Check if we should redirect (skip if already on a target page)
+        var currentPath = window.location.pathname;
+        var isOnLoginPage = currentPath === '/login.html' || currentPath === '/';
+        
+        if (isOnLoginPage) {
+            redirectBasedOnRole({ uid: user.uid, email: user.email, role: role, tenantId: tenantId, claims: claims });
+        }
+    }).catch(function() {
+        authRedirectInProgress = false;
+    });
 }
 
 // ============================================================================
 // PAGE LOAD
 // ============================================================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    const tenantId = getTenantFromSubdomain();
-    const displayName = tenantId ? tenantId.charAt(0).toUpperCase() + tenantId.slice(1) + ' Air' : 'Unknown';
+document.addEventListener('DOMContentLoaded', async function() {
+    // Resolve tenant display
+    var tenantId = getTenantFromSubdomain();
+    var displayName = tenantId ? tenantId.charAt(0).toUpperCase() + tenantId.slice(1) + ' Air' : 'Unknown';
     document.getElementById('tenantDisplay').textContent = displayName;
     
     if (tenantId === 'caan') {
@@ -338,11 +348,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('tenantDisplay').textContent = 'System Administration';
     }
     
-    getCurrentUser().then(user => {
-        if (user) {
-            redirectBasedOnRole(user);
-        }
-    }).catch(() => {});
+    // Wait for Firebase SDK to be ready, then register persistent listener
+    await waitForFirebase();
+    firebase.auth().onAuthStateChanged(onAuthStateChanged);
 });
 
 // ============================================================================
@@ -352,22 +360,24 @@ document.addEventListener('DOMContentLoaded', function() {
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const loginBtn = document.getElementById('loginBtn');
-    const errorDiv = document.getElementById('errorMessage');
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+    var loginBtn = document.getElementById('loginBtn');
+    var errorDiv = document.getElementById('errorMessage');
     
     errorDiv.style.display = 'none';
     loginBtn.disabled = true;
     loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
     
     try {
-        const user = await signIn(email, password);
+        var user = await signIn(email, password);
         
         if (user) {
             console.log('✅ Logged in as:', user.email);
             console.log('   Role:', user.role);
             console.log('   Tenant:', user.tenantId || 'None');
+            // The onAuthStateChanged listener will handle the redirect with fresh claims,
+            // but call it directly here for immediate response
             redirectBasedOnRole(user);
         }
         

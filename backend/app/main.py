@@ -1,52 +1,140 @@
-# ============================================================================
-# FILE: main.py
-# PATH: backend/app/main.py
-# VERSION: 1.0.0
-# DATE CREATED: 2026-07-03
-# DATE REVISED: 2026-07-03
-# PURPOSE: FastAPI application entry point with Firebase integration.
-# AUTHOR: Ghanshyam Acharya
-# CODE OWNER: AviaSafeSystems
-# ============================================================================
-
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-from app.routes import reports, dashboard, auth, admin
-from app.firebase import initialize_firebase
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from loguru import logger
 
-# Initialize Firebase
-initialize_firebase()
+from app.core.config import settings
+from app.core.logging import setup_logging, RequestLoggingMiddleware
+from app.core.metrics import router as metrics_router
+from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
+from app.firebase import initialize_firebase, is_firebase_ready
+from app.routes import reports, dashboard, auth, admin
+
+setup_logging()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        initialize_firebase()
+    except Exception as e:
+        logger.warning(f"Firebase initialization failed at startup: {e}. Lazy init will retry on first request.")
+    yield
+
 
 app = FastAPI(
     title="AviaSAFE SMS API",
     description="Safety Climate Measurement System - ICAO Annex 19 Compliant",
-    version="1.0.0"
+    version=settings.API_VERSION,
+    debug=settings.DEBUG,
+    lifespan=lifespan,
 )
 
-# CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure in production
+    allow_origins=[o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
-app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
-app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+
+
+def _req_id(request: Request) -> str:
+    return getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID", "")
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "error": exc.detail if isinstance(exc.detail, str) else str(exc.detail),
+            "detail": None,
+            "errors": None,
+            "request_id": _req_id(request),
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for err in exc.errors():
+        errors.append({
+            "field": " -> ".join(str(loc) for loc in err.get("loc", [])),
+            "message": err.get("msg", str(err)),
+        })
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "error": "Validation error",
+            "detail": str(exc),
+            "errors": errors,
+            "request_id": _req_id(request),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": "Internal server error",
+            "detail": str(exc) if settings.DEBUG else None,
+            "errors": None,
+            "request_id": _req_id(request),
+        },
+    )
+
+app.include_router(auth.router, prefix=settings.API_PREFIX_AUTH, tags=["Authentication"])
+app.include_router(reports.router, prefix=settings.API_PREFIX_REPORTS, tags=["Reports"])
+app.include_router(dashboard.router, prefix=settings.API_PREFIX_DASHBOARD, tags=["Dashboard"])
+app.include_router(admin.router, prefix=settings.API_PREFIX_ADMIN, tags=["Admin"])
+
+app.include_router(auth.router, prefix=settings.API_PREFIX_AUTH_LEGACY, tags=["Authentication (Legacy)"], include_in_schema=False)
+app.include_router(reports.router, prefix=settings.API_PREFIX_REPORTS_LEGACY, tags=["Reports (Legacy)"], include_in_schema=False)
+app.include_router(dashboard.router, prefix=settings.API_PREFIX_DASHBOARD_LEGACY, tags=["Dashboard (Legacy)"], include_in_schema=False)
+app.include_router(admin.router, prefix=settings.API_PREFIX_ADMIN_LEGACY, tags=["Admin (Legacy)"], include_in_schema=False)
+
+app.include_router(metrics_router, prefix="", tags=["Metrics"])
 
 @app.get("/")
 async def root():
     return {
         "message": "AviaSAFE SMS API is running",
-        "version": "1.0.0",
+        "version": settings.API_VERSION,
         "status": "operational"
     }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "firebase": "connected"}
+    return {
+        "status": "healthy",
+        "firebase": "connected" if is_firebase_ready() else "unavailable",
+        "service": "AviaSAFE SMS API",
+        "version": settings.API_VERSION,
+    }
+
+@app.get("/live")
+async def liveness_probe():
+    return {"status": "alive"}
+
+@app.get("/ready")
+async def readiness_probe():
+    fb = is_firebase_ready()
+    return {
+        "status": "ready" if fb else "not_ready",
+        "firebase": "connected" if fb else "unavailable",
+    }

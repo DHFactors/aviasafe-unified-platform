@@ -15,10 +15,8 @@ PURPOSE: Super Admin Portal - NO AUTO-REDIRECTS
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Shared Firebase Config -->
+    <script src="/js/firebase.js"></script>
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
@@ -132,21 +130,6 @@ PURPOSE: Super Admin Portal - NO AUTO-REDIRECTS
 
 <!-- SCRIPTS -->
 <script>
-// ============================================================================
-// FIREBASE CONFIG
-// ============================================================================
-
-const firebaseConfig = {
-    apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
-    authDomain: "gap-analysis-ssp.firebaseapp.com",
-    projectId: "gap-analysis-ssp",
-    storageBucket: "gap-analysis-ssp.appspot.com",
-    messagingSenderId: "817614332543",
-    appId: "1:817614332543:web:01224a312e8478b24d554a"
-};
-
-firebase.initializeApp(firebaseConfig);
-
 // ============================================================================
 // STATE
 // ============================================================================

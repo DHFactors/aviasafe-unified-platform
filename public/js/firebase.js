@@ -22,6 +22,16 @@ const firebaseConfig = {
     appId: "1:817614332543:web:01224a312e8478b24d554a"
 };
 
+// Centralized application configuration (single source of truth)
+const APP_CONFIG = {
+    apiBaseUrl: '',                      // Same-origin by default
+    environment: 'production',
+    pagination: { defaultPageSize: 20, maxPageSize: 100 },
+};
+
+window.APP_CONFIG = APP_CONFIG;
+window.__FIREBASE_CONFIG__ = firebaseConfig;
+
 // ============================================================================
 // DYNAMIC LOADING OF FIREBASE SDK
 // ============================================================================
@@ -170,5 +180,65 @@ function initServices() {
 window.firebase = firebase;
 window.auth = auth;
 window.db = db;
+
+// ============================================================================
+// SHARED AUTH HELPERS (used by all pages)
+// ============================================================================
+
+function waitForFirebase() {
+    return new Promise(function(resolve) {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            resolve();
+            return;
+        }
+        var check = setInterval(function() {
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                clearInterval(check);
+                resolve();
+            }
+        }, 30);
+        setTimeout(function() {
+            clearInterval(check);
+            resolve();
+        }, 10000);
+    });
+}
+
+async function getCurrentUser() {
+    await waitForFirebase();
+    return new Promise(function(resolve) {
+        var resolved = false;
+        var unsubscribe = firebase.auth().onAuthStateChanged(async function(user) {
+            if (resolved) return;
+            resolved = true;
+            unsubscribe();
+            if (user) {
+                try {
+                    var tokenResult = await user.getIdTokenResult(true);
+                    var claims = tokenResult.claims || {};
+                    resolve({
+                        uid: user.uid,
+                        email: user.email,
+                        role: claims.role || 'USER',
+                        tenantId: claims.tenant_id || null,
+                        claims: claims
+                    });
+                } catch (error) {
+                    resolve(null);
+                }
+            } else {
+                resolve(null);
+            }
+        });
+        // Safety timeout — resolve with null if auth never fires
+        setTimeout(function() {
+            if (!resolved) {
+                resolved = true;
+                unsubscribe();
+                resolve(null);
+            }
+        }, 5000);
+    });
+}
 
 console.log('📦 firebase.js loaded');

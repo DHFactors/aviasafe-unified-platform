@@ -282,6 +282,38 @@ AUTHOR: AviaSAFE Systems
                 </div>
             </div>
 
+            <!-- ICAO Risk Assessment (Optional) -->
+            <div style="background: var(--color-gray-50); padding: var(--spacing-lg); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-xl); border: 1px solid var(--color-gray-200);">
+                <h4><i class="fas fa-th-large"></i> ICAO Risk Assessment (Optional)</h4>
+                <p style="font-size: var(--font-size-sm); color: var(--color-gray-700); margin-bottom: var(--spacing-md);">
+                    Provide your initial assessment. Leave blank for AI-assisted classification.
+                </p>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="severityLevel">Severity (1-5)</label>
+                        <select id="severityLevel" class="form-control">
+                            <option value="">— AI will assess —</option>
+                            <option value="5">5 — Catastrophic (Fatalities, hull loss)</option>
+                            <option value="4">4 — Hazardous (Life-threatening, near CFIT/LOC-I)</option>
+                            <option value="3">3 — Major (Serious injury, major damage)</option>
+                            <option value="2">2 — Minor (Slight injuries, minor damage)</option>
+                            <option value="1">1 — Negligible (No injuries, minor system degradation)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="probabilityLevel">Probability (1-5)</label>
+                        <select id="probabilityLevel" class="form-control">
+                            <option value="">— AI will assess —</option>
+                            <option value="5">5 — Frequent (&gt;10⁻³ per flight hour)</option>
+                            <option value="4">4 — Occasional (&lt;10⁻³ per flight hour)</option>
+                            <option value="3">3 — Remote (&lt;10⁻⁵ per flight hour)</option>
+                            <option value="2">2 — Improbable (&lt;10⁻⁶ per flight hour)</option>
+                            <option value="1">1 — Extremely Improbable (&lt;10⁻⁸ per flight hour)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Consent -->
             <div class="checkbox-group">
                 <input type="checkbox" id="confirmGoodFaith" required>
@@ -299,6 +331,7 @@ AUTHOR: AviaSAFE Systems
 
 <script src="/js/firebase.js"></script>
 <script src="/js/tenant.js"></script>
+<script src="/js/report.js"></script>
 <script>
 // ============================================================================
 // VSR FORM - Tenant from Auth ONLY
@@ -355,6 +388,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         try {
             const isIdentified = document.getElementById('toggleIdentification').checked;
+            const sevEl = document.getElementById('severityLevel');
+            const probEl = document.getElementById('probabilityLevel');
 
             // Build report data - NO tenant from user input
             const reportData = {
@@ -365,7 +400,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 isAnonymous: !isIdentified,
                 reporterName: isIdentified ? document.getElementById('reporterName').value.trim() : null,
                 reporterRole: isIdentified ? document.getElementById('reporterRole').value : null,
-                reporterEmail: isIdentified ? document.getElementById('reporterEmail').value.trim() : null
+                reporterEmail: isIdentified ? document.getElementById('reporterEmail').value.trim() : null,
+                severityLevel: sevEl.value ? parseInt(sevEl.value, 10) : null,
+                probabilityLevel: probEl.value ? parseInt(probEl.value, 10) : null,
             };
 
             // Validate required fields

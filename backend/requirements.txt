@@ -17,8 +17,6 @@ python-dotenv==1.0.0
 firebase-admin==6.4.0
 
 # Authentication
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 
 # AI Integration
@@ -29,6 +27,5 @@ pydantic==2.5.3
 pydantic-settings==2.1.0
 
 # Utilities
-httpx<0.25.0,>=0.24.0
 loguru==0.7.2
 python-dateutil==2.8.2
