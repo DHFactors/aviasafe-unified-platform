@@ -184,6 +184,7 @@
     <!-- ===== HEADER ===== -->
     <header class="app-header">
         <div class="logo">Avia<span>SAFE</span>system</div>
+        <div id="tenantBadge" style="font-size:12px;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:12px;display:none;"></div>
         <nav>
             <a href="/">Home</a>
             <a href="/survey/" class="active">Survey</a>
@@ -191,24 +192,31 @@
         </nav>
     </header>
 
+    <!-- ===== SURVEY STATUS BAR ===== -->
+    <div id="surveyStatusBar" style="display:none;background:#e8f0fe;padding:8px 16px;font-size:13px;color:#1a73e8;flex-shrink:0;text-align:center;border-bottom:1px solid #c5d9f7;">
+        <span id="statusMessage"></span>
+    </div>
+
     <!-- ===== STEP 1: INFO SCREEN ===== -->
     <div id="infoScreen">
         <div class="icon"><i class="fas fa-clipboard-list"></i></div>
-        <h1>Safety Survey</h1>
+        <h1 id="surveyTitle">Safety Survey</h1>
         <p class="subtitle">ICAO Annex 19 Gap Analysis · SMS Maturity Assessment</p>
-        <div class="demo-badge">⚠️ DEMO — Responses are not saved</div>
+        <div id="surveyPeriodInfo" style="font-size:13px;color:#666;margin-bottom:8px;display:none;"></div>
+        <div id="daysRemaining" style="font-size:14px;font-weight:600;color:#1a73e8;margin-bottom:16px;display:none;"></div>
 
         <div class="fields">
-            <input type="text" id="respondentName" placeholder="Full Name (optional)">
-            <input type="text" id="respondentDesignation" placeholder="Designation / Role (optional)">
-            <input type="text" id="respondentDepartment" placeholder="Department (optional)">
+            <input type="text" id="respondentName" placeholder="Full Name">
+            <input type="text" id="respondentDesignation" placeholder="Designation / Role">
+            <input type="text" id="respondentDepartment" placeholder="Department">
         </div>
+        <p style="font-size: 12px; color: #999; margin-top: -8px; margin-bottom: 16px;">Fields above are optional — you may skip any or all of them.</p>
 
         <div class="btn-group">
-            <button class="btn btn-secondary" onclick="skipInfo()">Skip</button>
+            <button class="btn btn-secondary" onclick="skipInfo()">Skip Details</button>
             <button class="btn btn-primary" onclick="startSurvey()">Begin Survey →</button>
         </div>
-        <p style="font-size: 12px; color: #999; margin-top: 16px;">Your information is optional and confidential</p>
+        <p style="font-size: 12px; color: #999; margin-top: 16px;">Your responses are confidential and anonymous</p>
     </div>
 
     <!-- ===== STEP 2: SURVEY SCREEN ===== -->
@@ -220,12 +228,11 @@
 
     <!-- ===== COMPLETE SCREEN ===== -->
     <div id="completeScreen">
-        <div class="icon"><i class="fas fa-flask"></i></div>
-        <h2>Demo Complete!</h2>
-        <p>Thank you for participating in this demonstration.</p>
-        <div class="note">⚠️ This is a demo version. Your responses have <strong>not been saved</strong>.</div>
+        <div class="icon"><i class="fas fa-check-circle" style="color:#34a853;"></i></div>
+        <h2 style="color:#34a853;">Survey Complete!</h2>
+        <p>Thank you for your participation. Your responses have been recorded.</p>
+        <div class="note" style="background:#e6f4ea;color:#1e7e34;border-color:#34a853;">✅ Your feedback helps improve safety — thank you.</div>
         <a href="/" class="btn"><i class="fas fa-home"></i> Return Home</a>
-        <a href="/survey/" style="margin-top:12px; color:#1a73e8; font-size:14px; text-decoration:none;">Retake Survey</a>
     </div>
 
     <!-- ===== FOOTER ===== -->
@@ -238,6 +245,9 @@
 </div>
 
 <!-- ===== SCRIPTS ===== -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="default_q.js"></script>
 <script src="app.js"></script>
 

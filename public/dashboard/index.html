@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Dashboard - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="/js/firebase.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 2px solid #e9ecef; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #1a73e8; font-size: 22px; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 20px; }
+        .card h3 { margin: 0 0 16px 0; font-size: 16px; color: #202124; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 13px; color: #5f6368; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .form-group input:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-success { background: #34a853; color: white; }
+        .btn-success:hover { background: #2d8e47; }
+        .btn-danger { background: #ea4335; color: white; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .status-open { background: #e6f4ea; color: #1e7e34; }
+        .status-closed { background: #fce8e6; color: #d33426; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f3f4; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { font-size: 13px; color: #5f6368; }
+        .info-value { font-size: 14px; font-weight: 500; color: #202124; }
+        .tenant-selector { margin-bottom: 24px; }
+        .tenant-selector select { width: 100%; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: white; }
+        .tenant-selector select:focus { outline: none; border-color: #1a73e8; }
+        #message { padding: 12px 16px; border-radius: 6px; margin-top: 16px; display: none; font-size: 14px; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1><i class="fas fa-poll"></i> Survey Period Management</h1>
+        <div>
+            <span id="userDisplay" style="margin-right:12px;font-size:13px;color:#5f6368;"></span>
+            <button class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div id="authGuard" style="display:none;">
+        <div class="card" style="text-align:center;padding:40px;">
+            <i class="fas fa-lock" style="font-size:48px;color:#ea4335;margin-bottom:16px;"></i>
+            <h3>Authentication Required</h3>
+            <p style="color:#5f6368;">Please <a href="/login.html">log in</a> with an admin account to manage survey periods.</p>
+        </div>
+    </div>
+
+    <div id="appContent" style="display:none;">
+
+        <!-- Tenant Selector -->
+        <div class="card tenant-selector">
+            <label for="tenantSelect" style="font-weight:600;font-size:14px;color:#202124;display:block;margin-bottom:8px;">Select Airline / Tenant</label>
+            <select id="tenantSelect" onchange="onTenantChange()">
+                <option value="">— Select a tenant —</option>
+            </select>
+        </div>
+
+        <!-- Survey Info -->
+        <div class="card" id="surveyInfoCard" style="display:none;">
+            <h3><i class="fas fa-info-circle"></i> Current Survey Status</h3>
+            <div id="surveyInfoContent">
+                <div class="info-row"><span class="info-label">Status</span><span id="surveyStatusDisplay" class="status-badge">—</span></div>
+                <div class="info-row"><span class="info-label">Open Date</span><span class="info-value" id="currentOpenDate">Not set</span></div>
+                <div class="info-row"><span class="info-label">Close Date</span><span class="info-value" id="currentCloseDate">Not set</span></div>
+                <div class="info-row"><span class="info-label">Days Remaining</span><span class="info-value" id="currentDaysRemaining">—</span></div>
+                <div class="info-row"><span class="info-label">Responses Collected</span><span class="info-value" id="responseCount">0</span></div>
+            </div>
+        </div>
+
+        <!-- Survey Period Form -->
+        <div class="card" id="surveyFormCard" style="display:none;">
+            <h3><i class="fas fa-calendar-alt"></i> Set Survey Period</h3>
+            <p style="font-size:13px;color:#5f6368;margin-bottom:16px;">Define when the safety survey opens and closes for this airline.</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="openDate">Survey Open Date</label>
+                    <input type="date" id="openDate">
+                </div>
+                <div class="form-group">
+                    <label for="closeDate">Survey Close Date</label>
+                    <input type="date" id="closeDate">
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="saveSurveyPeriod()"><i class="fas fa-save"></i> Save Survey Period</button>
+            <button class="btn btn-danger btn-sm" onclick="clearSurveyPeriod()" style="margin-left:8px;">Clear Dates</button>
+            <div id="message"></div>
+        </div>
+
+        <!-- Survey Link -->
+        <div class="card" id="surveyLinkCard" style="display:none;">
+            <h3><i class="fas fa-link"></i> Survey Link</h3>
+            <p style="font-size:13px;color:#5f6368;">Share this link with employees to access the survey:</p>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="surveyLink" readonly style="flex:1;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#f8f9fa;">
+                <button class="btn btn-primary btn-sm" onclick="copySurveyLink()"><i class="fas fa-copy"></i> Copy</button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+var tenants = [];
+var selectedTenantId = '';
+var currentUser = null;
+
+firebase.auth().onAuthStateChanged(function(user) {
+    currentUser = user;
+    var userDisplay = document.getElementById('userDisplay');
+
+    if (!user) {
+        userDisplay.textContent = 'Not logged in';
+        document.getElementById('authGuard').style.display = 'block';
+        document.getElementById('appContent').style.display = 'none';
+        return;
+    }
+
+    userDisplay.textContent = user.email;
+    user.getIdTokenResult().then(function(tokenResult) {
+        var claims = tokenResult.claims || {};
+        if (claims.role === 'SUPER_ADMIN' || claims.role === 'AIRLINE_ADMIN') {
+            document.getElementById('authGuard').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+            loadTenants();
+        } else {
+            document.getElementById('authGuard').querySelector('h3').textContent = 'Access Denied';
+            document.getElementById('authGuard').querySelector('p').innerHTML = 'Your role (' + claims.role + ') does not have permission to manage survey periods.';
+            document.getElementById('authGuard').style.display = 'block';
+            document.getElementById('appContent').style.display = 'none';
+        }
+    });
+});
+
+async function loadTenants() {
+    var select = document.getElementById('tenantSelect');
+    select.innerHTML = '<option value="">— Select a tenant —</option>';
+
+    try {
+        var user = currentUser;
+        var query = firebase.firestore().collection('tenants');
+
+        var tokenResult = await user.getIdTokenResult();
+        var claims = tokenResult.claims || {};
+
+        if (claims.role === 'AIRLINE_ADMIN' && claims.tenant_id) {
+            query = query.where(firebase.firestore.FieldPath.documentId(), '==', claims.tenant_id);
+        }
+
+        var snapshot = await query.get();
+
+        if (snapshot.empty) {
+            select.innerHTML = '<option value="">No tenants available</option>';
+            return;
+        }
+
+        tenants = [];
+        snapshot.forEach(function(doc) {
+            var data = doc.data();
+            tenants.push({ id: doc.id, name: data.name, icao: data.icao, surveyConfig: data.surveyConfig || null });
+            var option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = data.name || doc.id;
+            select.appendChild(option);
+        });
+
+        // Auto-select for AIRLINE_ADMIN with single tenant
+        if (claims.role === 'AIRLINE_ADMIN' && claims.tenant_id) {
+            select.value = claims.tenant_id;
+            onTenantChange();
+        }
+    } catch (error) {
+        console.error('Error loading tenants:', error);
+        select.innerHTML = '<option value="">Error loading tenants</option>';
+    }
+}
+
+async function onTenantChange() {
+    var tenantId = document.getElementById('tenantSelect').value;
+    selectedTenantId = tenantId;
+
+    var surveyInfoCard = document.getElementById('surveyInfoCard');
+    var surveyFormCard = document.getElementById('surveyFormCard');
+    var surveyLinkCard = document.getElementById('surveyLinkCard');
+
+    if (!tenantId) {
+        surveyInfoCard.style.display = 'none';
+        surveyFormCard.style.display = 'none';
+        surveyLinkCard.style.display = 'none';
+        return;
+    }
+
+    var tenant = tenants.find(function(t) { return t.id === tenantId; });
+    if (!tenant) return;
+
+    // Load latest data
+    try {
+        var doc = await firebase.firestore().collection('tenants').doc(tenantId).get();
+        var data = doc.data();
+        var config = data.surveyConfig || {};
+
+        // Show info card
+        surveyInfoCard.style.display = 'block';
+        var statusEl = document.getElementById('surveyStatusDisplay');
+        var now = new Date();
+
+        if (config.openDate && config.closeDate) {
+            var open = new Date(config.openDate);
+            var close = new Date(config.closeDate);
+            if (now < open) {
+                statusEl.textContent = 'Pending';
+                statusEl.className = 'status-badge status-pending';
+            } else if (now > close) {
+                statusEl.textContent = 'Closed';
+                statusEl.className = 'status-badge status-closed';
+            } else {
+                statusEl.textContent = 'Open';
+                statusEl.className = 'status-badge status-open';
+            }
+        } else {
+            statusEl.textContent = 'Not configured';
+            statusEl.className = 'status-badge status-pending';
+        }
+
+        document.getElementById('currentOpenDate').textContent = config.openDate ? new Date(config.openDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not set';
+        document.getElementById('currentCloseDate').textContent = config.closeDate ? new Date(config.closeDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not set';
+
+        if (config.closeDate) {
+            var days = getDaysRemaining(config.closeDate);
+            document.getElementById('currentDaysRemaining').textContent = days > 0 ? days + ' day(s)' : 'Expired';
+        } else {
+            document.getElementById('currentDaysRemaining').textContent = '—';
+        }
+
+        // Count responses
+        try {
+            var responsesSnap = await firebase.firestore().collection('tenants').doc(tenantId).collection('responses').get();
+            document.getElementById('responseCount').textContent = responsesSnap.size;
+        } catch (e) {
+            document.getElementById('responseCount').textContent = '0';
+        }
+
+        // Pre-fill form
+        if (config.openDate) {
+            document.getElementById('openDate').value = config.openDate.substring(0, 10);
+        } else {
+            document.getElementById('openDate').value = '';
+        }
+        if (config.closeDate) {
+            document.getElementById('closeDate').value = config.closeDate.substring(0, 10);
+        } else {
+            document.getElementById('closeDate').value = '';
+        }
+
+        surveyFormCard.style.display = 'block';
+
+        // Show survey link
+        surveyLinkCard.style.display = 'block';
+        var baseUrl = window.location.protocol + '//' + window.location.host;
+        document.getElementById('surveyLink').value = baseUrl + '/survey/?tenant=' + tenantId;
+
+        document.getElementById('message').style.display = 'none';
+
+    } catch (error) {
+        console.error('Error loading tenant data:', error);
+        document.getElementById('message').textContent = 'Error loading tenant data: ' + error.message;
+        document.getElementById('message').className = 'error';
+        document.getElementById('message').style.display = 'block';
+    }
+}
+
+function getDaysRemaining(closeDate) {
+    var now = new Date();
+    var close = new Date(closeDate);
+    var diff = close - now;
+    if (diff <= 0) return 0;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+async function saveSurveyPeriod() {
+    if (!selectedTenantId) {
+        showMessage('Please select a tenant first.', 'error');
+        return;
+    }
+
+    var openDate = document.getElementById('openDate').value;
+    var closeDate = document.getElementById('closeDate').value;
+
+    if (!openDate || !closeDate) {
+        showMessage('Please fill in both open and close dates.', 'error');
+        return;
+    }
+
+    if (new Date(closeDate) <= new Date(openDate)) {
+        showMessage('Close date must be after open date.', 'error');
+        return;
+    }
+
+    try {
+        await firebase.firestore().collection('tenants').doc(selectedTenantId).update({
+            surveyConfig: {
+                openDate: new Date(openDate).toISOString(),
+                closeDate: new Date(closeDate).toISOString()
+            }
+        });
+
+        showMessage('Survey period saved successfully!', 'success');
+        onTenantChange(); // Refresh
+    } catch (error) {
+        console.error('Error saving survey period:', error);
+        showMessage('Error: ' + error.message, 'error');
+    }
+}
+
+async function clearSurveyPeriod() {
+    if (!selectedTenantId) return;
+    if (!confirm('Clear survey dates for this tenant?')) return;
+
+    try {
+        await firebase.firestore().collection('tenants').doc(selectedTenantId).update({
+            surveyConfig: firebase.firestore.FieldValue.delete()
+        });
+
+        showMessage('Survey dates cleared.', 'success');
+        onTenantChange();
+    } catch (error) {
+        showMessage('Error: ' + error.message, 'error');
+    }
+}
+
+function copySurveyLink() {
+    var input = document.getElementById('surveyLink');
+    input.select();
+    document.execCommand('copy');
+    showMessage('Survey link copied to clipboard!', 'success');
+    setTimeout(function() { document.getElementById('message').style.display = 'none'; }, 2000);
+}
+
+function showMessage(text, type) {
+    var msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+}
+
+function logout() {
+    firebase.auth().signOut().then(function() {
+        window.location.href = '/';
+    });
+}
+</script>
+
+</body>
+</html>

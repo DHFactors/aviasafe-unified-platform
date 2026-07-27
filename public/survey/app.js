@@ -1,17 +1,132 @@
-/* ============================================================================
-   FILE: app.js
-   PATH: public/survey/app.js
-   VERSION: 3.1.0
-   DATE CREATED: 2026-07-26
-   DATE REVISED: 2026-07-26
-   PURPOSE: Two-step survey flow with proper option highlighting.
-   ============================================================================ */
-
 var currentQuestionIndex = 0;
 var answers = [];
 var questions = [];
 var totalQuestions = 0;
 var respondentInfo = {};
+var surveyConfig = null;
+var tenantName = '';
+
+// ============================================================================
+// TENANT DETECTION
+// ============================================================================
+
+function getTenantFromSubdomain() {
+    var hostname = window.location.hostname;
+    var parts = hostname.split('.');
+    if (parts.length >= 2 && parts[1] === 'aviasafesystems') {
+        return parts[0];
+    }
+    return null;
+}
+
+function getTenantFromUrl() {
+    var params = new URLSearchParams(window.location.search);
+    return params.get('tenant') || null;
+}
+
+function getCurrentTenant() {
+    return getTenantFromSubdomain() || getTenantFromUrl();
+}
+
+// ============================================================================
+// SURVEY PERIOD
+// ============================================================================
+
+function getDaysRemaining(closeDate) {
+    var now = new Date();
+    var close = new Date(closeDate);
+    var diff = close - now;
+    if (diff <= 0) return 0;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function isSurveyOpen(config) {
+    if (!config) return true;
+    var now = new Date();
+    if (config.openDate) {
+        var open = new Date(config.openDate);
+        if (now < open) return false;
+    }
+    if (config.closeDate) {
+        var close = new Date(config.closeDate);
+        if (now > close) return false;
+    }
+    return true;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// ============================================================================
+// INIT
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadSurveyContext();
+});
+
+async function loadSurveyContext() {
+    var tenantId = getCurrentTenant();
+    if (!tenantId) {
+        document.getElementById('surveyTitle').textContent = 'Safety Survey';
+        return;
+    }
+
+    try {
+        var tenantDoc = await firebase.firestore().collection('tenants').doc(tenantId).get();
+        if (!tenantDoc.exists) return;
+
+        var data = tenantDoc.data();
+        tenantName = data.name || tenantId.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+        surveyConfig = data.surveyConfig || data.survey || null;
+
+        // Show tenant badge
+        var badge = document.getElementById('tenantBadge');
+        badge.textContent = tenantName;
+        badge.style.display = 'inline-block';
+
+        // Update survey title
+        document.getElementById('surveyTitle').textContent = tenantName + ' — Safety Survey';
+
+        // Show survey period
+        if (surveyConfig && (surveyConfig.openDate || surveyConfig.closeDate)) {
+            var periodInfo = document.getElementById('surveyPeriodInfo');
+            var parts = [];
+            if (surveyConfig.openDate) parts.push('Opens: ' + formatDate(surveyConfig.openDate));
+            if (surveyConfig.closeDate) parts.push('Closes: ' + formatDate(surveyConfig.closeDate));
+            periodInfo.textContent = parts.join('  ·  ');
+            periodInfo.style.display = 'block';
+
+            var daysEl = document.getElementById('daysRemaining');
+            if (surveyConfig.closeDate) {
+                var days = getDaysRemaining(surveyConfig.closeDate);
+                if (days > 0) {
+                    daysEl.textContent = days + ' day' + (days !== 1 ? 's' : '') + ' remaining to complete the survey';
+                    daysEl.style.display = 'block';
+                } else {
+                    daysEl.textContent = 'Survey is closed';
+                    daysEl.style.color = '#ea4335';
+                    daysEl.style.display = 'block';
+                }
+            }
+
+            // Status bar for closed survey
+            if (!isSurveyOpen(surveyConfig)) {
+                var statusBar = document.getElementById('surveyStatusBar');
+                var statusMsg = document.getElementById('statusMessage');
+                statusBar.style.display = 'block';
+                statusBar.style.background = '#fce8e6';
+                statusBar.style.color = '#ea4335';
+                statusMsg.innerHTML = '<i class="fas fa-clock"></i> This survey is currently closed. It will reopen on ' + formatDate(surveyConfig.openDate) + '.';
+            }
+        }
+    } catch (e) {
+        console.warn('Could not load tenant context:', e);
+    }
+}
 
 // ============================================================================
 // STEP 1: INFO SCREEN
@@ -22,6 +137,11 @@ function skipInfo() {
 }
 
 function startSurvey() {
+    if (surveyConfig && !isSurveyOpen(surveyConfig)) {
+        alert('This survey is currently closed. Please check back during the open period.');
+        return;
+    }
+
     respondentInfo = {
         name: document.getElementById('respondentName').value.trim(),
         designation: document.getElementById('respondentDesignation').value.trim(),
@@ -155,13 +275,10 @@ function getLikertValue(option) {
 }
 
 function selectOption(index, value) {
-    // Store the answer
     answers[index] = value;
 
-    // Highlight the selected button
     var btns = document.querySelectorAll('.option-btn');
     btns.forEach(function(b) {
-        // Check if this button's data-value matches the selected value
         var btnValue = b.getAttribute('data-value');
         if (btnValue === value) {
             b.classList.add('selected');
@@ -178,14 +295,47 @@ function nextQuestion(index) {
     }
 
     if (index === totalQuestions - 1) {
-        showComplete();
+        submitSurvey();
     } else {
         renderQuestion(index + 1);
     }
 }
 
 // ============================================================================
-// STEP 3: COMPLETE
+// STEP 3: SUBMIT
+// ============================================================================
+
+async function submitSurvey() {
+    if (surveyConfig && !isSurveyOpen(surveyConfig)) {
+        alert('This survey is closed. Responses cannot be submitted at this time.');
+        return;
+    }
+
+    var tenantId = getCurrentTenant();
+
+    var responseData = {
+        answers: answers,
+        respondentInfo: respondentInfo,
+        tenantId: tenantId || null,
+        submittedAt: new Date().toISOString(),
+        surveyVersion: '3.0.0'
+    };
+
+    try {
+        if (tenantId) {
+            await firebase.firestore().collection('tenants').doc(tenantId).collection('responses').add(responseData);
+        } else {
+            await firebase.firestore().collection('surveyResponses').add(responseData);
+        }
+        showComplete();
+    } catch (e) {
+        console.error('Submit error:', e);
+        alert('Could not save your response. Please try again.');
+    }
+}
+
+// ============================================================================
+// STEP 4: COMPLETE
 // ============================================================================
 
 function showComplete() {
