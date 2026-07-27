@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from loguru import logger
 
-from app.models.report import ReportCreate, ReportResponse, ReportListItem
+from app.models.report import ReportCreate, MorCreate, ReportResponse, ReportListItem
 from app.middleware.auth import get_tenant_user, get_safety_manager
 from app.services.report_service import ReportService
 from app.services.risk_matrix import compute_risk_index, get_risk_level
@@ -34,26 +34,85 @@ async def submit_report(
     background_tasks: BackgroundTasks,
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
-    """Submit a new safety report.
+    tenant_id = user["tenant_id"]
+    service = ReportService(tenant_id)
+    stored = service.create_report(report.model_dump(), user)
+    background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
+    return _to_report_response(stored)
 
-    Flow:
-      1. Validate request body (Pydantic)
-      2. Authenticate via JWT (middleware)
-      3. Persist to Firestore with tenant isolation
-      4. Return HTTP 201 immediately
-      5. AI classification runs as a background task
 
-    The client receives the response before AI processing completes.
-    Poll GET /api/reports/{id} to check ai_status.
+@router.post("/mor", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+async def submit_mor(
+    report: MorCreate,
+    background_tasks: BackgroundTasks,
+    user: Dict[str, Any] = Depends(get_tenant_user),
+):
+    """Submit an ECCAIRS-aligned Mandatory Occurrence Report.
+
+    All ECCAIRS entities are validated:
+      - REPORTER (mandatory identification)
+      - AIRCRAFT (make, model, registration, operator)
+      - FLIGHT (phase, type)
+      - ENGINE / PROPELLER (optional)
+      - PEOPLE (optional counts)
+      - OCCURRENCE (date, location, type, class, category)
+      - RISK (optional severity/probability)
+      - INVESTIGATION (optional tracking)
     """
     tenant_id = user["tenant_id"]
     service = ReportService(tenant_id)
+    payload = report.model_dump()
 
-    stored = service.create_report(report.model_dump(), user)
+    risk_index = None
+    sev = payload.get("severity")
+    prob = payload.get("probability")
+    if sev is not None and prob is not None:
+        risk_index = compute_risk_index(sev, prob)
 
-    # Schedule AI analysis after response is sent
+    payload["risk_index"] = risk_index
+    payload["severity_level"] = sev
+    payload["probability_level"] = prob
+    payload["report_type"] = "mandatory"
+    payload["is_anonymous"] = False
+    payload["occurrence_date"] = payload.pop("occurrence_date_time")
+    payload["location"] = payload.pop("occurrence_location")
+    payload["country"] = payload.pop("occurrence_country")
+    payload["latitude"] = payload.pop("occurrence_latitude", None)
+    payload["longitude"] = payload.pop("occurrence_longitude", None)
+
+    stored = service.create_report(payload, user)
     background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
+    return _to_report_response(stored)
 
+
+@router.post("/vsr", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+async def submit_vsr(
+    report: ReportCreate,
+    background_tasks: BackgroundTasks,
+    user: Dict[str, Any] = Depends(get_tenant_user),
+):
+    """Submit a Voluntary Safety Report (VSR).
+
+    Differences from MOR:
+      - Reporter fields are optional
+      - is_anonymous flag may be set
+      - No engine/propeller, people, or investigation validation
+    """
+    tenant_id = user["tenant_id"]
+    service = ReportService(tenant_id)
+    payload = report.model_dump()
+
+    sev = payload.get("severity_level")
+    prob = payload.get("probability_level")
+    risk_index = None
+    if sev is not None and prob is not None:
+        risk_index = compute_risk_index(sev, prob)
+
+    payload["risk_index"] = risk_index
+    payload["report_type"] = "voluntary"
+
+    stored = service.create_report(payload, user)
+    background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
     return _to_report_response(stored)
 
 
@@ -140,6 +199,9 @@ def _to_report_response(data: dict) -> dict:
         "investigation_agency",
         "reporter_name", "reporter_role", "reporter_email",
         "reporter_phone", "reporter_organisation", "reporting_date",
+        "etops", "propeller_make", "propeller_model",
+        "call_sign", "organisation_comments",
+        "manufacturer_advised", "fdr_data_retained",
     ]
     return {k: data.get(k) for k in keys}
 

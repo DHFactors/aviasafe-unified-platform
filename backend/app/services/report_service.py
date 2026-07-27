@@ -41,7 +41,7 @@ class ReportService:
             "aircraft_registration": payload.get("aircraft_registration"),
             "occurrence_type": payload.get("occurrence_type"),
             "severity": payload.get("severity"),
-            "investigation_status": None,
+            "investigation_status": payload.get("investigation_status"),
             "created_by": user["uid"],
             "created_at": now,
             "updated_at": now,
@@ -87,6 +87,13 @@ class ReportService:
             "reporter_phone": payload.get("reporter_phone"),
             "reporter_organisation": payload.get("reporter_organisation"),
             "reporting_date": payload.get("reporting_date"),
+            "etops": payload.get("etops", False),
+            "propeller_make": payload.get("propeller_make"),
+            "propeller_model": payload.get("propeller_model"),
+            "call_sign": payload.get("call_sign"),
+            "organisation_comments": payload.get("organisation_comments"),
+            "manufacturer_advised": payload.get("manufacturer_advised", False),
+            "fdr_data_retained": payload.get("fdr_data_retained", False),
         }
 
         doc_data = {k: v for k, v in doc_data.items() if v is not None}

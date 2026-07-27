@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -25,15 +25,11 @@ class AiStatus(str, Enum):
     FAILED = "FAILED"
 
 
-_OCCURRENCE_TYPES = [
-    "Runway Excursion", "Runway Incursion", "Airborne Conflict",
-    "Abnormal Runway Contact", "Ground Collision", "System/Component Failure",
-    "Powerplant Failure", "Weather Encounter", "Bird Strike",
-    "Cabin Safety Event", "Procedural Deviation", "ATC Operational Incident",
-    "Other"
-]
+_OCCURRENCE_TYPES = ["ACCIDENT", "SERIOUS_INCIDENT", "INCIDENT"]
 
-_OCCURRENCE_CLASSES = ["ACCIDENT", "SERIOUS_INCIDENT", "INCIDENT"]
+_OCCURRENCE_CLASSES = [
+    "CLASS_A", "CLASS_B", "CLASS_C", "CLASS_D", "CLASS_E"
+]
 
 _OCCURRENCE_CATEGORIES = [
     "ARC", "MAC", "BIRD", "CABIN", "CFIT", "ENG", "FIRE", "GCOL",
@@ -43,7 +39,7 @@ _OCCURRENCE_CATEGORIES = [
 _SEVERITY_LEVELS = ["Low", "Medium", "High", "Critical"]
 
 _INVESTIGATION_STATUSES = [
-    "NOT_INVESTIGATED", "INVESTIGATING", "INVESTIGATED", "CLOSED"
+    "NOT_STARTED", "UNDER_INVESTIGATION", "COMPLETED"
 ]
 
 _FLIGHT_PHASES = [
@@ -52,9 +48,12 @@ _FLIGHT_PHASES = [
     "Emergency", "Hover", "Circuit", "Aerobatics"
 ]
 
-_FLIGHT_TYPES = ["Commercial", "Private", "Training", "Cargo", "Ferry", "Other"]
+_FLIGHT_TYPES = [
+    "Commercial", "Private", "Training", "Ferry",
+    "Agricultural", "Survey", "Pleasure", "Other"
+]
 
-_AIRCRAFT_CATEGORIES = ["Aeroplane", "Helicopter", "Glider", "Drone", "Other"]
+_AIRCRAFT_CATEGORIES = ["Aeroplane", "Helicopter", "Glider", "Other"]
 
 _HUMAN_FACTORS = [
     "Decision Making Error", "Situational Awareness", "Skill-Based Error",
@@ -102,15 +101,15 @@ class AiSuggestedAssessment(BaseModel):
 
 
 class ReportCreate(BaseModel):
-    narrative: str = Field(..., min_length=10, max_length=10000)
-    location: str = Field(..., min_length=3, max_length=100)
-    occurrence_date: datetime
     report_type: ReportType = ReportType.VOLUNTARY
     is_anonymous: bool = False
+    narrative: str = Field(..., min_length=10, max_length=10000)
+    location: str = Field(..., min_length=2, max_length=100)
+    occurrence_date: datetime
     flight_number: Optional[str] = None
     aircraft_registration: Optional[str] = None
-    severity_level: Optional[int] = None
-    probability_level: Optional[int] = None
+    severity_level: Optional[int] = Field(None, ge=1, le=5)
+    probability_level: Optional[int] = Field(None, ge=1, le=5)
 
     occurrence_class: Optional[str] = None
     latitude: Optional[float] = None
@@ -152,80 +151,140 @@ class ReportCreate(BaseModel):
     reporter_organisation: Optional[str] = None
     reporting_date: Optional[datetime] = None
 
-    @field_validator('narrative')
-    def sanitize_narrative(cls, v: str) -> str:
-        v = v.replace('<script>', '').replace('</script>', '')
-        import re
-        v = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[REDACTED_EMAIL]', v)
-        v = re.sub(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', '[REDACTED_PHONE]', v)
-        return v
 
-    @field_validator('occurrence_category')
-    def validate_occurrence_category(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in _OCCURRENCE_CATEGORIES:
-            raise ValueError(f"occurrence_category must be one of: {', '.join(_OCCURRENCE_CATEGORIES)}")
+class MorCreate(BaseModel):
+    reporter_name: str = Field(..., min_length=2, max_length=100)
+    reporter_role: str = Field(...)
+    reporter_organisation: str = Field(..., min_length=2, max_length=100)
+    reporter_email: EmailStr = Field(...)
+    reporter_phone: Optional[str] = None
+    reporting_date: datetime = Field(default_factory=datetime.utcnow)
+
+    aircraft_make: str = Field(..., min_length=2, max_length=50)
+    aircraft_model: str = Field(..., min_length=2, max_length=50)
+    aircraft_registration: str = Field(..., min_length=3, max_length=20)
+    aircraft_serial_number: Optional[str] = None
+    operator: str = Field(..., min_length=2, max_length=100)
+    operator_icao: Optional[str] = Field(None, max_length=3)
+    aircraft_category: str = Field(...)
+    etops: bool = False
+
+    engine_make: Optional[str] = None
+    engine_model: Optional[str] = None
+    engine_serial_number: Optional[str] = None
+    propeller_make: Optional[str] = None
+    propeller_model: Optional[str] = None
+
+    flight_number: Optional[str] = None
+    call_sign: Optional[str] = None
+    flight_type: str = Field(...)
+    flight_phase: str = Field(...)
+    departure_airport: Optional[str] = Field(None, max_length=4)
+    destination_airport: Optional[str] = Field(None, max_length=4)
+
+    crew_count: Optional[int] = Field(None, ge=0)
+    passenger_count: Optional[int] = Field(None, ge=0)
+    fatal_injuries: Optional[int] = Field(None, ge=0)
+    serious_injuries: Optional[int] = Field(None, ge=0)
+    minor_injuries: Optional[int] = Field(None, ge=0)
+
+    occurrence_date_time: datetime = Field(...)
+    occurrence_location: str = Field(..., min_length=2, max_length=100)
+    occurrence_latitude: Optional[float] = Field(None, ge=-90, le=90)
+    occurrence_longitude: Optional[float] = Field(None, ge=-180, le=180)
+    occurrence_country: str = Field(..., min_length=2, max_length=100)
+    occurrence_type: str = Field(...)
+    occurrence_class: str = Field(...)
+    occurrence_category: str = Field(...)
+    human_factors: List[str] = Field(default_factory=list)
+    contributing_factors: List[str] = Field(default_factory=list)
+    narrative: str = Field(..., min_length=10)
+
+    severity: Optional[int] = Field(None, ge=1, le=5)
+    probability: Optional[int] = Field(None, ge=1, le=5)
+
+    investigation_status: Optional[str] = None
+    investigation_agency: Optional[str] = None
+    organisation_comments: Optional[str] = None
+    manufacturer_advised: bool = False
+    fdr_data_retained: bool = False
+
+    @field_validator('occurrence_type')
+    @classmethod
+    def mor_validate_occurrence_type(cls, v: str) -> str:
+        if v not in _OCCURRENCE_TYPES:
+            raise ValueError(f"occurrence_type must be one of: {', '.join(_OCCURRENCE_TYPES)}")
         return v
 
     @field_validator('occurrence_class')
-    def validate_occurrence_class(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in _OCCURRENCE_CLASSES:
+    @classmethod
+    def mor_validate_occurrence_class(cls, v: str) -> str:
+        if v not in _OCCURRENCE_CLASSES:
             raise ValueError(f"occurrence_class must be one of: {', '.join(_OCCURRENCE_CLASSES)}")
         return v
 
-    @field_validator('severity_level')
-    def validate_severity_level(cls, v: Optional[int]) -> Optional[int]:
-        if v is not None and not (1 <= v <= 5):
-            raise ValueError("severity_level must be between 1 and 5")
+    @field_validator('occurrence_category')
+    @classmethod
+    def mor_validate_occurrence_category(cls, v: str) -> str:
+        if v not in _OCCURRENCE_CATEGORIES:
+            raise ValueError(f"occurrence_category must be one of: {', '.join(_OCCURRENCE_CATEGORIES)}")
         return v
-
-    @field_validator('probability_level')
-    def validate_probability_level(cls, v: Optional[int]) -> Optional[int]:
-        if v is not None and not (1 <= v <= 5):
-            raise ValueError("probability_level must be between 1 and 5")
-        return v
-
-    @field_validator('flight_number')
-    def validate_flight_number(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and len(v.strip()) == 0:
-            return None
-        return v
-
-    @field_validator('aircraft_registration')
-    def validate_aircraft_registration(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and len(v.strip()) == 0:
-            return None
-        return v.upper() if v else v
 
     @field_validator('flight_phase')
-    def validate_flight_phase(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in _FLIGHT_PHASES:
+    @classmethod
+    def mor_validate_flight_phase(cls, v: str) -> str:
+        if v not in _FLIGHT_PHASES:
             raise ValueError(f"flight_phase must be one of: {', '.join(_FLIGHT_PHASES)}")
         return v
 
     @field_validator('flight_type')
-    def validate_flight_type(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in _FLIGHT_TYPES:
+    @classmethod
+    def mor_validate_flight_type(cls, v: str) -> str:
+        if v not in _FLIGHT_TYPES:
             raise ValueError(f"flight_type must be one of: {', '.join(_FLIGHT_TYPES)}")
         return v
 
     @field_validator('aircraft_category')
-    def validate_aircraft_category(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in _AIRCRAFT_CATEGORIES:
+    @classmethod
+    def mor_validate_aircraft_category(cls, v: str) -> str:
+        if v not in _AIRCRAFT_CATEGORIES:
             raise ValueError(f"aircraft_category must be one of: {', '.join(_AIRCRAFT_CATEGORIES)}")
         return v
 
     @field_validator('reporter_role')
-    def validate_reporter_role(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in _REPORTER_ROLES:
+    @classmethod
+    def mor_validate_reporter_role(cls, v: str) -> str:
+        if v not in _REPORTER_ROLES:
             raise ValueError(f"reporter_role must be one of: {', '.join(_REPORTER_ROLES)}")
         return v
 
     @field_validator('human_factors')
-    def validate_human_factors(cls, v: Optional[List[str]]) -> Optional[List[str]]:
-        if v is not None:
-            for hf in v:
-                if hf not in _HUMAN_FACTORS:
-                    raise ValueError(f"human_factor '{hf}' must be one of: {', '.join(_HUMAN_FACTORS)}")
+    @classmethod
+    def mor_validate_human_factors(cls, v: List[str]) -> List[str]:
+        for hf in v:
+            if hf not in _HUMAN_FACTORS:
+                raise ValueError(f"human_factor '{hf}' must be one of: {', '.join(_HUMAN_FACTORS)}")
+        return v
+
+    @field_validator('aircraft_registration')
+    @classmethod
+    def mor_validate_registration(cls, v: str) -> str:
+        return v.upper()
+
+    @field_validator('investigation_status')
+    @classmethod
+    def mor_validate_investigation_status(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in _INVESTIGATION_STATUSES:
+            raise ValueError(f"investigation_status must be one of: {', '.join(_INVESTIGATION_STATUSES)}")
+        return v
+
+    @field_validator('narrative')
+    @classmethod
+    def mor_sanitize_narrative(cls, v: str) -> str:
+        v = v.replace('<script>', '').replace('</script>', '')
+        import re
+        v = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[REDACTED_EMAIL]', v)
+        v = re.sub(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', '[REDACTED_PHONE]', v)
         return v
 
 
@@ -305,6 +364,14 @@ class ReportResponse(BaseModel):
     reporter_phone: Optional[str] = None
     reporter_organisation: Optional[str] = None
     reporting_date: Optional[datetime] = None
+
+    etops: bool = False
+    propeller_make: Optional[str] = None
+    propeller_model: Optional[str] = None
+    call_sign: Optional[str] = None
+    organisation_comments: Optional[str] = None
+    manufacturer_advised: bool = False
+    fdr_data_retained: bool = False
 
     model_config = {"from_attributes": True}
 
