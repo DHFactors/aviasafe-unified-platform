@@ -126,13 +126,6 @@ function initServices() {
             auth = firebase.auth();
             db = firebase.firestore();
             
-            // Enable offline persistence for Firestore (optional)
-            if (db && db.enablePersistence) {
-                db.enablePersistence().catch(function(err) {
-                    console.warn('Firestore persistence error:', err);
-                });
-            }
-            
             console.log('✅ Firebase services initialized');
         } catch (error) {
             console.warn('Error initializing Firebase services:', error);
@@ -152,6 +145,7 @@ function initServices() {
     if (typeof firebase !== 'undefined' && firebase.initializeApp) {
         initializeFirebase();
         initServices();
+        window.firebase = firebase;
         window.auth = auth;
         window.db = db;
         console.log('✅ Firebase loaded from CDN');
@@ -160,26 +154,19 @@ function initServices() {
         loadFirebaseSDK()
             .then(function() {
                 initServices();
+                window.firebase = firebase;
                 window.auth = auth;
                 window.db = db;
                 console.log('✅ Firebase loaded dynamically');
             })
             .catch(function(error) {
                 console.warn('⚠️ Firebase load failed:', error.message);
-                // Provide mock services for demo
+                window.firebase = null;
                 window.auth = null;
                 window.db = null;
             });
     }
 })();
-
-// ============================================================================
-// EXPOSE GLOBALLY
-// ============================================================================
-
-window.firebase = firebase;
-window.auth = auth;
-window.db = db;
 
 // ============================================================================
 // SHARED AUTH HELPERS (used by all pages)
