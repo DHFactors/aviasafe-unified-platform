@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAN Detail - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .detail-field { margin-bottom: 0.5rem; }
+        .detail-field .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
+        .detail-field .value { font-size: 0.95rem; color: #1e293b; margin-top: 0.15rem; word-break: break-word; }
+        .detail-field.full-width { grid-column: 1 / -1; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-critical { background: #fde8e8; color: #dc3545; }
+        .badge-high { background: #fff3e0; color: #e65100; }
+        .badge-medium { background: #fff8e1; color: #f9a825; }
+        .badge-low { background: #e8f5e9; color: #2e7d32; }
+        .badge-default { background: #f1f5f9; color: #64748b; }
+        .badge-new { background: #e3f2fd; color: #1565c0; }
+        .badge-processing { background: #fff3e0; color: #e65100; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-danger { background: #fde8e8; color: #b91c1c; }
+        .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .action-btn:hover { opacity: 0.85; }
+        .action-btn-open { background: #e3f2fd; color: #1565c0; }
+        .action-btn-review { background: #fef3c7; color: #d97706; }
+        .action-btn-close { background: #e8f5e9; color: #2e7d32; }
+        .action-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+        .cap-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+        .cap-card .cap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .cap-card .cap-header h4 { margin: 0; font-size: 0.9rem; }
+        .loading-state { display: flex; align-items: center; justify-content: center; padding: 4rem; color: #64748b; }
+        .loading-state i { font-size: 2rem; margin-right: 0.75rem; }
+        .error-state { text-align: center; padding: 4rem; color: #dc3545; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/can_cap/cans.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to CANs</a>
+    <div id="message"></div>
+
+    <div id="loadingIndicator" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i> Loading CAN...
+    </div>
+    <div id="errorIndicator" class="error-state" style="display:none;">
+        <i class="fas fa-exclamation-circle" style="font-size:2rem;"></i>
+        <p id="errorText" style="margin-top:0.5rem;"></p>
+    </div>
+
+    <div id="canContent" style="display:none;">
+        <div class="action-bar" id="statusButtons"></div>
+
+        <div class="card">
+            <h2><i class="fas fa-clipboard-check"></i> <span id="canRefDisplay"></span></h2>
+            <div class="detail-grid">
+                <div class="detail-field full-width">
+                    <div class="label">Title</div>
+                    <div class="value" id="fieldTitle"></div>
+                </div>
+                <div class="detail-field full-width">
+                    <div class="label">Description</div>
+                    <div class="value" style="white-space:pre-wrap;" id="fieldDescription"></div>
+                </div>
+                <div class="detail-field full-width">
+                    <div class="label">Required Action</div>
+                    <div class="value" style="white-space:pre-wrap;" id="fieldRequiredAction"></div>
+                </div>
+                <div class="detail-field"><div class="label">Hazard ID</div><div class="value"><a id="fieldHazardLink" href="#"></a></div></div>
+                <div class="detail-field"><div class="label">Priority</div><div class="value" id="fieldPriority"></div></div>
+                <div class="detail-field"><div class="label">Status</div><div class="value" id="fieldStatus"></div></div>
+                <div class="detail-field"><div class="label">Issued By</div><div class="value" id="fieldIssuedBy"></div></div>
+                <div class="detail-field"><div class="label">Issued At</div><div class="value" id="fieldIssuedAt"></div></div>
+                <div class="detail-field"><div class="label">Assigned To</div><div class="value" id="fieldAssignedTo"></div></div>
+                <div class="detail-field"><div class="label">Target Completion</div><div class="value" id="fieldTargetDate"></div></div>
+            </div>
+        </div>
+
+        <!-- CAPs Section -->
+        <div id="capsSection">
+            <div class="card">
+                <h2><i class="fas fa-tasks"></i> Corrective Action Plans</h2>
+                <div id="capsList">
+                    <p style="color:#94a3b8;font-size:0.85rem;">No CAPs submitted yet.</p>
+                </div>
+                <div style="margin-top:1rem;text-align:right;">
+                    <a id="submitCapBtn" href="#" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Submit CAP</a>
+                    <a id="reviewCapBtn" href="#" class="btn btn-secondary btn-sm" style="display:none;"><i class="fas fa-check-double"></i> Review CAP</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/can_cap.js"></script>
+<script>
+let canData = null;
+let currentUser = null;
+
+firebase.auth().onAuthStateChanged(function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    currentUser = user;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (!id) { showError('No CAN ID provided'); return; }
+    loadCan(id);
+});
+
+async function loadCan(id) {
+    document.getElementById('loadingIndicator').style.display = 'flex';
+    document.getElementById('canContent').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'none';
+
+    try {
+        canData = await CanCapAPI.getCan(id);
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('canContent').style.display = 'block';
+        renderCan();
+        loadCaps(id);
+    } catch (err) {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        showError(err.message);
+    }
+}
+
+async function loadCaps(canId) {
+    try {
+        const caps = await CanCapAPI.listCaps(canId);
+        const container = document.getElementById('capsList');
+        if (!caps || caps.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">No CAPs submitted yet.</p>';
+            return;
+        }
+        container.innerHTML = caps.map(c => `
+            <div class="cap-card" style="cursor:pointer;" onclick="window.location.href='/can_cap/cap_review.html?id=${c.id}'">
+                <div class="cap-header">
+                    <h4>${c.cap_reference}</h4>
+                    <span class="badge ${capStatusBadgeClass(c.status)}">${c.status}</span>
+                </div>
+                <p style="font-size:0.85rem;color:#475569;">Submitted by ${c.submitted_by || '-'} on ${formatCanDate(c.submitted_at)}</p>
+                <p style="font-size:0.85rem;color:#475569;">Target: ${formatCanDate(c.target_completion_date)}</p>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Load CAPs error:', e);
+    }
+}
+
+function renderCan() {
+    const c = canData;
+    document.getElementById('canRefDisplay').textContent = c.can_reference;
+    document.getElementById('fieldTitle').textContent = c.title || '-';
+    document.getElementById('fieldDescription').textContent = c.description || '-';
+    document.getElementById('fieldRequiredAction').textContent = c.required_action || '-';
+
+    const hazardLink = document.getElementById('fieldHazardLink');
+    hazardLink.textContent = c.hazard_id || '-';
+    hazardLink.href = `/hazards/detail.html?id=${c.hazard_id}`;
+
+    document.getElementById('fieldPriority').innerHTML = `<span class="badge ${canPriorityBadgeClass(c.priority)}">${c.priority}</span>`;
+    document.getElementById('fieldStatus').innerHTML = `<span class="badge ${canStatusBadgeClass(c.status)}">${c.status}</span>`;
+    document.getElementById('fieldIssuedBy').textContent = c.issued_by || '-';
+    document.getElementById('fieldIssuedAt').textContent = formatCanDate(c.issued_at);
+    document.getElementById('fieldAssignedTo').textContent = c.assigned_to || '-';
+    document.getElementById('fieldTargetDate').textContent = formatCanDate(c.target_completion_date);
+
+    // Status buttons
+    const btnContainer = document.getElementById('statusButtons');
+    const current = c.status;
+    const transitions = {
+        'Open': [{ status: 'Under Review', label: 'Mark Under Review', cls: 'action-btn-review' }],
+        'Under Review': [{ status: 'Closed', label: 'Close CAN', cls: 'action-btn-close' }],
+        'Closed': [],
+    };
+    const btns = transitions[current] || [];
+    btnContainer.innerHTML = btns.map(b =>
+        `<button class="action-btn ${b.cls}" onclick="changeCanStatus('${b.status}')">${b.label}</button>`
+    ).join('');
+
+    // Show/hide submit CAP button
+    const submitBtn = document.getElementById('submitCapBtn');
+    submitBtn.href = `/can_cap/cap_submit.html?can_id=${c.id}`;
+    if (c.status === 'Closed') {
+        submitBtn.style.display = 'none';
+    } else {
+        submitBtn.style.display = 'inline-flex';
+    }
+
+    // Show review button if latest CAP is Under Review
+    const reviewBtn = document.getElementById('reviewCapBtn');
+    if (c.latest_cap && c.latest_cap.status === 'Under Review') {
+        reviewBtn.href = `/can_cap/cap_review.html?id=${c.latest_cap.id}`;
+        reviewBtn.style.display = 'inline-flex';
+    } else {
+        reviewBtn.style.display = 'none';
+    }
+}
+
+async function changeCanStatus(newStatus) {
+    if (!canData) return;
+    try {
+        await CanCapAPI.updateCanStatus(canData.id, newStatus);
+        showMessage(`Status changed to ${newStatus}`, 'success');
+        loadCan(canData.id);
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+}
+
+function showError(msg) {
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'block';
+    document.getElementById('errorText').textContent = msg;
+}
+</script>
+</body>
+</html>

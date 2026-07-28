@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approve Closure - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem; }
+        .form-group textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; font-family: inherit; resize: vertical; min-height: 80px; }
+        .form-group textarea:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.15); }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+        .detail-field .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
+        .detail-field .value { font-size: 0.95rem; color: #1e293b; margin-top: 0.15rem; }
+        .detail-field.full-width { grid-column: 1 / -1; }
+        .btn-primary { background: #2e7d32; color: #fff; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+        .btn-primary:hover { background: #1b5e20; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/hazards/detail.html" id="backLink" class="back-link"><i class="fas fa-arrow-left"></i> Back to Hazard</a>
+
+    <div id="message"></div>
+
+    <div class="card">
+        <h2><i class="fas fa-check-double"></i> Hazard Closure Approval</h2>
+        <p style="font-size:0.85rem;color:#64748b;margin-bottom:1.25rem;">
+            As Accountable Executive, review the verification outcome and approve closure of this hazard.
+            Once approved, the hazard will be closed and archived.
+        </p>
+
+        <div id="summarySection" style="display:none;">
+            <div class="card" style="background:#f8fafc;margin-bottom:1rem;">
+                <h2><i class="fas fa-exclamation-triangle"></i> Hazard Summary</h2>
+                <div class="detail-grid">
+                    <div class="detail-field full-width"><div class="label">Title</div><div class="value" id="hazardTitle"></div></div>
+                    <div class="detail-field"><div class="label">Hazard ID</div><div class="value" id="hazardId"></div></div>
+                    <div class="detail-field"><div class="label">Status</div><div class="value" id="hazardStatus"></div></div>
+                    <div class="detail-field"><div class="label">Risk Level</div><div class="value" id="hazardRisk"></div></div>
+                    <div class="detail-field full-width"><div class="label">Verification Outcome</div><div class="value" id="verificationOutcome"></div></div>
+                    <div class="detail-field full-width"><div class="label">Verification Comments</div><div class="value" id="verificationComments"></div></div>
+                    <div class="detail-field full-width"><div class="label">Verified By</div><div class="value" id="verifiedBy"></div></div>
+                </div>
+            </div>
+
+            <form id="closureForm">
+                <h2><i class="fas fa-book"></i> Closure Details</h2>
+                <div class="form-group">
+                    <label for="lessonsLearned">Lessons Learned</label>
+                    <textarea id="lessonsLearned" rows="4" placeholder="What lessons were learned from this hazard and its resolution?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="recommendations">Recommendations</label>
+                    <textarea id="recommendations" rows="3" placeholder="Any recommendations for future prevention or improvement?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="approvalNotes">Approval Notes</label>
+                    <textarea id="approvalNotes" rows="3" placeholder="Additional notes or remarks regarding this closure approval."></textarea>
+                </div>
+
+                <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+                    <button type="submit" class="btn-primary" id="approveBtn"><i class="fas fa-check-double"></i> Approve Closure</button>
+                    <button type="button" class="btn-secondary" onclick="window.history.back()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/hazards.js"></script>
+<script src="/js/verification.js"></script>
+<script>
+let hazardData = null;
+let verificationData = null;
+
+firebase.auth().onAuthStateChanged(function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    const params = new URLSearchParams(window.location.search);
+    const hid = params.get('hazard_id');
+    if (!hid) { showMessage('No hazard ID provided', 'error'); return; }
+    document.getElementById('backLink').href = `/hazards/detail.html?id=${hid}`;
+    loadData(hid);
+});
+
+async function loadData(hazardId) {
+    try {
+        hazardData = await HazardsAPI.get(hazardId);
+        document.getElementById('hazardTitle').textContent = hazardData.title || '-';
+        document.getElementById('hazardId').textContent = hazardData.hazard_id || hazardData.id;
+        document.getElementById('hazardStatus').innerHTML = `<span class="badge ${hazardStatusBadgeClass(hazardData.status)}">${hazardData.status}</span>`;
+        document.getElementById('hazardRisk').textContent = hazardData.risk_level || 'N/A';
+
+        const verifications = await VerificationAPI.listVerifications(hazardData.id);
+        if (verifications && verifications.length > 0) {
+            verificationData = verifications[0];
+            document.getElementById('verificationOutcome').innerHTML = `<span class="badge ${verificationOutcomeBadgeClass(verificationData.outcome)}">${verificationData.outcome}</span>`;
+            document.getElementById('verificationComments').textContent = verificationData.comments || '-';
+            document.getElementById('verifiedBy').textContent = verificationData.verified_by || '-';
+        } else {
+            document.getElementById('verificationOutcome').textContent = 'No verification found';
+        }
+
+        document.getElementById('summarySection').style.display = 'block';
+    } catch (err) {
+        showMessage('Error loading data: ' + err.message, 'error');
+    }
+}
+
+document.getElementById('closureForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (!hazardData) { showMessage('Hazard data not loaded', 'error'); return; }
+
+    const data = {
+        hazard_id: hazardData.id,
+        lessons_learned: document.getElementById('lessonsLearned').value.trim() || null,
+        recommendations: document.getElementById('recommendations').value.trim() || null,
+        approval_notes: document.getElementById('approvalNotes').value.trim() || null,
+    };
+
+    const btn = document.getElementById('approveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Approving...';
+
+    try {
+        const result = await VerificationAPI.createClosure(hazardData.id, data);
+        showMessage('Closure approved! Hazard closed and archived.', 'success');
+        setTimeout(() => {
+            window.location.href = `/hazards/detail.html?id=${hazardData.id}`;
+        }, 1500);
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-double"></i> Approve Closure';
+    }
+});
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 5000);
+}
+</script>
+</body>
+</html>

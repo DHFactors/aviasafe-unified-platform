@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review CAP - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .detail-field { margin-bottom: 0.5rem; }
+        .detail-field .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
+        .detail-field .value { font-size: 0.95rem; color: #1e293b; margin-top: 0.15rem; word-break: break-word; white-space: pre-wrap; }
+        .detail-field.full-width { grid-column: 1 / -1; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-critical { background: #fde8e8; color: #dc3545; }
+        .badge-high { background: #fff3e0; color: #e65100; }
+        .badge-medium { background: #fff8e1; color: #f9a825; }
+        .badge-low { background: #e8f5e9; color: #2e7d32; }
+        .badge-default { background: #f1f5f9; color: #64748b; }
+        .badge-processing { background: #fff3e0; color: #e65100; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-danger { background: #fde8e8; color: #b91c1c; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem; }
+        .form-control { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+        textarea.form-control { min-height: 80px; resize: vertical; }
+        select.form-control { appearance: auto; }
+        .review-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+        .btn-review { padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+        .btn-review:hover { opacity: 0.85; }
+        .btn-accept { background: #2e7d32; color: #fff; }
+        .btn-revision { background: #e65100; color: #fff; }
+        .btn-overdue { background: #b91c1c; color: #fff; }
+        .btn-review:disabled { opacity: 0.4; cursor: not-allowed; }
+        .loading-state { display: flex; align-items: center; justify-content: center; padding: 4rem; color: #64748b; }
+        .loading-state i { font-size: 2rem; margin-right: 0.75rem; }
+        .error-state { text-align: center; padding: 4rem; color: #dc3545; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/can_cap/cans.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to CANs</a>
+    <div id="message"></div>
+
+    <div id="loadingIndicator" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i> Loading CAP...
+    </div>
+    <div id="errorIndicator" class="error-state" style="display:none;">
+        <i class="fas fa-exclamation-circle" style="font-size:2rem;"></i>
+        <p id="errorText" style="margin-top:0.5rem;"></p>
+    </div>
+
+    <div id="capContent" style="display:none;">
+        <!-- CAP Details -->
+        <div class="card">
+            <h2><i class="fas fa-tasks"></i> <span id="capRefDisplay"></span>
+                <span id="capStatusBadge" style="margin-left:0.5rem;"></span>
+            </h2>
+            <div class="detail-grid">
+                <div class="detail-field full-width">
+                    <div class="label">Action Plan</div>
+                    <div class="value" id="fieldActionPlan"></div>
+                </div>
+                <div class="detail-field full-width">
+                    <div class="label">Timeline</div>
+                    <div class="value" id="fieldTimeline"></div>
+                </div>
+                <div class="detail-field"><div class="label">Submitted By</div><div class="value" id="fieldSubmittedBy"></div></div>
+                <div class="detail-field"><div class="label">Submitted At</div><div class="value" id="fieldSubmittedAt"></div></div>
+                <div class="detail-field"><div class="label">Target Completion</div><div class="value" id="fieldTargetDate"></div></div>
+                <div class="detail-field"><div class="label">Resources Required</div><div class="value" id="fieldResources"></div></div>
+                <div class="detail-field full-width">
+                    <div class="label">Implementation Plan</div>
+                    <div class="value" id="fieldImplPlan"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Section -->
+        <div class="card" id="reviewSection">
+            <h2><i class="fas fa-check-double"></i> Safety Manager Review</h2>
+
+            <div id="reviewCompleted" style="display:none;">
+                <div class="detail-grid">
+                    <div class="detail-field"><div class="label">Reviewed By</div><div class="value" id="fieldReviewedBy"></div></div>
+                    <div class="detail-field"><div class="label">Reviewed At</div><div class="value" id="fieldReviewedAt"></div></div>
+                    <div class="detail-field full-width"><div class="label">Review Comments</div><div class="value" id="fieldReviewComments"></div></div>
+                    <div class="detail-field"><div class="label">Revision Deadline</div><div class="value" id="fieldRevisionDeadline"></div></div>
+                </div>
+            </div>
+
+            <div id="reviewForm" style="display:none;">
+                <div class="form-group">
+                    <label>Review Decision</label>
+                    <select class="form-control" id="reviewDecision">
+                        <option value="Completed">Accept — CAP Complete</option>
+                        <option value="Revision Required">Request Revision</option>
+                        <option value="Overdue">Mark as Overdue</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Review Comments</label>
+                    <textarea class="form-control" id="reviewComments" placeholder="Provide feedback on the CAP"></textarea>
+                </div>
+                <div class="form-group" id="revisionDeadlineGroup" style="display:none;">
+                    <label>Revision Deadline</label>
+                    <input class="form-control" id="revisionDeadline" type="date">
+                </div>
+                <div class="review-actions">
+                    <button class="btn-review btn-accept" onclick="submitReview('Completed')"><i class="fas fa-check"></i> Accept CAP</button>
+                    <button class="btn-review btn-revision" onclick="submitReview('Revision Required')"><i class="fas fa-undo"></i> Request Revision</button>
+                    <button class="btn-review btn-overdue" onclick="submitReview('Overdue')"><i class="fas fa-clock"></i> Mark Overdue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Original CAN Link -->
+        <div style="text-align:center;">
+            <a id="canLinkBack" href="#" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back to Related CAN</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/can_cap.js"></script>
+<script>
+let capData = null;
+let currentUser = null;
+let canIdFromCap = null;
+
+firebase.auth().onAuthStateChanged(function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    currentUser = user;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (!id) { showError('No CAP ID provided'); return; }
+    loadCap(id);
+
+    document.getElementById('reviewDecision').addEventListener('change', function() {
+        document.getElementById('revisionDeadlineGroup').style.display =
+            this.value === 'Revision Required' ? 'block' : 'none';
+    });
+});
+
+async function loadCap(id) {
+    document.getElementById('loadingIndicator').style.display = 'flex';
+    document.getElementById('capContent').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'none';
+
+    try {
+        capData = await CanCapAPI.getCap(id);
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('capContent').style.display = 'block';
+        canIdFromCap = capData.can_id;
+        renderCap();
+    } catch (err) {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        showError(err.message);
+    }
+}
+
+function renderCap() {
+    const c = capData;
+    document.getElementById('capRefDisplay').textContent = c.cap_reference;
+    document.getElementById('capStatusBadge').innerHTML = `<span class="badge ${capStatusBadgeClass(c.status)}">${c.status}</span>`;
+    document.getElementById('fieldActionPlan').textContent = c.action_plan || '-';
+    document.getElementById('fieldTimeline').textContent = c.timeline || '-';
+    document.getElementById('fieldSubmittedBy').textContent = c.submitted_by || '-';
+    document.getElementById('fieldSubmittedAt').textContent = formatCanDate(c.submitted_at);
+    document.getElementById('fieldTargetDate').textContent = formatCanDate(c.target_completion_date);
+    document.getElementById('fieldResources').textContent = c.resources_required || 'None';
+    document.getElementById('fieldImplPlan').textContent = c.implementation_plan || 'None';
+
+    document.getElementById('canLinkBack').href = `/can_cap/can_detail.html?id=${c.can_id}`;
+
+    const isReviewed = c.status === 'Completed' || c.status === 'Revision Required' || c.status === 'Overdue';
+    if (isReviewed && c.reviewed_by) {
+        document.getElementById('reviewCompleted').style.display = 'block';
+        document.getElementById('reviewForm').style.display = 'none';
+        document.getElementById('fieldReviewedBy').textContent = c.reviewed_by || '-';
+        document.getElementById('fieldReviewedAt').textContent = formatCanDate(c.reviewed_at);
+        document.getElementById('fieldReviewComments').textContent = c.review_comments || '-';
+        document.getElementById('fieldRevisionDeadline').textContent = formatCanDate(c.revision_deadline);
+    } else {
+        document.getElementById('reviewCompleted').style.display = 'none';
+        document.getElementById('reviewForm').style.display = 'block';
+    }
+}
+
+async function submitReview(decision) {
+    if (!capData) return;
+    const comments = document.getElementById('reviewComments').value.trim();
+    const revisionDeadline = document.getElementById('revisionDeadline').value;
+
+    const data = {
+        status: decision,
+        comments: comments || null,
+        revision_deadline: (decision === 'Revision Required' && revisionDeadline)
+            ? new Date(revisionDeadline).toISOString() : null,
+    };
+
+    const btns = document.querySelectorAll('.btn-review');
+    btns.forEach(b => b.disabled = true);
+
+    try {
+        await CanCapAPI.reviewCap(capData.id, data);
+        showMessage(`CAP ${decision === 'Completed' ? 'accepted' : decision === 'Revision Required' ? 'sent for revision' : 'marked overdue'}!`, 'success');
+        setTimeout(() => {
+            window.location.href = `/can_cap/can_detail.html?id=${canIdFromCap}`;
+        }, 1500);
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+        btns.forEach(b => b.disabled = false);
+    }
+}
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+    if (type === 'error') setTimeout(() => { msg.style.display = 'none'; }, 6000);
+}
+
+function showError(msg) {
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'block';
+    document.getElementById('errorText').textContent = msg;
+}
+</script>
+</body>
+</html>

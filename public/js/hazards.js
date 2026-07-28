@@ -1,0 +1,86 @@
+const HazardsAPI = {
+    list: (params = {}) => {
+        const qs = new URLSearchParams();
+        if (params.status) qs.set('status', params.status);
+        if (params.priority) qs.set('priority', params.priority);
+        if (params.source) qs.set('source', params.source);
+        if (params.taxonomy) qs.set('taxonomy', params.taxonomy);
+        if (params.tenant_id) qs.set('tenant_id', params.tenant_id);
+        if (params.search) qs.set('search', params.search);
+        return ApiClient.get(`/api/hazards?${qs.toString()}`);
+    },
+
+    get: (hazardId) => ApiClient.get(`/api/hazards/${hazardId}`),
+
+    create: (data) => ApiClient.post('/api/hazards', data),
+
+    update: (hazardId, data) => ApiClient.put(`/api/hazards/${hazardId}`, data),
+
+    updateStatus: (hazardId, status) =>
+        ApiClient._request('PATCH', `/api/hazards/${hazardId}/status?status=${status}`),
+
+    assign: (hazardId, assignedTo, assignedToUid) =>
+        ApiClient._request('PATCH', `/api/hazards/${hazardId}/assign?assigned_to=${encodeURIComponent(assignedTo)}&assigned_to_uid=${assignedToUid}`),
+
+    getStats: () => ApiClient.get('/api/hazards/stats'),
+};
+
+const HAZARD_STATUSES = ['Open', 'Processing', 'Under Review', 'Closed', 'Reopened'];
+const HAZARD_PRIORITIES = ['H', 'M', 'L'];
+const HAZARD_SOURCES = [
+    'VSR', 'MOR', 'Quality Audit', 'Safety Inspection', 'Flight Diversion',
+    'CAAN Audit', 'Internal Audit', 'Safety Survey', 'IOR', 'MOC', 'SRM Request', 'Incident'
+];
+const HAZARD_TAXONOMIES = [
+    'Organizational-Facilities',
+    'Organizational-Documentation, Processes and Procedures',
+    'Technical', 'Wildlife', 'Human Factors', 'Environmental', 'Other'
+];
+
+function hazardStatusBadgeClass(status) {
+    const map = {
+        'Open': 'badge-new',
+        'Processing': 'badge-processing',
+        'Under Review': 'badge-warning',
+        'Closed': 'badge-completed',
+        'Reopened': 'badge-critical'
+    };
+    return map[status] || 'badge-default';
+}
+
+function hazardPriorityBadgeClass(priority) {
+    const map = { 'H': 'badge-critical', 'M': 'badge-warning', 'L': 'badge-low' };
+    return map[priority] || 'badge-default';
+}
+
+function hazardRiskBadgeClass(riskLevel) {
+    const map = { 'Low': 'badge-low', 'Medium': 'badge-medium', 'High': 'badge-high', 'Very High': 'badge-critical' };
+    return map[riskLevel] || 'badge-default';
+}
+
+function calculateRiskIndex(severity, probability) {
+    if (severity == null || probability == null) return null;
+    return severity * probability;
+}
+
+function classifyHazardRisk(riskIndex) {
+    if (riskIndex == null) return 'Unknown';
+    if (riskIndex <= 3) return 'Low';
+    if (riskIndex <= 6) return 'Medium';
+    if (riskIndex <= 12) return 'High';
+    return 'Very High';
+}
+
+function getRiskOutcome(severity, probability) {
+    const ri = calculateRiskIndex(severity, probability);
+    if (ri == null) return null;
+    if (ri <= 3) return 'Acceptable';
+    if (ri <= 6) return 'Tolerable';
+    return 'Intolerable';
+}
+
+function formatDate(d) {
+    if (!d) return '-';
+    try { return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); }
+    catch { return '-'; }
+}

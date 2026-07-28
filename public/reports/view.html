@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report View - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; }
+        .page-header h1 { font-size: 1.25rem; color: #002f6c; margin: 0; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+        .kpi-item { background: #f8fafc; padding: 1rem; border-radius: 8px; text-align: center; border-left: 4px solid #1a73e8; }
+        .kpi-item .value { font-size: 1.6rem; font-weight: 700; color: #002f6c; }
+        .kpi-item .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.3px; color: #64748b; margin-top: 0.2rem; }
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+        .chart-card { background: #fff; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .chart-card h3 { font-size: 0.85rem; color: #475569; margin: 0 0 0.75rem; }
+        .chart-wrapper { position: relative; height: 220px; }
+        .chart-full { grid-column: 1 / -1; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; border: none; }
+        .btn-primary { background: #1a73e8; color: #fff; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-success { background: #2e7d32; color: #fff; }
+        .btn-success:hover { background: #1b5e20; }
+        .btn-outline { background: transparent; color: #475569; border: 1px solid #e2e8f0; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .insight-item { padding: 0.5rem 0.75rem; background: #f0f6ff; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.85rem; border-left: 3px solid #1a73e8; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        th { background: #f8fafc; padding: 0.6rem 0.75rem; text-align: left; font-weight: 600; color: #64748b; border-bottom: 2px solid #e2e8f0; font-size: 0.75rem; text-transform: uppercase; }
+        td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #f1f5f9; }
+        @media (max-width: 700px) { .chart-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/reports/index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Reports</a>
+
+    <div id="loadingIndicator" style="text-align:center;padding:3rem;color:#94a3b8;">
+        <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
+        <p style="margin-top:0.5rem;">Loading report...</p>
+    </div>
+
+    <div id="reportContent" style="display:none;">
+        <div class="page-header">
+            <div>
+                <h1 id="reportTitle"></h1>
+                <p style="font-size:0.85rem;color:#64748b;margin:0.25rem 0 0;" id="reportMeta"></p>
+            </div>
+            <button class="btn btn-success" id="exportBtn"><i class="fas fa-download"></i> Download PDF</button>
+        </div>
+
+        <div id="kpiSection" class="kpi-grid"></div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-pie"></i> Risk Distribution</h3>
+                <div class="chart-wrapper"><canvas id="riskChartCanvas"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-line"></i> Hazard Trends</h3>
+                <div class="chart-wrapper"><canvas id="trendChartCanvas"></canvas></div>
+            </div>
+        </div>
+
+        <div class="card" id="topRisksSection">
+            <h2><i class="fas fa-list"></i> Top Risks</h2>
+            <div id="topRisksTable"></div>
+        </div>
+
+        <div class="card" id="canCapSection">
+            <h2><i class="fas fa-clipboard-check"></i> CAN/CAP Summary</h2>
+            <div id="canCapContent"></div>
+        </div>
+
+        <div class="card" id="sspSection">
+            <h2><i class="fas fa-gauge-high"></i> SSP Indicators</h2>
+            <div id="sspContent"></div>
+        </div>
+
+        <div class="card" id="insightsSection">
+            <h2><i class="fas fa-lightbulb"></i> Insights</h2>
+            <div id="insightsContent"></div>
+        </div>
+
+        <div class="card" id="recommendationsSection">
+            <h2><i class="fas fa-list-check"></i> Recommendations</h2>
+            <div id="recommendationsContent"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/reports.js"></script>
+<script>
+let chartInstances = {};
+
+function destroyChart(key) {
+    if (chartInstances[key]) { chartInstances[key].destroy(); delete chartInstances[key]; }
+}
+
+firebase.auth().onAuthStateChanged(async function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const type = params.get('type') || 'quarterly';
+    if (!id) { alert('No report ID'); window.location.href = '/reports/index.html'; return; }
+    await loadReport(id, type);
+});
+
+async function loadReport(id, type) {
+    try {
+        const data = type === 'quarterly' ? await ReportsAPI.getQuarterly(id) : await ReportsAPI.getAnnual(id);
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('reportContent').style.display = 'block';
+        renderReport(data, type);
+    } catch (err) {
+        document.getElementById('loadingIndicator').innerHTML = `<p style="color:#dc3545;">Error: ${err.message}</p>`;
+    }
+}
+
+function renderReport(data, type) {
+    const s = data.summary || {};
+    const d = data.data || {};
+
+    document.getElementById('reportTitle').textContent = `${type === 'quarterly' ? 'Quarterly' : 'Annual'} Report — ${data.period || ''}`;
+    document.getElementById('reportMeta').textContent = `Generated ${formatReportDate(data.generated_at)} | Status: ${data.status}`;
+
+    document.getElementById('exportBtn').onclick = () => downloadPdf(data.id, type);
+
+    // KPIs
+    const kpiContainer = document.getElementById('kpiSection');
+    const kpiItems = [
+        { label: 'Total Hazards', value: s.total_hazards || 0, color: '#1a73e8' },
+        { label: type === 'quarterly' ? 'New (Period)' : 'Opened (Year)', value: s.new_hazards || s.hazards_opened || 0, color: '#d97706' },
+        { label: 'Closed', value: s.closed_hazards || s.hazards_closed || 0, color: '#2e7d32' },
+        { label: 'Closure Rate', value: `${s.closure_rate || 0}%`, color: '#7c3aed' },
+    ];
+    if (s.can_cap_total !== undefined) {
+        kpiItems.push({ label: 'CAN/CAP Total', value: s.can_cap_total, color: '#1565c0' });
+    }
+    if (s.avg_closure_days !== undefined) {
+        kpiItems.push({ label: 'Avg Closure', value: `${s.avg_closure_days}d`, color: '#e65100' });
+    }
+    kpiContainer.innerHTML = kpiItems.map(k =>
+        `<div class="kpi-item" style="border-left-color:${k.color};"><div class="value">${k.value}</div><div class="label">${k.label}</div></div>`
+    ).join('');
+
+    // Risk Distribution Chart
+    const riskDist = d.risk_distribution || {};
+    renderRiskChart(riskDist);
+
+    // Hazard Trends Chart
+    const trends = d.hazard_trends || [];
+    renderTrendChart(trends);
+
+    // Top Risks
+    const topRisks = d.top_risks || [];
+    if (topRisks.length > 0) {
+        document.getElementById('topRisksSection').style.display = 'block';
+        document.getElementById('topRisksTable').innerHTML = `
+            <table><thead><tr><th>Category</th><th>Count</th></tr></thead>
+            <tbody>${topRisks.map(r => `<tr><td>${r.category}</td><td><strong>${r.count}</strong></td></tr>`).join('')}</tbody></table>`;
+    } else {
+        document.getElementById('topRisksSection').style.display = 'none';
+    }
+
+    // CAN/CAP
+    const canCap = d.can_cap_status || d.can_cap_summary || {};
+    if (Object.keys(canCap).length > 0) {
+        document.getElementById('canCapSection').style.display = 'block';
+        const rows = 'total' in canCap
+            ? [['Total CANs', canCap.total], ['Closed', canCap.closed], ['Open', canCap.open], ['Compliance', `${canCap.compliance_rate || 0}%`]]
+            : Object.entries(canCap);
+        document.getElementById('canCapContent').innerHTML = `
+            <table><thead><tr><th>Metric</th><th>Value</th></tr></thead>
+            <tbody>${rows.map(([k, v]) => `<tr><td>${k}</td><td><strong>${v}</strong></td></tr>`).join('')}</tbody></table>`;
+    } else {
+        document.getElementById('canCapSection').style.display = 'none';
+    }
+
+    // SSP Indicators
+    const ssp = d.ssp_indicators || {};
+    if (Object.keys(ssp).length > 0) {
+        document.getElementById('sspSection').style.display = 'block';
+        document.getElementById('sspContent').innerHTML = `
+            <table><thead><tr><th>Indicator</th><th>Value</th></tr></thead>
+            <tbody>${Object.entries(ssp).map(([k, v]) => `<tr><td>${k.replace(/_/g, ' ')}</td><td><strong>${typeof v === 'number' ? v + '%' : v}</strong></td></tr>`).join('')}</tbody></table>`;
+    } else {
+        document.getElementById('sspSection').style.display = 'none';
+    }
+
+    // Insights
+    const insights = d.insights || [];
+    if (insights.length > 0) {
+        document.getElementById('insightsSection').style.display = 'block';
+        document.getElementById('insightsContent').innerHTML = insights.map(i => `<div class="insight-item"><i class="fas fa-circle-info" style="color:#1a73e8;margin-right:0.35rem;"></i>${i}</div>`).join('');
+    } else {
+        document.getElementById('insightsSection').style.display = 'none';
+    }
+
+    // Recommendations
+    const recs = [...(d.strategic_recommendations || []), ...(d.operational_recommendations || [])];
+    if (recs.length > 0) {
+        document.getElementById('recommendationsSection').style.display = 'block';
+        document.getElementById('recommendationsContent').innerHTML = recs.map(r => `<div class="insight-item" style="border-left-color:#2e7d32;"><i class="fas fa-check-circle" style="color:#2e7d32;margin-right:0.35rem;"></i>${r}</div>`).join('');
+    } else {
+        document.getElementById('recommendationsSection').style.display = 'none';
+    }
+}
+
+function renderRiskChart(dist) {
+    destroyChart('riskChart');
+    const ctx = document.getElementById('riskChartCanvas');
+    if (!ctx) return;
+    const labels = ['Low', 'Medium', 'High', 'Very High'];
+    const data = labels.map(l => dist[l] || 0);
+    const colors = ['#34a853', '#f9ab00', '#f57c00', '#ea4335'];
+    chartInstances.risk = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+    });
+}
+
+function renderTrendChart(trends) {
+    destroyChart('trendChart');
+    const ctx = document.getElementById('trendChartCanvas');
+    if (!ctx || !trends.length) return;
+    chartInstances.trend = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: trends.map(t => t.month ? t.month.slice(-2) : t.month || ''),
+            datasets: [{
+                label: 'Hazards',
+                data: trends.map(t => t.count || 0),
+                backgroundColor: '#1a73e8',
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            plugins: { legend: { display: false } },
+        },
+    });
+}
+</script>
+</body>
+</html>

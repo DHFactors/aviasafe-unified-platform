@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hazard Detail - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .detail-field { margin-bottom: 0.5rem; }
+        .detail-field .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
+        .detail-field .value { font-size: 0.95rem; color: #1e293b; margin-top: 0.15rem; word-break: break-word; }
+        .detail-field.full-width { grid-column: 1 / -1; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-critical { background: #fde8e8; color: #dc3545; }
+        .badge-high { background: #fff3e0; color: #e65100; }
+        .badge-medium { background: #fff8e1; color: #f9a825; }
+        .badge-low { background: #e8f5e9; color: #2e7d32; }
+        .badge-default { background: #f1f5f9; color: #64748b; }
+        .badge-new { background: #e3f2fd; color: #1565c0; }
+        .badge-processing { background: #fff3e0; color: #e65100; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .risk-index-display { text-align: center; padding: 1rem; border-radius: 10px; margin-bottom: 1rem; }
+        .risk-index-display .value { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+        .risk-index-display .label { font-size: 0.85rem; font-weight: 600; margin-top: 0.25rem; }
+        .bg-very-high { background: #7f1d1d; color: #fff; }
+        .bg-high { background: #dc3545; color: #fff; }
+        .bg-medium { background: #f9a825; color: #1e293b; }
+        .bg-low { background: #2e7d32; color: #fff; }
+        .bg-na { background: #f1f5f9; color: #64748b; }
+        .action-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+        .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .action-btn:hover { opacity: 0.85; }
+        .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .action-btn-open { background: #e3f2fd; color: #1565c0; }
+        .action-btn-processing { background: #fff3e0; color: #e65100; }
+        .action-btn-review { background: #fef3c7; color: #d97706; }
+        .action-btn-close { background: #e8f5e9; color: #2e7d32; }
+        .action-btn-reopen { background: #fde8e8; color: #dc3545; }
+        .action-btn-warning { background: #fef3c7; color: #d97706; }
+        .status-transition { background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+        .status-transition h4 { font-size: 0.85rem; color: #475569; margin: 0 0 0.75rem; }
+        .status-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .loading-state { display: flex; align-items: center; justify-content: center; padding: 4rem; color: #64748b; }
+        .loading-state i { font-size: 2rem; margin-right: 0.75rem; }
+        .error-state { text-align: center; padding: 4rem; color: #dc3545; }
+        .edit-field { width: 100%; padding: 0.4rem 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem; }
+        .edit-field:focus { outline: none; border-color: #1a73e8; }
+        .btn-save-edit { background: #1a73e8; color: #fff; border: none; padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 0.25rem; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/hazards/index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Hazard Register</a>
+
+    <div id="message"></div>
+
+    <div id="loadingIndicator" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i> Loading hazard...
+    </div>
+    <div id="errorIndicator" class="error-state" style="display:none;">
+        <i class="fas fa-exclamation-circle" style="font-size:2rem;"></i>
+        <p id="errorText" style="margin-top:0.5rem;"></p>
+    </div>
+
+    <div id="hazardContent" style="display:none;">
+        <div id="statusTransition" class="status-transition">
+            <h4><i class="fas fa-arrow-right-arrow-left"></i> Change Status</h4>
+            <div class="status-btns" id="statusButtons"></div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-exclamation-triangle"></i> <span id="hazardIdDisplay"></span></h2>
+            <div class="detail-grid">
+                <div class="detail-field full-width">
+                    <div class="label">Title</div>
+                    <div class="value" id="fieldTitle"></div>
+                </div>
+                <div class="detail-field full-width">
+                    <div class="label">Description</div>
+                    <div class="value" style="white-space:pre-wrap;" id="fieldDescription"></div>
+                </div>
+                <div class="detail-field"><div class="label">Source</div><div class="value" id="fieldSource"></div></div>
+                <div class="detail-field"><div class="label">Source Reference</div><div class="value" id="fieldSourceRef"></div></div>
+                <div class="detail-field"><div class="label">Taxonomy</div><div class="value" id="fieldTaxonomy"></div></div>
+                <div class="detail-field"><div class="label">Taxonomy Specific</div><div class="value" id="fieldTaxonomySpecific"></div></div>
+                <div class="detail-field"><div class="label">ADREP Category</div><div class="value" id="fieldAdrep"></div></div>
+                <div class="detail-field"><div class="label">Occurrence Type</div><div class="value" id="fieldOccurrenceType"></div></div>
+                <div class="detail-field"><div class="label">Priority</div><div class="value" id="fieldPriority"></div></div>
+                <div class="detail-field"><div class="label">Status</div><div class="value" id="fieldStatus"></div></div>
+                <div class="detail-field"><div class="label">Consequence</div><div class="value" id="fieldConsequence"></div></div>
+                <div class="detail-field"><div class="label">Assigned To</div><div class="value" id="fieldAssignedTo"></div></div>
+                <div class="detail-field"><div class="label">Assigned UID</div><div class="value" id="fieldAssignedUid"></div></div>
+                <div class="detail-field"><div class="label">Created By</div><div class="value" id="fieldCreatedBy"></div></div>
+                <div class="detail-field"><div class="label">Created At</div><div class="value" id="fieldCreatedAt"></div></div>
+                <div class="detail-field"><div class="label">Updated At</div><div class="value" id="fieldUpdatedAt"></div></div>
+                <div class="detail-field"><div class="label">Follow-up Date</div><div class="value" id="fieldFollowUp"></div></div>
+                <div class="detail-field"><div class="label">Closed At</div><div class="value" id="fieldClosedAt"></div></div>
+                <div class="detail-field full-width"><div class="label">Recommended Action</div><div class="value" style="white-space:pre-wrap;" id="fieldRecommendedAction"></div></div>
+                <div class="detail-field full-width"><div class="label">Corrective Action (CAP)</div><div class="value" style="white-space:pre-wrap;" id="fieldCorrectiveAction"></div></div>
+                <div class="detail-field full-width"><div class="label">Remarks</div><div class="value" style="white-space:pre-wrap;" id="fieldRemarks"></div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-th"></i> Risk Assessment</h2>
+            <div id="riskDisplay"></div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-clipboard-list"></i> SRM Status</h2>
+            <div class="detail-grid">
+                <div class="detail-field"><div class="label">SRM Conducted</div><div class="value" id="fieldSrmConducted"></div></div>
+                <div class="detail-field"><div class="label">SRM Date</div><div class="value" id="fieldSrmDate"></div></div>
+                <div class="detail-field"><div class="label">SRM Status</div><div class="value" id="fieldSrmStatus"></div></div>
+            </div>
+        </div>
+
+        <div class="card" id="verificationSection" style="display:none;">
+            <h2><i class="fas fa-clipboard-check"></i> Verification & Closure</h2>
+            <div id="verificationContent">
+                <div id="verificationList"></div>
+                <div id="closureInfo" style="display:none;margin-top:1rem;"></div>
+                <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;" id="verificationActions"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-edit"></i> Edit Hazard</h2>
+            <div class="detail-grid" id="editForm">
+                <div class="detail-field"><div class="label">Title</div><input class="edit-field" id="editTitle"></div>
+                <div class="detail-field"><div class="label">Priority</div><select class="edit-field" id="editPriority"></select></div>
+                <div class="detail-field"><div class="label">Severity (1-5)</div><input class="edit-field" id="editSeverity" type="number" min="1" max="5"></div>
+                <div class="detail-field"><div class="label">Probability (1-5)</div><input class="edit-field" id="editProbability" type="number" min="1" max="5"></div>
+                <div class="detail-field"><div class="label">Assigned To</div><input class="edit-field" id="editAssignedTo"></div>
+                <div class="detail-field"><div class="label">Assigned UID</div><input class="edit-field" id="editAssignedUid"></div>
+                <div class="detail-field"><div class="label">Recommended Action</div><textarea class="edit-field" id="editRecommendedAction" rows="2"></textarea></div>
+                <div class="detail-field"><div class="label">Corrective Action</div><textarea class="edit-field" id="editCorrectiveAction" rows="2"></textarea></div>
+                <div class="detail-field"><div class="label">Remarks</div><textarea class="edit-field" id="editRemarks" rows="2"></textarea></div>
+                <div class="detail-field" style="display:flex;align-items:end;">
+                    <button class="btn-save-edit" onclick="saveEdit()"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/hazards.js"></script>
+<script src="/js/verification.js"></script>
+<script>
+let hazardData = null;
+let currentUser = null;
+let currentUserRole = null;
+
+firebase.auth().onAuthStateChanged(async function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    currentUser = user;
+    currentUserRole = (await user.getIdTokenResult()).claims.role || 'USER';
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (!id) { showError('No hazard ID provided'); return; }
+    loadHazard(id);
+});
+
+async function loadHazard(id) {
+    document.getElementById('loadingIndicator').style.display = 'flex';
+    document.getElementById('hazardContent').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'none';
+
+    try {
+        hazardData = await HazardsAPI.get(id);
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('hazardContent').style.display = 'block';
+        renderHazard();
+    } catch (err) {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        showError(err.message);
+    }
+}
+
+function renderHazard() {
+    const h = hazardData;
+    document.getElementById('hazardIdDisplay').textContent = h.hazard_id || h.id;
+
+    document.getElementById('fieldTitle').textContent = h.title || '-';
+    document.getElementById('fieldDescription').textContent = h.description || '-';
+    document.getElementById('fieldSource').textContent = h.source || '-';
+    document.getElementById('fieldSourceRef').innerHTML = h.source_url
+        ? `<a href="${h.source_url}" target="_blank">${h.source_id || 'View Source'}</a>`
+        : (h.source_id || '-');
+    document.getElementById('fieldTaxonomy').textContent = h.taxonomy || '-';
+    document.getElementById('fieldTaxonomySpecific').textContent = h.taxonomy_specific || '-';
+    document.getElementById('fieldAdrep').textContent = h.adrep_category || '-';
+    document.getElementById('fieldOccurrenceType').textContent = h.occurrence_type || '-';
+    document.getElementById('fieldPriority').innerHTML = `<span class="badge ${hazardPriorityBadgeClass(h.priority)}">${h.priority}</span>`;
+    document.getElementById('fieldStatus').innerHTML = `<span class="badge ${hazardStatusBadgeClass(h.status)}">${h.status}</span>`;
+    document.getElementById('fieldConsequence').textContent = h.consequence || '-';
+    document.getElementById('fieldAssignedTo').textContent = h.assigned_to || 'Unassigned';
+    document.getElementById('fieldAssignedUid').textContent = h.assigned_to_uid || '-';
+    document.getElementById('fieldCreatedBy').textContent = h.created_by || '-';
+    document.getElementById('fieldCreatedAt').textContent = formatDate(h.created_at);
+    document.getElementById('fieldUpdatedAt').textContent = formatDate(h.updated_at);
+    document.getElementById('fieldFollowUp').textContent = formatDate(h.follow_up_date);
+    document.getElementById('fieldClosedAt').textContent = formatDate(h.closed_at);
+    document.getElementById('fieldRecommendedAction').textContent = h.recommended_action || '-';
+    document.getElementById('fieldCorrectiveAction').textContent = h.corrective_action || '-';
+    document.getElementById('fieldRemarks').textContent = h.remarks || '-';
+
+    document.getElementById('fieldSrmConducted').textContent = h.srm_conducted ? 'Yes' : 'No';
+    document.getElementById('fieldSrmDate').textContent = formatDate(h.srm_date);
+    document.getElementById('fieldSrmStatus').textContent = h.srm_status || '-';
+
+    renderRiskDisplay(h);
+    renderStatusButtons(h);
+    populateEditForm(h);
+    renderVerificationSection(h);
+}
+
+async function renderVerificationSection(h) {
+    const section = document.getElementById('verificationSection');
+    const listContainer = document.getElementById('verificationList');
+    const closureContainer = document.getElementById('closureInfo');
+    const actionsContainer = document.getElementById('verificationActions');
+
+    if (h.status !== 'Under Review' && h.status !== 'Pending Closure' && h.status !== 'Closed') {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = 'block';
+
+    try {
+        const verifications = await VerificationAPI.listVerifications(h.id);
+        listContainer.innerHTML = '';
+
+        if (verifications && verifications.length > 0) {
+            let html = '<h3 style="font-size:0.85rem;color:#475569;margin:0 0 0.75rem;">Verification History</h3>';
+            verifications.forEach(v => {
+                html += `
+                    <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;margin-bottom:0.5rem;border-left:3px solid ${v.outcome === 'Accepted' ? '#2e7d32' : v.outcome === 'Revision Required' ? '#d97706' : v.outcome === 'Ineffective' ? '#dc3545' : '#7c3aed'};">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span class="badge ${verificationOutcomeBadgeClass(v.outcome)}">${v.outcome}</span>
+                            <span style="font-size:0.75rem;color:#94a3b8;">${formatVerificationDate(v.verification_date)}</span>
+                        </div>
+                        ${v.comments ? `<p style="margin:0.35rem 0 0;font-size:0.85rem;color:#475569;">${v.comments}</p>` : ''}
+                        <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.25rem;">Verified by: ${v.verified_by}</div>
+                    </div>`;
+            });
+            listContainer.innerHTML = html;
+
+            // Show closure info if hazard is closed
+            if (h.status === 'Closed') {
+                try {
+                    const closure = await VerificationAPI.getClosure(h.id);
+                    if (closure) {
+                        closureContainer.style.display = 'block';
+                        closureContainer.innerHTML = `
+                            <h3 style="font-size:0.85rem;color:#2e7d32;margin:0 0 0.75rem;"><i class="fas fa-check-circle"></i> Closure Record</h3>
+                            <div style="background:#e8f5e9;padding:0.75rem;border-radius:6px;">
+                                <div style="display:flex;justify-content:space-between;font-size:0.85rem;">
+                                    <span>Approved by: <strong>${closure.approved_by}</strong></span>
+                                    <span style="color:#94a3b8;">${formatVerificationDate(closure.approved_at)}</span>
+                                </div>
+                                ${closure.lessons_learned ? `<p style="margin:0.35rem 0 0;font-size:0.85rem;"><strong>Lessons:</strong> ${closure.lessons_learned}</p>` : ''}
+                                ${closure.recommendations ? `<p style="margin:0.25rem 0 0;font-size:0.85rem;"><strong>Recommendations:</strong> ${closure.recommendations}</p>` : ''}
+                                ${closure.approval_notes ? `<p style="margin:0.25rem 0 0;font-size:0.85rem;"><strong>Notes:</strong> ${closure.approval_notes}</p>` : ''}
+                            </div>`;
+                    }
+                } catch (e) {
+                    closureContainer.style.display = 'none';
+                }
+            }
+        } else if (h.status === 'Under Review') {
+            listContainer.innerHTML = '<p style="font-size:0.85rem;color:#94a3b8;"><i class="fas fa-hourglass"></i> Pending verification</p>';
+        }
+
+        // Buttons
+        actionsContainer.innerHTML = '';
+        if (h.status === 'Under Review' && currentUserRole === 'AIRLINE_ADMIN') {
+            actionsContainer.innerHTML += `<a href="/hazards/verify.html?hazard_id=${h.id}" class="action-btn action-btn-review"><i class="fas fa-clipboard-check"></i> Verify CAP</a>`;
+        }
+        if (h.status === 'Pending Closure' && currentUserRole === 'AIRLINE_ADMIN') {
+            actionsContainer.innerHTML += `<a href="/hazards/approve_closure.html?hazard_id=${h.id}" class="action-btn action-btn-close"><i class="fas fa-check-double"></i> Approve Closure</a>`;
+        }
+        if (h.status === 'Closed') {
+            actionsContainer.innerHTML += `<button class="action-btn action-btn-reopen" onclick="confirmReopen()"><i class="fas fa-undo"></i> Reopen Hazard</button>`;
+        }
+    } catch (err) {
+        listContainer.innerHTML = '<p style="font-size:0.85rem;color:#dc3545;">Error loading verification data.</p>';
+        console.error('Verification section error:', err);
+    }
+}
+
+async function confirmReopen() {
+    const reason = prompt('Reason for reopening this hazard:');
+    if (!reason || reason.trim().length < 5) {
+        showMessage('A reason of at least 5 characters is required', 'error');
+        return;
+    }
+    try {
+        const updated = await VerificationAPI.reopenHazard(hazardData.id, reason.trim());
+        showMessage('Hazard reopened successfully', 'success');
+        hazardData = updated;
+        renderHazard();
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+function renderRiskDisplay(h) {
+    const container = document.getElementById('riskDisplay');
+    const ri = h.risk_index;
+    const sev = h.severity;
+    const prob = h.probability;
+    const rl = h.risk_level;
+    const ro = h.risk_outcome;
+
+    const bgClass = rl === 'Very High' ? 'bg-very-high' : rl === 'High' ? 'bg-high' : rl === 'Medium' ? 'bg-medium' : rl === 'Low' ? 'bg-low' : 'bg-na';
+    const rlDisplay = rl || 'N/A';
+
+    container.innerHTML = `
+        <div class="risk-index-display ${bgClass}">
+            <div class="value">${ri != null ? ri : '-'}</div>
+            <div class="label">Risk Index (Severity × Probability)</div>
+            <div class="sub">S=${sev != null ? sev : '-'} × P=${prob != null ? prob : '-'}</div>
+        </div>
+        <div class="detail-grid">
+            <div class="detail-field"><div class="label">Severity</div><div class="value">${sev != null ? sev : '-'}</div></div>
+            <div class="detail-field"><div class="label">Probability</div><div class="value">${prob != null ? prob : '-'}</div></div>
+            <div class="detail-field"><div class="label">Risk Level</div><div class="value"><span class="badge ${hazardRiskBadgeClass(rl)}">${rlDisplay}</span></div></div>
+            <div class="detail-field"><div class="label">Risk Outcome</div><div class="value">${ro || '-'}</div></div>
+        </div>
+    `;
+}
+
+function renderStatusButtons(h) {
+    const container = document.getElementById('statusButtons');
+    const current = h.status;
+    const transitions = {
+        'Open': [{ status: 'Processing', label: 'Start Processing', cls: 'action-btn-processing' }],
+        'Processing': [
+            { status: 'Under Review', label: 'Send to Review', cls: 'action-btn-review' },
+            { status: 'Open', label: 'Back to Open', cls: 'action-btn-open' }
+        ],
+        'Under Review': [
+            { status: 'Processing', label: 'Back to Processing', cls: 'action-btn-processing' }
+        ],
+        'Pending Closure': [
+            { status: 'Under Review', label: 'Back to Review', cls: 'action-btn-warning' }
+        ],
+        'Closed': [{ status: 'Reopened', label: 'Reopen', cls: 'action-btn-reopen' }],
+        'Reopened': [
+            { status: 'Processing', label: 'Start Processing', cls: 'action-btn-processing' },
+            { status: 'Closed', label: 'Close Hazard', cls: 'action-btn-close' }
+        ],
+    };
+
+    const buttons = transitions[current] || [];
+    container.innerHTML = buttons.length === 0
+        ? '<p style="font-size:0.85rem;color:#64748b;">No status transitions available.</p>'
+        : buttons.map(b =>
+            `<button class="action-btn ${b.cls}" onclick="changeStatus('${b.status}')">${b.label}</button>`
+        ).join('');
+}
+
+function populateEditForm(h) {
+    document.getElementById('editTitle').value = h.title || '';
+    const priSel = document.getElementById('editPriority');
+    priSel.innerHTML = HAZARD_PRIORITIES.map(p =>
+        `<option value="${p}" ${h.priority === p ? 'selected' : ''}>${p}</option>`
+    ).join('');
+    document.getElementById('editSeverity').value = h.severity || '';
+    document.getElementById('editProbability').value = h.probability || '';
+    document.getElementById('editAssignedTo').value = h.assigned_to || '';
+    document.getElementById('editAssignedUid').value = h.assigned_to_uid || '';
+    document.getElementById('editRecommendedAction').value = h.recommended_action || '';
+    document.getElementById('editCorrectiveAction').value = h.corrective_action || '';
+    document.getElementById('editRemarks').value = h.remarks || '';
+}
+
+async function changeStatus(newStatus) {
+    if (!hazardData) return;
+    try {
+        const updated = await HazardsAPI.updateStatus(hazardData.id, newStatus);
+        showMessage(`Status changed to ${newStatus}`, 'success');
+        hazardData = updated;
+        renderHazard();
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+async function saveEdit() {
+    if (!hazardData) return;
+    const sev = parseInt(document.getElementById('editSeverity').value) || null;
+    const prob = parseInt(document.getElementById('editProbability').value) || null;
+    const data = {
+        title: document.getElementById('editTitle').value,
+        priority: document.getElementById('editPriority').value,
+        severity: sev,
+        probability: prob,
+        assigned_to: document.getElementById('editAssignedTo').value,
+        assigned_to_uid: document.getElementById('editAssignedUid').value,
+        recommended_action: document.getElementById('editRecommendedAction').value,
+        corrective_action: document.getElementById('editCorrectiveAction').value,
+        remarks: document.getElementById('editRemarks').value,
+    };
+    // Remove empties
+    Object.keys(data).forEach(k => { if (data[k] === '' || data[k] === null) delete data[k]; });
+
+    try {
+        const updated = await HazardsAPI.update(hazardData.id, data);
+        showMessage('Hazard updated successfully', 'success');
+        hazardData = updated;
+        renderHazard();
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+}
+
+function showError(msg) {
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'block';
+    document.getElementById('errorText').textContent = msg;
+}
+</script>
+</body>
+</html>

@@ -332,6 +332,61 @@
             </div>
         </div>
 
+        <!-- Section 3b: Hazard Register Widget -->
+        <div class="section-title"><i class="fas fa-book"></i> Hazard Register</div>
+        <div class="chart-grid">
+            <div class="chart-card chart-full">
+                <h3>Hazard Register Summary <a href="/hazards/index.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View Full Register</a></h3>
+                <div id="hazardRegisterWidget" class="state-container" style="min-height:100px;">
+                    <div id="hazardStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0.75rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3c: CAN/CAP Widget -->
+        <div class="section-title"><i class="fas fa-clipboard-check"></i> CAN/CAP Status</div>
+        <div class="chart-grid">
+            <div class="chart-card chart-full">
+                <h3>Corrective Action Progress <a href="/can_cap/cans.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All CANs</a></h3>
+                <div id="canCapWidget" class="state-container" style="min-height:80px;">
+                    <div id="canCapStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0.75rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3d: Verification & Closure Widget -->
+        <div class="section-title"><i class="fas fa-check-double"></i> Verification & Closure</div>
+        <div class="chart-grid">
+            <div class="chart-card chart-full">
+                <h3>Verification Status</h3>
+                <div id="verificationWidget" class="state-container" style="min-height:80px;">
+                    <div id="verificationStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.75rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3e: Reports Widget -->
+        <div class="section-title"><i class="fas fa-chart-bar"></i> Latest Reports</div>
+        <div class="chart-grid">
+            <div class="chart-card chart-full">
+                <h3>Recent Reports <a href="/reports/index.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All Reports</a></h3>
+                <div id="reportsWidget" style="min-height:60px;">
+                    <div id="reportsWidgetContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3f: Flight Diversions Widget -->
+        <div class="section-title"><i class="fas fa-plane-slash"></i> Flight Diversions</div>
+        <div class="chart-grid">
+            <div class="chart-card chart-full">
+                <h3>Diversion Summary <a href="/flight_diversions/index.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All</a></h3>
+                <div id="diversionWidget" style="min-height:60px;">
+                    <div id="diversionWidgetContent"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Section 4: Recent Reports -->
         <div class="section-title"><i class="fas fa-table-list"></i> Recent Reports</div>
         <div id="reportsTable" class="table-card state-container">
@@ -392,7 +447,194 @@
 <script src="/js/api/dashboard.js"></script>
 <script src="/js/dashboard-utils.js"></script>
 <script src="/js/report.js"></script>
+<script src="/js/hazards.js"></script>
+<script src="/js/can_cap.js"></script>
+<script src="/js/verification.js"></script>
+<script src="/js/reports.js"></script>
+<script src="/js/flight_diversions.js"></script>
 <script src="/js/dashboard.js"></script>
+
+<script>
+// Hazard Register Widget for Airline Dashboard
+async function loadHazardWidget() {
+    const container = document.getElementById('hazardStatsGrid');
+    try {
+        const stats = await HazardsAPI.getStats();
+        if (!stats || !stats.by_status) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">No hazard data available.</p>';
+            return;
+        }
+        const statuses = stats.by_status;
+        const total = stats.total || 0;
+        let html = '';
+        for (const [status, count] of Object.entries(statuses)) {
+            const cls = status === 'Open' ? 'badge-new' : status === 'Processing' ? 'badge-processing' : status === 'Under Review' ? 'badge-warning' : status === 'Closed' ? 'badge-completed' : 'badge-critical';
+            html += `
+                <div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:3px solid ${status === 'Open' ? '#1565c0' : status === 'Processing' ? '#e65100' : status === 'Under Review' ? '#d97706' : status === 'Closed' ? '#2e7d32' : '#dc3545'};">
+                    <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${count}</div>
+                    <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;">${status}</div>
+                </div>`;
+        }
+        html += `
+            <div style="background:#002f6c;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+                <div style="font-size:1.5rem;font-weight:700;">${total}</div>
+                <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.3px;opacity:0.8;">Total</div>
+            </div>
+            <div style="grid-column:1/-1;text-align:center;padding-top:0.5rem;">
+                <a href="/hazards/create.html" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> New Hazard</a>
+                <a href="/hazards/index.html" class="btn btn-outline btn-sm"><i class="fas fa-list"></i> All Hazards</a>
+            </div>`;
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">Error loading hazard data.</p>';
+        console.error('Hazard widget error:', err);
+    }
+}
+
+async function loadCanCapWidget() {
+    const grid = document.getElementById('canCapStatsGrid');
+    try {
+        const stats = await CanCapAPI.getStats();
+        if (!stats || !stats.cans) {
+            grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">No CAN/CAP data.</p>';
+            return;
+        }
+        const canStatuses = stats.cans.by_status || {};
+        const capTotal = stats.caps.total || 0;
+        const canTotal = stats.cans.total || 0;
+        let html = Object.entries(canStatuses).map(([k, v]) =>
+            `<div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:3px solid ${k === 'Open' ? '#1565c0' : k === 'Under Review' ? '#d97706' : '#2e7d32'};">
+                <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${v}</div>
+                <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;">CAN ${k}</div>
+            </div>`
+        ).join('');
+        html += `<div style="background:#002f6c;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+                <div style="font-size:1.5rem;font-weight:700;">${capTotal}</div>
+                <div style="font-size:0.7rem;text-transform:uppercase;opacity:0.8;">CAPs</div>
+            </div>
+            <div style="background:#1a73e8;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+                <div style="font-size:1.5rem;font-weight:700;">${canTotal}</div>
+                <div style="font-size:0.7rem;text-transform:uppercase;opacity:0.8;">Total CANs</div>
+            </div>
+            <div style="grid-column:1/-1;text-align:center;padding-top:0.5rem;">
+                <a href="/can_cap/cans.html" class="btn btn-outline btn-sm"><i class="fas fa-list"></i> View CANs</a>
+            </div>`;
+        grid.innerHTML = html;
+    } catch (err) {
+        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">Error loading CAN/CAP data.</p>';
+    }
+}
+
+// Verification & Closure Widget
+async function loadVerificationWidget() {
+    const grid = document.getElementById('verificationStatsGrid');
+    try {
+        const stats = await VerificationAPI.getStats();
+        if (!stats) {
+            grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">No verification data.</p>';
+            return;
+        }
+        const items = [
+            { label: 'Pending Verification', value: stats.pending_verification || 0, color: '#1565c0' },
+            { label: 'Under Verification', value: stats.under_verification || 0, color: '#d97706' },
+            { label: 'Verified (Accepted)', value: stats.verified || 0, color: '#2e7d32' },
+            { label: 'Pending Closure', value: stats.pending_closure || 0, color: '#e65100' },
+            { label: 'Closed', value: stats.closed || 0, color: '#1b5e20' },
+            { label: 'Reopened', value: stats.reopened || 0, color: '#dc3545' },
+        ];
+        let html = items.map(item => `
+            <div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:3px solid ${item.color};">
+                <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${item.value}</div>
+                <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;">${item.label}</div>
+            </div>
+        `).join('');
+        grid.innerHTML = html;
+    } catch (err) {
+        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">Error loading verification data.</p>';
+        console.error('Verification widget error:', err);
+    }
+}
+
+// Reports Widget
+async function loadReportsWidget() {
+    const container = document.getElementById('reportsWidgetContent');
+    try {
+        const [quarterly, annual] = await Promise.all([
+            ReportsAPI.listQuarterly(),
+            ReportsAPI.listAnnual(),
+        ]);
+        const all = [...(quarterly || []).map(r => ({ ...r, label: r.period })), ...(annual || []).map(r => ({ ...r, label: r.period }))];
+        all.sort((a, b) => new Date(b.generated_at || 0) - new Date(a.generated_at || 0));
+        const recent = all.slice(0, 5);
+        if (recent.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:0.5rem;">No reports generated yet. <a href="/reports/generate.html" style="color:#1a73e8;">Generate one</a></p>';
+            return;
+        }
+        container.innerHTML = `
+            <table>
+                <thead><tr><th>Period</th><th>Type</th><th>Status</th><th>Generated</th><th></th></tr></thead>
+                <tbody>${recent.map(r => `
+                    <tr>
+                        <td><strong>${r.period}</strong></td>
+                        <td><span class="badge ${r.report_type === 'quarterly' ? 'badge-new' : 'badge-completed'}">${r.report_type}</span></td>
+                        <td><span class="badge ${reportStatusBadgeClass(r.status)}">${r.status}</span></td>
+                        <td>${formatReportDate(r.generated_at)}</td>
+                        <td><a href="/reports/view.html?id=${r.id}&type=${r.report_type}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a></td>
+                    </tr>
+                `).join('')}</tbody>
+            </table>
+            <div style="text-align:center;padding:0.5rem;">
+                <a href="/reports/generate.html" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Generate Report</a>
+            </div>`;
+    } catch (err) {
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:0.5rem;">Error loading reports.</p>';
+    }
+}
+
+// Diversion Widget
+async function loadDiversionWidget() {
+    const container = document.getElementById('diversionWidgetContent');
+    try {
+        const stats = await DiversionsAPI.getStats();
+        if (!stats || stats.total_diversions === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:1rem;color:#94a3b8;">
+                    <p>No flight diversions recorded.</p>
+                    <a href="/flight_diversions/create.html" class="btn btn-primary btn-sm" style="margin-top:0.5rem;">Report Diversion</a>
+                </div>`;
+            return;
+        }
+        const reasons = stats.by_reason || {};
+        const statusCounts = {};
+        try {
+            const all = await DiversionsAPI.list();
+            (all || []).forEach(d => { statusCounts[d.status] = (statusCounts[d.status] || 0) + 1; });
+        } catch (_) {}
+
+        let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0.75rem;">';
+        html += `<div style="background:#f8fafc;padding:0.75rem;border-radius:8px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${stats.total_diversions}</div><div style="font-size:0.7rem;text-transform:uppercase;color:#64748b;">Total</div></div>`;
+        html += `<div style="background:#e3f2fd;padding:0.75rem;border-radius:8px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#1565c0;">${reasons['Weather'] || 0}</div><div style="font-size:0.7rem;text-transform:uppercase;color:#64748b;">Weather</div></div>`;
+        html += `<div style="background:#fff3e0;padding:0.75rem;border-radius:8px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#e65100;">${reasons['Technical'] || 0}</div><div style="font-size:0.7rem;text-transform:uppercase;color:#64748b;">Technical</div></div>`;
+        html += `<div style="background:#fef3c7;padding:0.75rem;border-radius:8px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#d97706;">${stats.avg_delay_minutes || 0}m</div><div style="font-size:0.7rem;text-transform:uppercase;color:#64748b;">Avg Delay</div></div>`;
+        html += `<div style="grid-column:1/-1;text-align:center;padding-top:0.25rem;"><a href="/flight_diversions/index.html" class="btn btn-outline btn-sm"><i class="fas fa-list"></i> View All Diversions</a></div>`;
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">Error loading diversion data.</p>';
+    }
+}
+
+// Override loadAll to include all widgets
+const origLoadAll = loadAll;
+loadAll = function() {
+    origLoadAll();
+    loadHazardWidget();
+    loadCanCapWidget();
+    loadVerificationWidget();
+    loadReportsWidget();
+    loadDiversionWidget();
+};
+</script>
 
 </body>
 </html>

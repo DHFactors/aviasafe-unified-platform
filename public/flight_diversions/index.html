@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Diversions - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+        .page-header h1 { font-size: 1.25rem; color: #002f6c; margin: 0; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+        .stat-card { background: #f8fafc; padding: 1rem; border-radius: 8px; text-align: center; border-left: 4px solid #1a73e8; }
+        .stat-card .value { font-size: 1.6rem; font-weight: 700; color: #002f6c; }
+        .stat-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.3px; color: #64748b; }
+        .filter-bar { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+        .filter-bar select, .filter-bar input { padding: 0.4rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem; background: #fff; }
+        .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; border: none; transition: all 0.15s; }
+        .btn-primary { background: #1a73e8; color: #fff; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-outline { background: transparent; color: #475569; border: 1px solid #e2e8f0; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+        .btn-danger { background: transparent; color: #dc3545; border: 1px solid #fde8e8; }
+        .btn-danger:hover { background: #fde8e8; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-new { background: #e3f2fd; color: #1565c0; }
+        .badge-processing { background: #fff3e0; color: #e65100; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-critical { background: #fde8e8; color: #dc3545; }
+        .badge-default { background: #f1f5f9; color: #64748b; }
+        .badge-info { background: #e3f2fd; color: #1565c0; }
+        .badge-high { background: #fff3e0; color: #e65100; }
+        .badge-medium { background: #fff8e1; color: #f9a825; }
+        .badge-low { background: #e8f5e9; color: #2e7d32; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; padding: 0.75rem 1rem; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 0.65rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+        tr:hover td { background: #f8fafc; }
+        .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 0.75rem; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 600px) { .page-header { flex-direction: column; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <div class="page-header">
+        <h1><i class="fas fa-plane-slash" style="color:#1a73e8;"></i> Flight Diversions</h1>
+        <div>
+            <a href="/flight_diversions/create.html" class="btn btn-primary"><i class="fas fa-plus"></i> Report Diversion</a>
+            <a href="/safety.html" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Dashboard</a>
+        </div>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="card" id="statsCard">
+        <div class="stats-grid" id="statsGrid"></div>
+    </div>
+
+    <div class="card">
+        <div class="filter-bar">
+            <select id="reasonFilter" onchange="loadDiversions()">
+                <option value="">All Reasons</option>
+                <option value="Weather">Weather</option>
+                <option value="Technical">Technical</option>
+                <option value="Medical">Medical</option>
+                <option value="Fuel">Fuel</option>
+                <option value="Security">Security</option>
+                <option value="Operational">Operational</option>
+                <option value="Airport Closure">Airport Closure</option>
+                <option value="Air Traffic Control">ATC</option>
+                <option value="Other">Other</option>
+            </select>
+            <select id="statusFilter" onchange="loadDiversions()">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Reviewed">Reviewed</option>
+                <option value="Investigating">Investigating</option>
+                <option value="Closed">Closed</option>
+                <option value="Linked to Hazard">Linked to Hazard</option>
+            </select>
+            <input type="text" id="searchInput" placeholder="Search flight or ID..." onkeyup="if(event.key==='Enter')loadDiversions()">
+            <button class="btn btn-outline btn-sm" onclick="loadDiversions()"><i class="fas fa-search"></i> Search</button>
+        </div>
+
+        <div style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Diversion ID</th><th>Date</th><th>Flight</th><th>Aircraft</th><th>Sector</th><th>Diverted To</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="diversionsBody"></tbody>
+            </table>
+            <div id="emptyState" class="empty-state" style="display:none;">
+                <i class="fas fa-inbox"></i><p>No flight diversions recorded.</p>
+                <a href="/flight_diversions/create.html" class="btn btn-primary btn-sm" style="margin-top:0.5rem;">Report Diversion</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/flight_diversions.js"></script>
+<script>
+firebase.auth().onAuthStateChanged(function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    loadDiversions();
+    loadStats();
+});
+
+async function loadDiversions() {
+    const body = document.getElementById('diversionsBody');
+    const empty = document.getElementById('emptyState');
+    const filters = {
+        reason: document.getElementById('reasonFilter').value || undefined,
+        status: document.getElementById('statusFilter').value || undefined,
+        search: document.getElementById('searchInput').value || undefined,
+    };
+    try {
+        const list = await DiversionsAPI.list(filters);
+        if (!list || list.length === 0) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+        body.innerHTML = list.map(d => `
+            <tr>
+                <td><strong>${d.diversion_id}</strong></td>
+                <td>${formatDiversionDate(d.date)}</td>
+                <td>${d.flight_number}</td>
+                <td>${d.aircraft_registration}</td>
+                <td>${d.sector_from} → ${d.sector_to}</td>
+                <td><strong>${d.diverted_to}</strong></td>
+                <td><span class="badge ${diversionReasonBadgeClass(d.reason)}">${d.reason}</span></td>
+                <td><span class="badge ${diversionStatusBadgeClass(d.status)}">${d.status}</span></td>
+                <td>
+                    <a href="/flight_diversions/detail.html?id=${d.id}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#dc3545;">Error: ${err.message}</td></tr>`;
+    }
+}
+
+async function loadStats() {
+    const grid = document.getElementById('statsGrid');
+    try {
+        const stats = await DiversionsAPI.getStats();
+        grid.innerHTML = `
+            <div class="stat-card" style="border-left-color:#1a73e8;"><div class="value">${stats.total_diversions || 0}</div><div class="label">Total</div></div>
+            <div class="stat-card" style="border-left-color:#34a853;"><div class="value">${stats.weather_diversion_rate || 0}%</div><div class="label">Weather</div></div>
+            <div class="stat-card" style="border-left-color:#e65100;"><div class="value">${stats.technical_diversion_rate || 0}%</div><div class="label">Technical</div></div>
+            <div class="stat-card" style="border-left-color:#d97706;"><div class="value">${stats.avg_delay_minutes || 0}m</div><div class="label">Avg Delay</div></div>
+            <div class="stat-card" style="border-left-color:#7c3aed;"><div class="value">$${(stats.total_fuel_cost_impact || 0).toLocaleString()}</div><div class="label">Fuel Cost</div></div>
+            <div class="stat-card" style="border-left-color:#dc3545;"><div class="value">${stats.total_passenger_impact || 0}</div><div class="label">Passengers</div></div>
+        `;
+    } catch (err) {
+        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;">Error loading stats.</p>';
+    }
+}
+</script>
+</body>
+</html>

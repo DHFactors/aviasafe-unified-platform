@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Report - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 600px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem; }
+        .form-group select, .form-group input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; background: #fff; }
+        .form-group select:focus, .form-group input:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.15); }
+        .type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+        .type-option { padding: 1.25rem; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.15s; }
+        .type-option:hover { border-color: #1a73e8; background: #f0f6ff; }
+        .type-option.selected { border-color: #1a73e8; background: #e8f0fe; }
+        .type-option .icon { font-size: 1.5rem; margin-bottom: 0.35rem; }
+        .type-option .title { font-weight: 600; font-size: 0.9rem; }
+        .type-option .desc { font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; }
+        .btn-primary { background: #1a73e8; color: #fff; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s; width: 100%; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+        .result-card { display: none; background: #e8f5e9; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #34a853; }
+        .result-card .title { font-weight: 600; color: #2e7d32; }
+        .result-card .links { margin-top: 0.75rem; display: flex; gap: 0.75rem; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 500px) { .type-selector { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/reports/index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Reports</a>
+
+    <div id="message"></div>
+
+    <div class="card">
+        <h2><i class="fas fa-plus-circle"></i> Generate Report</h2>
+        <p style="font-size:0.85rem;color:#64748b;margin-bottom:1.25rem;">
+            Select a report type and period to generate a new safety performance report.
+        </p>
+
+        <form id="generateForm">
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#475569;margin-bottom:0.5rem;">Report Type</label>
+            <div class="type-selector" id="typeSelector">
+                <div class="type-option selected" data-value="quarterly" onclick="selectType('quarterly')">
+                    <div class="icon"><i class="fas fa-calendar-alt" style="color:#1a73e8;"></i></div>
+                    <div class="title">Quarterly Report</div>
+                    <div class="desc">For Q1–Q4 periods with hazard trends, risk distribution, and CAN/CAP status.</div>
+                </div>
+                <div class="type-option" data-value="annual" onclick="selectType('annual')">
+                    <div class="icon"><i class="fas fa-calendar-check" style="color:#2e7d32;"></i></div>
+                    <div class="title">Annual Report</div>
+                    <div class="desc">Full-year performance review with SSP indicators and strategic recommendations.</div>
+                </div>
+            </div>
+
+            <div class="form-group" id="quarterGroup">
+                <label for="quarter">Quarter</label>
+                <select id="quarter">
+                    <option value="1">Q1 (Jan–Mar)</option>
+                    <option value="2">Q2 (Apr–Jun)</option>
+                    <option value="3" selected>Q3 (Jul–Sep)</option>
+                    <option value="4">Q4 (Oct–Dec)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="year">Year</label>
+                <select id="year">
+                    <option value="2026" selected>2026</option>
+                    <option value="2025">2025</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-primary" id="generateBtn"><i class="fas fa-magic"></i> Generate Report</button>
+        </form>
+
+        <div class="result-card" id="resultCard">
+            <div class="title"><i class="fas fa-check-circle"></i> Report Generated Successfully</div>
+            <p id="resultMessage" style="font-size:0.85rem;color:#475569;margin:0.5rem 0 0;"></p>
+            <div class="links">
+                <a href="" id="viewLink" class="btn btn-primary btn-sm"><i class="fas fa-eye"></i> View Report</a>
+                <a href="" id="downloadLink" class="btn btn-outline btn-sm" onclick="event.preventDefault();downloadResultPdf();"><i class="fas fa-download"></i> Download PDF</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/reports.js"></script>
+<script>
+let selectedType = 'quarterly';
+let lastResult = null;
+
+firebase.auth().onAuthStateChanged(function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+});
+
+function selectType(type) {
+    selectedType = type;
+    document.querySelectorAll('.type-option').forEach(el => el.classList.toggle('selected', el.dataset.value === type));
+    document.getElementById('quarterGroup').style.display = type === 'quarterly' ? 'block' : 'none';
+}
+
+document.getElementById('generateForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+    const year = parseInt(document.getElementById('year').value);
+
+    try {
+        let result;
+        if (selectedType === 'quarterly') {
+            const quarter = parseInt(document.getElementById('quarter').value);
+            result = await ReportsAPI.generateQuarterly(year, quarter);
+        } else {
+            result = await ReportsAPI.generateAnnual(year);
+        }
+
+        lastResult = result;
+        document.getElementById('resultMessage').textContent = `${selectedType === 'quarterly' ? 'Quarterly' : 'Annual'} report for ${result.period || year} is ready.`;
+        document.getElementById('viewLink').href = `/reports/view.html?id=${result.id}&type=${selectedType}`;
+        document.getElementById('resultCard').style.display = 'block';
+        showMessage('Report generated successfully!', 'success');
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-magic"></i> Generate Report';
+});
+
+async function downloadResultPdf() {
+    if (!lastResult) return;
+    await downloadPdf(lastResult.id, selectedType);
+}
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 5000);
+}
+</script>
+</body>
+</html>

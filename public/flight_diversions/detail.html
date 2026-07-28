@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diversion Detail - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .detail-field { margin-bottom: 0.35rem; }
+        .detail-field .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
+        .detail-field .value { font-size: 0.95rem; color: #1e293b; margin-top: 0.15rem; word-break: break-word; }
+        .detail-field.full-width { grid-column: 1 / -1; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-new { background: #e3f2fd; color: #1565c0; }
+        .badge-processing { background: #fff3e0; color: #e65100; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-critical { background: #fde8e8; color: #dc3545; }
+        .badge-default { background: #f1f5f9; color: #64748b; }
+        .badge-info { background: #e3f2fd; color: #1565c0; }
+        .badge-high { background: #fff3e0; color: #e65100; }
+        .badge-medium { background: #fff8e1; color: #f9a825; }
+        .action-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .action-btn:hover { opacity: 0.85; }
+        .action-btn-primary { background: #1a73e8; color: #fff; }
+        .action-btn-danger { background: #fde8e8; color: #dc3545; }
+        .action-btn-success { background: #e8f5e9; color: #2e7d32; }
+        .action-btn-warning { background: #fef3c7; color: #d97706; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        .loading-state { display: flex; align-items: center; justify-content: center; padding: 4rem; color: #64748b; }
+        .loading-state i { font-size: 2rem; margin-right: 0.75rem; }
+        .error-state { text-align: center; padding: 4rem; color: #dc3545; }
+        .edit-field { width: 100%; padding: 0.4rem 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem; }
+        .edit-field:focus { outline: none; border-color: #1a73e8; }
+        .btn-save-edit { background: #1a73e8; color: #fff; border: none; padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 0.25rem; }
+        @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/flight_diversions/index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Diversions</a>
+
+    <div id="message"></div>
+
+    <div id="loadingIndicator" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i> Loading diversion...
+    </div>
+    <div id="errorIndicator" class="error-state" style="display:none;">
+        <i class="fas fa-exclamation-circle" style="font-size:2rem;"></i>
+        <p id="errorText" style="margin-top:0.5rem;"></p>
+    </div>
+
+    <div id="diversionContent" style="display:none;">
+        <div class="card">
+            <h2><i class="fas fa-plane-slash"></i> <span id="diversionIdDisplay"></span></h2>
+            <div class="detail-grid">
+                <div class="detail-field"><div class="label">Date & Time</div><div class="value" id="fieldDate"></div></div>
+                <div class="detail-field"><div class="label">Status</div><div class="value" id="fieldStatus"></div></div>
+                <div class="detail-field"><div class="label">Flight Number</div><div class="value" id="fieldFlight"></div></div>
+                <div class="detail-field"><div class="label">Aircraft Registration</div><div class="value" id="fieldAircraft"></div></div>
+                <div class="detail-field"><div class="label">Sector</div><div class="value" id="fieldSector"></div></div>
+                <div class="detail-field"><div class="label">Diverted To</div><div class="value" id="fieldDivertedTo"></div></div>
+                <div class="detail-field"><div class="label">Reason</div><div class="value" id="fieldReason"></div></div>
+                <div class="detail-field"><div class="label">Reason Details</div><div class="value" id="fieldReasonDetails"></div></div>
+                <div class="detail-field"><div class="label">Captain</div><div class="value" id="fieldCaptain"></div></div>
+                <div class="detail-field"><div class="label">First Officer</div><div class="value" id="fieldFO"></div></div>
+                <div class="detail-field"><div class="label">Air Hostess</div><div class="value" id="fieldAH"></div></div>
+                <div class="detail-field"><div class="label">Fuel Cost</div><div class="value" id="fieldFuelCost"></div></div>
+                <div class="detail-field"><div class="label">Passenger Impact</div><div class="value" id="fieldPassengers"></div></div>
+                <div class="detail-field"><div class="label">Delay (min)</div><div class="value" id="fieldDelay"></div></div>
+                <div class="detail-field full-width"><div class="label">Description</div><div class="value" style="white-space:pre-wrap;" id="fieldDescription"></div></div>
+                <div class="detail-field full-width"><div class="label">Remarks</div><div class="value" style="white-space:pre-wrap;" id="fieldRemarks"></div></div>
+                <div class="detail-field"><div class="label">Created By</div><div class="value" id="fieldCreatedBy"></div></div>
+                <div class="detail-field"><div class="label">Created At</div><div class="value" id="fieldCreatedAt"></div></div>
+            </div>
+        </div>
+
+        <div class="card" id="hazardLinkSection" style="display:none;">
+            <h2><i class="fas fa-link"></i> Hazard Link</h2>
+            <div id="hazardLinkContent"></div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-cog"></i> Actions</h2>
+            <div class="action-bar" id="actionButtons"></div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-edit"></i> Edit Diversion</h2>
+            <div class="detail-grid" id="editForm">
+                <div class="detail-field"><div class="label">Flight Number</div><input class="edit-field" id="editFlight"></div>
+                <div class="detail-field"><div class="label">Aircraft</div><input class="edit-field" id="editAircraft"></div>
+                <div class="detail-field"><div class="label">Diverted To</div><input class="edit-field" id="editDivertedTo"></div>
+                <div class="detail-field"><div class="label">Status</div><select class="edit-field" id="editStatus"></select></div>
+                <div class="detail-field"><div class="label">Fuel Cost</div><input class="edit-field" id="editFuelCost" type="number" min="0"></div>
+                <div class="detail-field"><div class="label">Passenger Impact</div><input class="edit-field" id="editPassengers" type="number" min="0"></div>
+                <div class="detail-field"><div class="label">Delay (min)</div><input class="edit-field" id="editDelay" type="number" min="0"></div>
+                <div class="detail-field" style="display:flex;align-items:end;">
+                    <button class="btn-save-edit" onclick="saveEdit()"><i class="fas fa-save"></i> Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/hazards.js"></script>
+<script src="/js/flight_diversions.js"></script>
+<script>
+let diversionData = null;
+let currentUser = null;
+let currentUserRole = null;
+
+firebase.auth().onAuthStateChanged(async function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    currentUser = user;
+    currentUserRole = (await user.getIdTokenResult()).claims.role || 'USER';
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (!id) { showError('No diversion ID provided'); return; }
+    loadDiversion(id);
+});
+
+async function loadDiversion(id) {
+    document.getElementById('loadingIndicator').style.display = 'flex';
+    document.getElementById('diversionContent').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'none';
+
+    try {
+        diversionData = await DiversionsAPI.get(id);
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('diversionContent').style.display = 'block';
+        renderDiversion();
+    } catch (err) {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        showError(err.message);
+    }
+}
+
+function renderDiversion() {
+    const d = diversionData;
+    document.getElementById('diversionIdDisplay').textContent = d.diversion_id || d.id;
+
+    document.getElementById('fieldDate').textContent = formatDiversionDate(d.date);
+    document.getElementById('fieldStatus').innerHTML = `<span class="badge ${diversionStatusBadgeClass(d.status)}">${d.status}</span>`;
+    document.getElementById('fieldFlight').textContent = d.flight_number || '-';
+    document.getElementById('fieldAircraft').textContent = d.aircraft_registration || '-';
+    document.getElementById('fieldSector').textContent = `${d.sector_from || '-'} → ${d.sector_to || '-'}`;
+    document.getElementById('fieldDivertedTo').textContent = d.diverted_to || '-';
+    document.getElementById('fieldReason').innerHTML = `<span class="badge ${diversionReasonBadgeClass(d.reason)}">${d.reason}</span>`;
+    document.getElementById('fieldReasonDetails').textContent = d.reason_details || '-';
+    document.getElementById('fieldCaptain').textContent = d.captain || '-';
+    document.getElementById('fieldFO').textContent = d.first_officer || '-';
+    document.getElementById('fieldAH').textContent = d.air_hostess || '-';
+    document.getElementById('fieldFuelCost').textContent = d.additional_fuel_cost ? `$${d.additional_fuel_cost.toLocaleString()}` : '-';
+    document.getElementById('fieldPassengers').textContent = d.passenger_impact != null ? d.passenger_impact : '-';
+    document.getElementById('fieldDelay').textContent = d.delay_minutes != null ? `${d.delay_minutes}m` : '-';
+    document.getElementById('fieldDescription').textContent = d.description || '-';
+    document.getElementById('fieldRemarks').textContent = d.remarks || '-';
+    document.getElementById('fieldCreatedBy').textContent = d.created_by || '-';
+    document.getElementById('fieldCreatedAt').textContent = formatDiversionDate(d.created_at);
+
+    renderHazardLink(d);
+    renderActionButtons(d);
+    populateEditForm(d);
+}
+
+function renderHazardLink(d) {
+    const section = document.getElementById('hazardLinkSection');
+    const content = document.getElementById('hazardLinkContent');
+
+    if (d.hazard_id) {
+        section.style.display = 'block';
+        content.innerHTML = `
+            <p style="font-size:0.85rem;margin-bottom:0.5rem;">This diversion is linked to a hazard:</p>
+            <div style="background:#f0f6ff;padding:0.75rem;border-radius:6px;">
+                <strong>Hazard ID:</strong> ${d.hazard_id}
+                <div style="margin-top:0.5rem;">
+                    <a href="/hazards/detail.html?id=${d.hazard_id}" class="action-btn action-btn-primary" style="font-size:0.8rem;padding:0.35rem 0.75rem;"><i class="fas fa-external-link-alt"></i> View Hazard</a>
+                    <button class="action-btn action-btn-danger" style="font-size:0.8rem;padding:0.35rem 0.75rem;" onclick="unlinkHazard()"><i class="fas fa-unlink"></i> Unlink</button>
+                </div>
+            </div>`;
+    } else {
+        section.style.display = 'none';
+    }
+}
+
+function renderActionButtons(d) {
+    const container = document.getElementById('actionButtons');
+    const isSafety = currentUserRole === 'AIRLINE_ADMIN';
+    let html = '';
+
+    if (d.status !== 'Closed' && d.status !== 'Linked to Hazard') {
+        const statusBtns = DIVERSION_STATUSES.filter(s => s !== d.status).map(s =>
+            `<button class="action-btn action-btn-${s === 'Closed' ? 'success' : 'warning'}" onclick="changeStatus('${s}')">${s}</button>`
+        ).join('');
+        html += statusBtns;
+    }
+
+    if (isSafety && !d.hazard_id) {
+        html += `<button class="action-btn action-btn-primary" onclick="linkToHazard()"><i class="fas fa-link"></i> Link to Hazard</button>`;
+    }
+
+    if (isSafety) {
+        html += `<button class="action-btn action-btn-danger" onclick="deleteDiversion()"><i class="fas fa-trash"></i> Delete</button>`;
+    }
+
+    container.innerHTML = html || '<p style="font-size:0.85rem;color:#94a3b8;">No actions available.</p>';
+}
+
+function populateEditForm(d) {
+    document.getElementById('editFlight').value = d.flight_number || '';
+    document.getElementById('editAircraft').value = d.aircraft_registration || '';
+    document.getElementById('editDivertedTo').value = d.diverted_to || '';
+    const sel = document.getElementById('editStatus');
+    sel.innerHTML = DIVERSION_STATUSES.map(s => `<option value="${s}" ${d.status === s ? 'selected' : ''}>${s}</option>`).join('');
+    document.getElementById('editFuelCost').value = d.additional_fuel_cost || '';
+    document.getElementById('editPassengers').value = d.passenger_impact || '';
+    document.getElementById('editDelay').value = d.delay_minutes || '';
+}
+
+async function changeStatus(newStatus) {
+    try {
+        await DiversionsAPI.update(diversionData.id, { status: newStatus });
+        showMessage(`Status changed to ${newStatus}`, 'success');
+        diversionData = await DiversionsAPI.get(diversionData.id);
+        renderDiversion();
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+async function saveEdit() {
+    const data = {
+        flight_number: document.getElementById('editFlight').value,
+        aircraft_registration: document.getElementById('editAircraft').value,
+        diverted_to: document.getElementById('editDivertedTo').value,
+        status: document.getElementById('editStatus').value,
+        additional_fuel_cost: parseFloat(document.getElementById('editFuelCost').value) || null,
+        passenger_impact: parseInt(document.getElementById('editPassengers').value) || null,
+        delay_minutes: parseInt(document.getElementById('editDelay').value) || null,
+    };
+    Object.keys(data).forEach(k => { if (data[k] === '' || data[k] === null) delete data[k]; });
+    try {
+        await DiversionsAPI.update(diversionData.id, data);
+        showMessage('Updated successfully', 'success');
+        diversionData = await DiversionsAPI.get(diversionData.id);
+        renderDiversion();
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+async function linkToHazard() {
+    const hid = prompt('Enter Hazard ID (hazard_id) to link:');
+    if (!hid) return;
+    try {
+        await DiversionsAPI.linkToHazard(diversionData.id, hid.trim());
+        showMessage('Linked to hazard successfully', 'success');
+        diversionData = await DiversionsAPI.get(diversionData.id);
+        renderDiversion();
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+async function unlinkHazard() {
+    if (!confirm('Unlink this diversion from its hazard?')) return;
+    try {
+        await DiversionsAPI.unlinkFromHazard(diversionData.id);
+        showMessage('Unlinked from hazard', 'success');
+        diversionData = await DiversionsAPI.get(diversionData.id);
+        renderDiversion();
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+async function deleteDiversion() {
+    if (!confirm('Delete this diversion permanently?')) return;
+    try {
+        await DiversionsAPI.delete(diversionData.id);
+        window.location.href = '/flight_diversions/index.html';
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+}
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+}
+
+function showError(msg) {
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('errorIndicator').style.display = 'block';
+    document.getElementById('errorText').textContent = msg;
+}
+</script>
+</body>
+</html>

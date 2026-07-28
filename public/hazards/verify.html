@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify CAP - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; font-family: inherit; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.15); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .outcome-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; }
+        .outcome-option { padding: 1rem; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.15s; }
+        .outcome-option:hover { border-color: #1a73e8; background: #f0f6ff; }
+        .outcome-option.selected { border-color: #1a73e8; background: #e8f0fe; }
+        .outcome-option .icon { font-size: 1.5rem; margin-bottom: 0.35rem; }
+        .outcome-option .title { font-weight: 600; font-size: 0.9rem; }
+        .outcome-option .desc { font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; }
+        .outcome-accepted .icon { color: #2e7d32; }
+        .outcome-revision .icon { color: #d97706; }
+        .outcome-ineffective .icon { color: #dc3545; }
+        .outcome-overdue .icon { color: #7c3aed; }
+        .conditional-section { display: none; padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem; }
+        .conditional-section.visible { display: block; }
+        .btn-primary { background: #1a73e8; color: #fff; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .outcome-selector { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/hazards/detail.html" id="backLink" class="back-link"><i class="fas fa-arrow-left"></i> Back to Hazard</a>
+
+    <div id="message"></div>
+
+    <div class="card">
+        <h2><i class="fas fa-clipboard-check"></i> CAP Verification</h2>
+        <p style="font-size:0.85rem;color:#64748b;margin-bottom:1.25rem;">
+            Review the completed CAP and verify its effectiveness. The outcome determines the next step in the workflow.
+        </p>
+
+        <div id="hazardSummary" style="display:none;background:#f8fafc;padding:1rem;border-radius:8px;margin-bottom:1.25rem;">
+            <div style="font-size:0.85rem;font-weight:600;color:#002f6c;" id="hazardTitle"></div>
+            <div style="font-size:0.8rem;color:#64748b;margin-top:0.25rem;">
+                <span id="hazardId"></span> &middot;
+                <span id="hazardStatus"></span> &middot;
+                <span id="capRef"></span>
+            </div>
+        </div>
+
+        <form id="verificationForm">
+            <label style="display:block;font-size:0.85rem;font-weight:600;color:#475569;margin-bottom:0.5rem;">Verification Outcome</label>
+            <div class="outcome-selector" id="outcomeSelector">
+                <div class="outcome-option outcome-accepted" data-value="Accepted" onclick="selectOutcome('Accepted')">
+                    <div class="icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="title">Accepted</div>
+                    <div class="desc">CAP is effective. Proceed to closure.</div>
+                </div>
+                <div class="outcome-option outcome-revision" data-value="Revision Required" onclick="selectOutcome('Revision Required')">
+                    <div class="icon"><i class="fas fa-undo-alt"></i></div>
+                    <div class="title">Revision Required</div>
+                    <div class="desc">CAP needs revision.</div>
+                </div>
+                <div class="outcome-option outcome-ineffective" data-value="Ineffective" onclick="selectOutcome('Ineffective')">
+                    <div class="icon"><i class="fas fa-times-circle"></i></div>
+                    <div class="title">Ineffective</div>
+                    <div class="desc">CAP failed. Reopen hazard.</div>
+                </div>
+                <div class="outcome-option outcome-overdue" data-value="Overdue" onclick="selectOutcome('Overdue')">
+                    <div class="icon"><i class="fas fa-clock"></i></div>
+                    <div class="title">Overdue</div>
+                    <div class="desc">Escalation required.</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="comments">Comments</label>
+                <textarea id="comments" rows="4" placeholder="Describe the verification findings, evidence reviewed, and rationale for the outcome..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="evidence">Evidence URLs (one per line)</label>
+                <textarea id="evidence" rows="3" placeholder="https://..."></textarea>
+            </div>
+
+            <div id="revisionSection" class="conditional-section">
+                <h3 style="font-size:0.9rem;color:#d97706;margin:0 0 0.75rem;"><i class="fas fa-undo-alt"></i> Revision Details</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="revisionDeadline">Revision Deadline</label>
+                        <input type="date" id="revisionDeadline">
+                    </div>
+                    <div class="form-group">
+                        <label for="revisionNotes">Revision Notes</label>
+                        <input type="text" id="revisionNotes" placeholder="What needs to be revised?">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+                <button type="submit" class="btn-primary" id="submitBtn"><i class="fas fa-paper-plane"></i> Submit Verification</button>
+                <button type="button" class="btn-secondary" onclick="window.history.back()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/hazards.js"></script>
+<script src="/js/can_cap.js"></script>
+<script src="/js/verification.js"></script>
+<script>
+let hazardData = null;
+let canData = null;
+let selectedOutcome = null;
+
+firebase.auth().onAuthStateChanged(function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    const params = new URLSearchParams(window.location.search);
+    const hid = params.get('hazard_id');
+    const cid = params.get('can_id');
+    if (!hid) { showMessage('No hazard ID provided', 'error'); return; }
+    document.getElementById('backLink').href = `/hazards/detail.html?id=${hid}`;
+    loadData(hid, cid);
+});
+
+async function loadData(hazardId, canId) {
+    try {
+        hazardData = await HazardsAPI.get(hazardId);
+        document.getElementById('hazardTitle').textContent = hazardData.title || '-';
+        document.getElementById('hazardId').textContent = hazardData.hazard_id || hazardData.id;
+        document.getElementById('hazardStatus').innerHTML = `<span class="badge ${hazardStatusBadgeClass(hazardData.status)}">${hazardData.status}</span>`;
+        document.getElementById('hazardSummary').style.display = 'block';
+
+        if (canId) {
+            canData = await CanCapAPI.getCan(canId);
+            document.getElementById('capRef').textContent = `CAN: ${canData.can_reference || canId}`;
+        }
+    } catch (err) {
+        showMessage('Error loading data: ' + err.message, 'error');
+    }
+}
+
+function selectOutcome(value) {
+    selectedOutcome = value;
+    document.querySelectorAll('.outcome-option').forEach(el => {
+        el.classList.toggle('selected', el.dataset.value === value);
+    });
+    const revSection = document.getElementById('revisionSection');
+    revSection.classList.toggle('visible', value === 'Revision Required');
+}
+
+document.getElementById('verificationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (!selectedOutcome) { showMessage('Please select a verification outcome', 'error'); return; }
+    if (!hazardData) { showMessage('Hazard data not loaded', 'error'); return; }
+
+    const evidenceText = document.getElementById('evidence').value.trim();
+    const evidence = evidenceText ? evidenceText.split('\n').map(s => s.trim()).filter(s => s) : [];
+
+    const data = {
+        hazard_id: hazardData.id,
+        cap_id: canData ? canData.id : '',
+        outcome: selectedOutcome,
+        comments: document.getElementById('comments').value.trim() || null,
+        evidence: evidence.length > 0 ? evidence : null,
+    };
+
+    if (selectedOutcome === 'Revision Required') {
+        data.revision_deadline = document.getElementById('revisionDeadline').value
+            ? new Date(document.getElementById('revisionDeadline').value).toISOString() : null;
+        data.revision_notes = document.getElementById('revisionNotes').value.trim() || null;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+    try {
+        const result = await VerificationAPI.createVerification(hazardData.id, data);
+        showMessage(`Verification submitted: ${selectedOutcome}`, 'success');
+        setTimeout(() => {
+            window.location.href = `/hazards/detail.html?id=${hazardData.id}`;
+        }, 1500);
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Verification';
+    }
+});
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 5000);
+}
+</script>
+</body>
+</html>

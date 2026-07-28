@@ -11,7 +11,7 @@ from app.core.logging import setup_logging, RequestLoggingMiddleware
 from app.core.metrics import router as metrics_router
 from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
 from app.firebase import initialize_firebase, is_firebase_ready
-from app.routes import reports, dashboard, auth, admin
+from app.routes import reports, dashboard, auth, admin, hazards, can_cap, verification, reporting, flight_diversions
 
 setup_logging()
 
@@ -102,11 +102,24 @@ app.include_router(auth.router, prefix=settings.API_PREFIX_AUTH, tags=["Authenti
 app.include_router(reports.router, prefix=settings.API_PREFIX_REPORTS, tags=["Reports"])
 app.include_router(dashboard.router, prefix=settings.API_PREFIX_DASHBOARD, tags=["Dashboard"])
 app.include_router(admin.router, prefix=settings.API_PREFIX_ADMIN, tags=["Admin"])
+app.include_router(hazards.router, prefix=settings.API_PREFIX_HAZARDS, tags=["Hazards"])
+app.include_router(can_cap.router, prefix=settings.API_PREFIX_CAN_CAP, tags=["CAN/CAP"])
 
 app.include_router(auth.router, prefix=settings.API_PREFIX_AUTH_LEGACY, tags=["Authentication (Legacy)"], include_in_schema=False)
 app.include_router(reports.router, prefix=settings.API_PREFIX_REPORTS_LEGACY, tags=["Reports (Legacy)"], include_in_schema=False)
 app.include_router(dashboard.router, prefix=settings.API_PREFIX_DASHBOARD_LEGACY, tags=["Dashboard (Legacy)"], include_in_schema=False)
 app.include_router(admin.router, prefix=settings.API_PREFIX_ADMIN_LEGACY, tags=["Admin (Legacy)"], include_in_schema=False)
+app.include_router(hazards.router, prefix=settings.API_PREFIX_HAZARDS_LEGACY, tags=["Hazards (Legacy)"], include_in_schema=False)
+app.include_router(can_cap.router, prefix=settings.API_PREFIX_CAN_CAP_LEGACY, tags=["CAN/CAP (Legacy)"], include_in_schema=False)
+
+app.include_router(verification.router, prefix=settings.API_PREFIX_VERIFICATION, tags=["Verification & Closure"])
+app.include_router(verification.router, prefix=settings.API_PREFIX_VERIFICATION_LEGACY, tags=["Verification & Closure (Legacy)"], include_in_schema=False)
+
+app.include_router(reporting.router, prefix=settings.API_PREFIX_REPORTING, tags=["Reporting"])
+app.include_router(reporting.router, prefix=settings.API_PREFIX_REPORTING_LEGACY, tags=["Reporting (Legacy)"], include_in_schema=False)
+
+app.include_router(flight_diversions.router, prefix=settings.API_PREFIX_FLIGHT_DIVERSIONS, tags=["Flight Diversions"])
+app.include_router(flight_diversions.router, prefix=settings.API_PREFIX_FLIGHT_DIVERSIONS_LEGACY, tags=["Flight Diversions (Legacy)"], include_in_schema=False)
 
 app.include_router(metrics_router, prefix="", tags=["Metrics"])
 

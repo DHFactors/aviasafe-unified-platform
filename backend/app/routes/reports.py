@@ -15,9 +15,11 @@ from typing import List, Dict, Any, Optional
 from loguru import logger
 
 from app.models.report import ReportCreate, MorCreate, ReportResponse, ReportListItem
+from app.models.hazard import HazardCreate, HazardSource, HazardTaxonomy, HazardPriority
 from app.middleware.auth import get_tenant_user, get_safety_manager
 from app.services.report_service import ReportService
-from app.services.risk_matrix import compute_risk_index, get_risk_level
+from app.services.hazard_service import HazardService
+from app.services.risk_matrix import compute_risk_index, get_risk_level, classify_risk
 
 router = APIRouter()
 
@@ -38,6 +40,7 @@ async def submit_report(
     service = ReportService(tenant_id)
     stored = service.create_report(report.model_dump(), user)
     background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
+    _auto_create_hazard_from_report(stored, user)
     return _to_report_response(stored)
 
 
@@ -82,6 +85,7 @@ async def submit_mor(
 
     stored = service.create_report(payload, user)
     background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
+    _auto_create_hazard_from_report(stored, user)
     return _to_report_response(stored)
 
 
@@ -113,6 +117,7 @@ async def submit_vsr(
 
     stored = service.create_report(payload, user)
     background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
+    _auto_create_hazard_from_report(stored, user)
     return _to_report_response(stored)
 
 
@@ -231,3 +236,68 @@ def _to_list_item(data: dict) -> dict:
         "operator": data.get("operator"),
         "flight_phase": data.get("flight_phase"),
     }
+
+
+def _determine_hazard_taxonomy(occurrence_category: Optional[str]) -> str:
+    taxonomy_map = {
+        "BIRD": "Wildlife",
+        "FIRE": "Technical",
+        "ENG": "Technical",
+        "SYS": "Technical",
+        "MAC": "Technical",
+        "CFIT": "Organizational-Facilities",
+        "GCOL": "Organizational-Facilities",
+        "RI": "Organizational-Facilities",
+        "RE": "Organizational-Facilities",
+        "LOCI": "Organizational-Facilities",
+        "CABIN": "Human Factors",
+        "PRO": "Organizational-Documentation, Processes and Procedures",
+        "ARC": "Organizational-Documentation, Processes and Procedures",
+        "WX": "Environmental",
+    }
+    return taxonomy_map.get(occurrence_category or "", "Other")
+
+
+def _determine_hazard_priority(severity_level: Optional[int], probability_level: Optional[int]) -> str:
+    if severity_level is None or probability_level is None:
+        return "M"
+    risk = severity_level * probability_level
+    if risk >= 12:
+        return "H"
+    elif risk >= 6:
+        return "M"
+    else:
+        return "L"
+
+
+def _auto_create_hazard_from_report(stored: dict, user: dict):
+    try:
+        tenant_id = stored.get("tenant_id")
+        if not tenant_id:
+            return
+        source = HazardSource.VSR if stored.get("report_type") == "voluntary" else HazardSource.MOR
+        sev = stored.get("severity_level")
+        prob = stored.get("probability_level")
+        taxonomy_str = _determine_hazard_taxonomy(stored.get("occurrence_category"))
+        priority_str = _determine_hazard_priority(sev, prob)
+
+        hazard_payload = HazardCreate(
+            title=(stored.get("narrative") or "")[:100],
+            description=stored.get("narrative", ""),
+            source=source,
+            source_id=stored.get("id"),
+            source_url=f"/report/detail.html?id={stored.get('id')}",
+            adrep_category=stored.get("occurrence_category"),
+            occurrence_type=stored.get("occurrence_type"),
+            taxonomy=HazardTaxonomy(taxonomy_str) if taxonomy_str in [e.value for e in HazardTaxonomy] else HazardTaxonomy.OTHER,
+            severity=sev,
+            probability=prob,
+            risk_index=compute_risk_index(sev, prob) if sev and prob else None,
+            priority=HazardPriority(priority_str) if priority_str in [e.value for e in HazardPriority] else HazardPriority.MEDIUM,
+            tenant_id=tenant_id,
+        )
+        service = HazardService(tenant_id)
+        service.create_hazard(hazard_payload.model_dump(), user)
+        logger.info(f"Auto-created hazard from report {stored.get('id')}")
+    except Exception as e:
+        logger.warning(f"Failed to auto-create hazard from report: {e}")

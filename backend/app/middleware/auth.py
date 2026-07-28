@@ -92,3 +92,35 @@ async def get_safety_manager(
             detail="Tenant access required for AIRLINE_ADMIN"
         )
     return user
+
+
+async def get_responsible_manager(
+    user: Dict[str, Any] = Depends(get_current_user)
+) -> Dict[str, Any]:
+    if user.get('role') not in settings.CROSS_TENANT_ROLES and user.get('role') not in ("AIRLINE_ADMIN", "USER"):
+        raise HTTPException(
+            status_code=403,
+            detail="Responsible Manager, AIRLINE_ADMIN, or CAAN_SMD role required"
+        )
+    if not user.get('tenant_id') and user.get('role') not in settings.CROSS_TENANT_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail="Tenant access required"
+        )
+    return user
+
+
+async def get_accountable_executive(
+    user: Dict[str, Any] = Depends(get_current_user)
+) -> Dict[str, Any]:
+    if user.get('role') not in settings.CROSS_TENANT_ROLES and user.get('role') != "AIRLINE_ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Accountable Executive, AIRLINE_ADMIN, or CAAN_SMD role required"
+        )
+    if user.get('role') == "AIRLINE_ADMIN" and not user.get('tenant_id'):
+        raise HTTPException(
+            status_code=403,
+            detail="Tenant access required for AIRLINE_ADMIN"
+        )
+    return user

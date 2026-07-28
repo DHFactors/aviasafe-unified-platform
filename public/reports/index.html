@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+        .page-header h1 { font-size: 1.25rem; color: #002f6c; margin: 0; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; border: none; transition: all 0.15s; }
+        .btn-primary { background: #1a73e8; color: #fff; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-success { background: #2e7d32; color: #fff; }
+        .btn-success:hover { background: #1b5e20; }
+        .btn-outline { background: transparent; color: #475569; border: 1px solid #e2e8f0; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-completed { background: #e8f5e9; color: #2e7d32; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-critical { background: #fde8e8; color: #dc3545; }
+        .badge-default { background: #f1f5f9; color: #64748b; }
+        .filter-bar { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+        .filter-bar select, .filter-bar input { padding: 0.4rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem; background: #fff; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; padding: 0.75rem 1rem; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
+        tr:hover td { background: #f8fafc; }
+        .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 0.75rem; }
+        .tab-bar { display: flex; gap: 0; margin-bottom: 1.25rem; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .tab-btn { flex: 1; padding: 0.75rem 1rem; border: none; background: transparent; font-size: 0.85rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.15s; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: #1a73e8; border-bottom-color: #1a73e8; background: #f0f6ff; }
+        .tab-btn:hover:not(.active) { background: #f8fafc; }
+        @media (max-width: 600px) { .page-header { flex-direction: column; align-items: stretch; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <div class="page-header">
+        <h1><i class="fas fa-chart-bar" style="color:#1a73e8;"></i> Reports & Analytics</h1>
+        <div>
+            <a href="/reports/generate.html" class="btn btn-primary"><i class="fas fa-plus"></i> Generate Report</a>
+            <a href="/safety.html" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Dashboard</a>
+        </div>
+    </div>
+
+    <div id="message" style="padding:0.75rem 1rem;border-radius:6px;margin-bottom:1rem;display:none;font-size:0.85rem;"></div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('quarterly')" id="tabQuarterly"><i class="fas fa-calendar-alt"></i> Quarterly Reports</button>
+        <button class="tab-btn" onclick="switchTab('annual')" id="tabAnnual"><i class="fas fa-calendar-check"></i> Annual Reports</button>
+    </div>
+
+    <div class="card" id="quarterlySection">
+        <h2><i class="fas fa-calendar-alt"></i> Quarterly Reports</h2>
+        <div class="filter-bar">
+            <label style="font-size:0.85rem;font-weight:500;">Year:</label>
+            <select id="qYearFilter" onchange="loadQuarterly()">
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadQuarterly()"><i class="fas fa-rotate"></i> Refresh</button>
+        </div>
+        <div id="quarterlyTableContainer">
+            <table>
+                <thead><tr><th>Period</th><th>Year</th><th>Quarter</th><th>Status</th><th>Generated</th><th>Actions</th></tr></thead>
+                <tbody id="quarterlyBody"></tbody>
+            </table>
+            <div id="quarterlyEmpty" class="empty-state" style="display:none;">
+                <i class="fas fa-inbox"></i><p>No quarterly reports yet.</p>
+                <a href="/reports/generate.html" class="btn btn-primary btn-sm" style="margin-top:0.5rem;">Generate Report</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="annualSection" style="display:none;">
+        <h2><i class="fas fa-calendar-check"></i> Annual Reports</h2>
+        <div class="filter-bar">
+            <label style="font-size:0.85rem;font-weight:500;">Year:</label>
+            <select id="aYearFilter" onchange="loadAnnual()">
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAnnual()"><i class="fas fa-rotate"></i> Refresh</button>
+        </div>
+        <div id="annualTableContainer">
+            <table>
+                <thead><tr><th>Period</th><th>Year</th><th>Status</th><th>Generated</th><th>Actions</th></tr></thead>
+                <tbody id="annualBody"></tbody>
+            </table>
+            <div id="annualEmpty" class="empty-state" style="display:none;">
+                <i class="fas fa-inbox"></i><p>No annual reports yet.</p>
+                <a href="/reports/generate.html" class="btn btn-primary btn-sm" style="margin-top:0.5rem;">Generate Report</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/reports.js"></script>
+<script>
+let currentTab = 'quarterly';
+
+firebase.auth().onAuthStateChanged(function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+    loadQuarterly();
+    loadAnnual();
+});
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.id === `tab${tab.charAt(0).toUpperCase()+tab.slice(1)}`));
+    document.getElementById('quarterlySection').style.display = tab === 'quarterly' ? 'block' : 'none';
+    document.getElementById('annualSection').style.display = tab === 'annual' ? 'block' : 'none';
+}
+
+async function loadQuarterly() {
+    const body = document.getElementById('quarterlyBody');
+    const empty = document.getElementById('quarterlyEmpty');
+    const year = parseInt(document.getElementById('qYearFilter').value);
+    try {
+        const list = await ReportsAPI.listQuarterly({ year });
+        if (!list || list.length === 0) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+        body.innerHTML = list.map(r => `
+            <tr>
+                <td><strong>${r.period}</strong></td>
+                <td>${r.year}</td>
+                <td>Q${r.quarter}</td>
+                <td><span class="badge ${reportStatusBadgeClass(r.status)}">${r.status}</span></td>
+                <td>${formatReportDate(r.generated_at)}</td>
+                <td>
+                    <a href="/reports/view.html?id=${r.id}&type=quarterly" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a>
+                    <button class="btn btn-outline btn-sm" onclick="downloadPdf('${r.id}', 'quarterly')"><i class="fas fa-download"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#dc3545;">Error: ${err.message}</td></tr>`;
+    }
+}
+
+async function loadAnnual() {
+    const body = document.getElementById('annualBody');
+    const empty = document.getElementById('annualEmpty');
+    const year = parseInt(document.getElementById('aYearFilter').value);
+    try {
+        const list = await ReportsAPI.listAnnual({ year });
+        if (!list || list.length === 0) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+        body.innerHTML = list.map(r => `
+            <tr>
+                <td><strong>${r.period}</strong></td>
+                <td>${r.year}</td>
+                <td><span class="badge ${reportStatusBadgeClass(r.status)}">${r.status}</span></td>
+                <td>${formatReportDate(r.generated_at)}</td>
+                <td>
+                    <a href="/reports/view.html?id=${r.id}&type=annual" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a>
+                    <button class="btn btn-outline btn-sm" onclick="downloadPdf('${r.id}', 'annual')"><i class="fas fa-download"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc3545;">Error: ${err.message}</td></tr>`;
+    }
+}
+</script>
+</body>
+</html>

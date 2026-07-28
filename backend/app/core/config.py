@@ -17,10 +17,20 @@ class Settings(BaseSettings):
     API_PREFIX_REPORTS: str = "/api/v1/reports"
     API_PREFIX_DASHBOARD: str = "/api/v1/dashboard"
     API_PREFIX_ADMIN: str = "/api/v1/admin"
+    API_PREFIX_HAZARDS: str = "/api/v1/hazards"
+    API_PREFIX_CAN_CAP: str = "/api/v1/cans"
+    API_PREFIX_VERIFICATION: str = "/api/v1/verification"
+    API_PREFIX_REPORTING: str = "/api/v1/reporting"
+    API_PREFIX_FLIGHT_DIVERSIONS: str = "/api/v1/flight-diversions"
     API_PREFIX_AUTH_LEGACY: str = "/api/auth"
     API_PREFIX_REPORTS_LEGACY: str = "/api/reports"
     API_PREFIX_DASHBOARD_LEGACY: str = "/api/dashboard"
     API_PREFIX_ADMIN_LEGACY: str = "/api/admin"
+    API_PREFIX_HAZARDS_LEGACY: str = "/api/hazards"
+    API_PREFIX_CAN_CAP_LEGACY: str = "/api/cans"
+    API_PREFIX_VERIFICATION_LEGACY: str = "/api/verification"
+    API_PREFIX_REPORTING_LEGACY: str = "/api/reporting"
+    API_PREFIX_FLIGHT_DIVERSIONS_LEGACY: str = "/api/flight-diversions"
     DEBUG: bool = False
 
     # ── CORS ──

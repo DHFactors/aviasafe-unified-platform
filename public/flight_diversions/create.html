@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Diversion - AviaSAFE</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        .page { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 i { width: 1.25rem; text-align: center; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; font-family: inherit; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.15); }
+        .btn-primary { background: #1a73e8; color: #fff; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+        #message { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.85rem; }
+        #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        @media (max-width: 600px) { .form-row, .form-row-3 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <a href="/flight_diversions/index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Diversions</a>
+    <div id="message"></div>
+
+    <div class="card">
+        <h2><i class="fas fa-plus-circle"></i> Report Flight Diversion</h2>
+        <p style="font-size:0.85rem;color:#64748b;margin-bottom:1.25rem;">
+            Record a flight diversion event. All fields marked with * are required.
+        </p>
+
+        <form id="diversionForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Date & Time *</label>
+                    <input type="datetime-local" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label>Flight Number *</label>
+                    <input type="text" id="flightNumber" placeholder="e.g. STA101" required maxlength="20">
+                </div>
+            </div>
+
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label>Aircraft Registration *</label>
+                    <input type="text" id="aircraftReg" placeholder="e.g. 9N-ABC" required maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label>Sector From *</label>
+                    <input type="text" id="sectorFrom" placeholder="ICAO e.g. VNKT" required maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label>Sector To *</label>
+                    <input type="text" id="sectorTo" placeholder="ICAO e.g. VNSI" required maxlength="10">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Diverted To *</label>
+                    <input type="text" id="divertedTo" placeholder="ICAO e.g. VNBG" required maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label>Reason *</label>
+                    <select id="reason" required>
+                        <option value="">Select Reason...</option>
+                        <option value="Weather">Weather</option>
+                        <option value="Technical">Technical</option>
+                        <option value="Medical">Medical</option>
+                        <option value="Fuel">Fuel</option>
+                        <option value="Security">Security</option>
+                        <option value="Operational">Operational</option>
+                        <option value="Airport Closure">Airport Closure</option>
+                        <option value="Air Traffic Control">Air Traffic Control</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Reason Details</label>
+                <input type="text" id="reasonDetails" placeholder="Additional details about the reason...">
+            </div>
+
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label>Captain</label>
+                    <input type="text" id="captain" placeholder="Captain name">
+                </div>
+                <div class="form-group">
+                    <label>First Officer</label>
+                    <input type="text" id="firstOfficer" placeholder="FO name">
+                </div>
+                <div class="form-group">
+                    <label>Air Hostess</label>
+                    <input type="text" id="airHostess" placeholder="CS name">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Description *</label>
+                <textarea id="description" rows="4" placeholder="Describe the diversion event in detail (min 10 characters)..." required></textarea>
+            </div>
+
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label>Additional Fuel Cost ($)</label>
+                    <input type="number" id="fuelCost" min="0" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Passenger Impact</label>
+                    <input type="number" id="passengerImpact" min="0" placeholder="Number of passengers">
+                </div>
+                <div class="form-group">
+                    <label>Delay (Minutes)</label>
+                    <input type="number" id="delayMinutes" min="0" placeholder="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Remarks</label>
+                <textarea id="remarks" rows="2" placeholder="Any additional remarks..."></textarea>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+                <button type="submit" class="btn-primary" id="submitBtn"><i class="fas fa-paper-plane"></i> Submit Diversion Report</button>
+                <button type="button" class="btn-secondary" onclick="window.location.href='/flight_diversions/index.html'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/flight_diversions.js"></script>
+<script>
+firebase.auth().onAuthStateChanged(function(user) {
+    if (!user) { window.location.href = '/login.html'; return; }
+});
+
+document.getElementById('diversionForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const data = {
+        date: new Date(document.getElementById('date').value).toISOString(),
+        flight_number: document.getElementById('flightNumber').value.trim(),
+        aircraft_registration: document.getElementById('aircraftReg').value.trim(),
+        sector_from: document.getElementById('sectorFrom').value.trim(),
+        sector_to: document.getElementById('sectorTo').value.trim(),
+        diverted_to: document.getElementById('divertedTo').value.trim(),
+        reason: document.getElementById('reason').value,
+        reason_details: document.getElementById('reasonDetails').value.trim() || null,
+        captain: document.getElementById('captain').value.trim() || null,
+        first_officer: document.getElementById('firstOfficer').value.trim() || null,
+        air_hostess: document.getElementById('airHostess').value.trim() || null,
+        description: document.getElementById('description').value.trim(),
+        additional_fuel_cost: parseFloat(document.getElementById('fuelCost').value) || null,
+        passenger_impact: parseInt(document.getElementById('passengerImpact').value) || null,
+        delay_minutes: parseInt(document.getElementById('delayMinutes').value) || null,
+        remarks: document.getElementById('remarks').value.trim() || null,
+    };
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+    try {
+        const result = await DiversionsAPI.create(data);
+        showMessage(`Diversion ${result.diversion_id} reported successfully!`, 'success');
+        setTimeout(() => {
+            window.location.href = `/flight_diversions/detail.html?id=${result.id}`;
+        }, 1500);
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Diversion Report';
+    }
+});
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 5000);
+}
+</script>
+</body>
+</html>

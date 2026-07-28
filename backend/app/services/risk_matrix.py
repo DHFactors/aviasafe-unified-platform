@@ -137,3 +137,24 @@ def get_icao_probability_from_likelihood(likelihood: Optional[str], risk_score: 
     if likelihood and likelihood in mapping:
         return mapping[likelihood]
     return get_icao_level_from_string(None, risk_score)
+
+
+def classify_risk(risk_index: int) -> str:
+    if risk_index <= 3:
+        return "Low"
+    elif risk_index <= 6:
+        return "Medium"
+    elif risk_index <= 12:
+        return "High"
+    else:
+        return "Very High"
+
+
+def risk_outcome(severity: int, probability: int) -> str:
+    risk_index = severity * probability
+    if risk_index <= 3:
+        return "Acceptable"
+    elif risk_index <= 6:
+        return "Tolerable"
+    else:
+        return "Intolerable"
