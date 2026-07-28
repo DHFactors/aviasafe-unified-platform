@@ -11,10 +11,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from loguru import logger
 from datetime import datetime, timezone
 
+from app.firebase import get_auth
 from app.middleware.auth import get_safety_manager, get_admin_user
 from app.services.risk_matrix import (
     get_risk_matrix_config,
@@ -83,3 +84,43 @@ async def update_risk_matrix(
     set_risk_matrix_config(tenant_id, data)
     logger.info(f"Risk matrix updated for tenant {tenant_id} by {user['uid']}")
     return data
+
+
+class SetupClaimsRequest(BaseModel):
+    setup_key: str
+    users: List[dict]
+
+
+SETUP_SECRET = "aviasafe-e2e-setup-2026"
+
+
+@router.post("/setup-claims")
+async def setup_test_user_claims(req: SetupClaimsRequest):
+    """One-time endpoint to set custom claims on test users.
+    Protected by a setup key to prevent unauthorized use.
+    """
+    if req.setup_key != SETUP_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid setup key")
+
+    results = []
+    auth = get_auth()
+    for u in req.users:
+        email = u.get("email")
+        role = u.get("role", "USER")
+        tenant_id = u.get("tenant_id")
+        if not email:
+            results.append({"email": email, "status": "error", "detail": "email required"})
+            continue
+        try:
+            user_record = auth.get_user_by_email(email)
+            claims = {"role": role}
+            if tenant_id:
+                claims["tenant_id"] = tenant_id
+            auth.set_custom_user_claims(user_record.uid, claims)
+            results.append({"email": email, "uid": user_record.uid, "role": role, "tenant_id": tenant_id, "status": "ok"})
+            logger.info(f"Claims set for {email}: role={role}, tenant_id={tenant_id}")
+        except Exception as e:
+            results.append({"email": email, "status": "error", "detail": str(e)})
+            logger.error(f"Failed to set claims for {email}: {e}")
+
+    return {"success": True, "results": results}
