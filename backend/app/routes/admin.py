@@ -175,44 +175,55 @@ async def provision_20_airlines(req: ProvisionRequest):
         record = {"tenant_id": tid, "email": email, "name": name, "status": "pending"}
 
         try:
-            user = auth.create_user(
-                email=email,
-                password=STANDARD_PASSWORD,
-                email_verified=True,
-                display_name=f"{name} Safety Manager",
-            )
-            uid = user.uid
+            try:
+                user = auth.create_user(
+                    email=email,
+                    password=STANDARD_PASSWORD,
+                    email_verified=True,
+                    display_name=f"{name} Safety Manager",
+                )
+                record["action"] = "created"
+            except Exception as create_err:
+                if "email already exists" in str(create_err).lower():
+                    user = auth.get_user_by_email(email)
+                    record["action"] = "existing"
+                else:
+                    raise
 
+            uid = user.uid
             auth.set_custom_user_claims(uid, {"role": "AIRLINE_ADMIN", "tenant_id": tid})
 
-            db.collection("tenants").document(tid).set({
-                "tenant_id": tid,
-                "name": name,
-                "icao": icao,
-                "country": "Nepal",
-                "active": True,
-                "safety_manager": {
-                    "email": email,
-                    "name": f"{name} Safety Manager",
-                    "uid": uid,
-                },
-                "survey_config": {
-                    "open": True,
-                    "open_date": "2026-08-01",
-                    "close_date": "2026-08-31",
-                },
-                "created_at": now,
-                "updated_at": now,
-            })
+            tenant_ref = db.collection("tenants").document(tid)
+            tenant_doc = tenant_ref.get()
+
+            if not tenant_doc.exists:
+                tenant_ref.set({
+                    "tenant_id": tid,
+                    "name": name,
+                    "icao": icao,
+                    "country": "Nepal",
+                    "active": True,
+                    "safety_manager": {
+                        "email": email,
+                        "name": f"{name} Safety Manager",
+                        "uid": uid,
+                    },
+                    "survey_config": {
+                        "open": True,
+                        "open_date": "2026-08-01",
+                        "close_date": "2026-08-31",
+                    },
+                    "created_at": now,
+                    "updated_at": now,
+                })
+                record["tenant"] = "created"
+            else:
+                record["tenant"] = "exists"
 
             record["uid"] = uid
             record["status"] = "ok"
             logger.info(f"Provisioned {name} ({tid}) -> {email} / {uid}")
 
-        except auth.EmailAlreadyExistsError:
-            record["status"] = "skipped"
-            record["detail"] = "email already exists"
-            logger.warning(f"Provision skipped for {email}: already exists")
         except Exception as e:
             record["status"] = "error"
             record["detail"] = str(e)
