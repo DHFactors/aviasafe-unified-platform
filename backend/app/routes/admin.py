@@ -116,8 +116,10 @@ async def setup_test_user_claims(req: SetupClaimsRequest):
             claims = {"role": role}
             if tenant_id:
                 claims["tenant_id"] = tenant_id
-            auth.set_custom_user_claims(user_record.uid, claims)
-            results.append({"email": email, "uid": user_record.uid, "role": role, "tenant_id": tenant_id, "status": "ok"})
+            uid = user_record.uid
+            auth.set_custom_user_claims(uid, claims)
+            auth.revoke_refresh_tokens(uid)
+            results.append({"email": email, "uid": uid, "role": role, "tenant_id": tenant_id, "status": "ok"})
             logger.info(f"Claims set for {email}: role={role}, tenant_id={tenant_id}")
         except Exception as e:
             results.append({"email": email, "status": "error", "detail": str(e)})
@@ -192,6 +194,7 @@ async def provision_20_airlines(req: ProvisionRequest):
 
             uid = user.uid
             auth.set_custom_user_claims(uid, {"role": "AIRLINE_ADMIN", "tenant_id": tid})
+            auth.revoke_refresh_tokens(uid)
 
             tenant_ref = db.collection("tenants").document(tid)
             tenant_doc = tenant_ref.get()
