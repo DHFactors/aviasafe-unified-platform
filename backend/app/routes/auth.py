@@ -40,11 +40,39 @@ class RegisterRequest(BaseModel):
     tenant_id: Optional[str] = None
 
 
-@router.post("/verify", response_model=LoginResponse)
+from app.firebase import get_auth
+
+class DebugVerifyRequest(BaseModel):
+    id_token: str
+
+@router.post("/verify")
 async def verify_token(request: LoginRequest):
     decoded_token = verify_firebase_token(request.id_token)
     if not decoded_token:
         raise HTTPException(status_code=401, detail="Invalid token")
+    role = decoded_token.get('role', settings.ROLE_DEFAULT)
+    tenant_id = decoded_token.get('tenant_id')
+    return {
+        "uid": decoded_token['uid'],
+        "email": decoded_token.get('email', ''),
+        "role": role,
+        "tenant_id": tenant_id,
+    }
+
+
+@router.post("/debug-verify")
+async def debug_verify_token(request: DebugVerifyRequest):
+    """Debug endpoint that returns detailed error info on verification failure."""
+    try:
+        auth = get_auth()
+        decoded = auth.verify_id_token(request.id_token, check_revoked=False)
+        return {"success": True, "decoded": dict(decoded)}
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__,
+        }
 
     role = decoded_token.get('role', settings.ROLE_DEFAULT)
     tenant_id = decoded_token.get('tenant_id')

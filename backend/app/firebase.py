@@ -94,6 +94,8 @@ def verify_firebase_token(token: str) -> Optional[Dict[str, Any]]:
         return None
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return None
 
 
