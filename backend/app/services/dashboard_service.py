@@ -84,9 +84,16 @@ class DashboardService:
     # Public: CAAN dashboard endpoints (cross-tenant, aggregated)
     # ------------------------------------------------------------------
 
+    def _caan_reports(self, **overrides) -> list:
+        try:
+            f = self._caan_filter(**overrides)
+            return self.repo.get_all_in_range(f)
+        except Exception as e:
+            logger.warning(f'CAAN dashboard query failed (missing index?): {e}')
+            return []
+
     def get_caan_overview(self, **overrides) -> Dict[str, Any]:
-        f = self._caan_filter(**overrides)
-        reports = self.repo.get_all_in_range(f)
+        reports = self._caan_reports(**overrides)
         kpis = MetricsService.calculate_kpis(reports)
         ai_kpis = MetricsService.calculate_ai_kpis(reports)
         org_kpis = MetricsService.calculate_org_kpis(reports)
@@ -100,8 +107,7 @@ class DashboardService:
         }
 
     def get_caan_trends(self, **overrides) -> Dict[str, Any]:
-        f = self._caan_filter(**overrides)
-        reports = self.repo.get_all_in_range(f)
+        reports = self._caan_reports(**overrides)
         trends = MetricsService.calculate_monthly_trends(reports)
 
         return {
@@ -111,8 +117,7 @@ class DashboardService:
         }
 
     def get_caan_risk(self, **overrides) -> Dict[str, Any]:
-        f = self._caan_filter(**overrides)
-        reports = self.repo.get_all_in_range(f)
+        reports = self._caan_reports(**overrides)
         dist = MetricsService.calculate_risk_distribution(reports)
 
         tenant_severity = self._tenant_severity_breakdown(reports)
@@ -122,13 +127,11 @@ class DashboardService:
         }
 
     def get_caan_hazards(self, **overrides) -> List[Dict[str, Any]]:
-        f = self._caan_filter(**overrides)
-        reports = self.repo.get_all_in_range(f)
+        reports = self._caan_reports(**overrides)
         return MetricsService.calculate_hazard_frequency(reports)
 
     def get_caan_benchmark(self, **overrides) -> Dict[str, Any]:
-        f = self._caan_filter(**overrides)
-        reports = self.repo.get_all_in_range(f)
+        reports = self._caan_reports(**overrides)
         anon_count = sum(1 for r in reports if r.get("is_anonymous"))
         total = len(reports) or 1
         return {
