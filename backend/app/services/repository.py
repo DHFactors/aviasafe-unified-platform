@@ -198,9 +198,9 @@ class ReportRepository:
     def _apply_filters(self, collection, filter: ReportFilter):
         query = collection
         if filter.date_from:
-            query = query.where("occurrence_date", ">=", filter.date_from)
+            query = query.where(filter.sort_by, ">=", filter.date_from)
         if filter.date_to:
-            query = query.where("occurrence_date", "<=", filter.date_to)
+            query = query.where(filter.sort_by, "<=", filter.date_to)
         if filter.report_type:
             query = query.where("report_type", "==", filter.report_type)
         if filter.status:
