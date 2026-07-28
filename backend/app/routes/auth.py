@@ -40,10 +40,9 @@ class RegisterRequest(BaseModel):
     tenant_id: Optional[str] = None
 
 
-from app.firebase import get_auth
-
 class DebugVerifyRequest(BaseModel):
     id_token: str
+
 
 @router.post("/verify")
 async def verify_token(request: LoginRequest):
@@ -62,7 +61,6 @@ async def verify_token(request: LoginRequest):
 
 @router.post("/debug-verify")
 async def debug_verify_token(request: DebugVerifyRequest):
-    """Debug endpoint that returns detailed error info on verification failure."""
     try:
         auth = get_auth()
         decoded = auth.verify_id_token(request.id_token, check_revoked=False)
@@ -73,17 +71,6 @@ async def debug_verify_token(request: DebugVerifyRequest):
             "error": str(e),
             "error_type": type(e).__name__,
         }
-
-    role = decoded_token.get('role', settings.ROLE_DEFAULT)
-    tenant_id = decoded_token.get('tenant_id')
-
-    return LoginResponse(
-        uid=decoded_token['uid'],
-        email=decoded_token.get('email', ''),
-        role=role,
-        tenant_id=tenant_id,
-        custom_claims={"role": role, "tenant_id": tenant_id}
-    )
 
 @router.post("/register")
 async def register_user(request: RegisterRequest):
