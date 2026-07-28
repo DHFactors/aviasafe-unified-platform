@@ -106,7 +106,7 @@ def create_custom_claims(uid: str, role: str, tenant_id: Optional[str] = None) -
         claims = {"role": role}
         if tenant_id:
             claims["tenant_id"] = tenant_id
-        auth.set_custom_user_claims(uid, claims)
+        auth.update_user(uid, custom_claims=claims)
         logger.info(f"Custom claims set for user {uid}: {claims}")
         return True
     except Exception as e:
