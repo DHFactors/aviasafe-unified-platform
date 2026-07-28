@@ -16,6 +16,7 @@ from datetime import datetime
 
 from app.middleware.auth import get_current_user, get_tenant_user, get_caan_user, get_admin_user
 from app.services.dashboard_service import DashboardService
+from loguru import logger
 
 router = APIRouter()
 
@@ -25,6 +26,31 @@ def _envelope(data: Any) -> Dict[str, Any]:
         "status": "success",
         "timestamp": datetime.now(),
         "data": data,
+    }
+
+
+def _empty_kpis():
+    return {
+        "total_reports": 0, "open_reports": 0, "closed_reports": 0,
+        "high_risk_reports": 0, "critical_reports": 0,
+        "anonymous_percentage": 0.0, "avg_closure_days": None,
+        "reporting_rate_trend": None, "repeat_occurrence_rate": None,
+    }
+
+
+def _empty_ai_kpis():
+    return {
+        "ai_processed": 0, "ai_pending": 0, "ai_failed": 0,
+        "avg_processing_time_ms": None, "avg_confidence": None,
+        "model_versions": {},
+    }
+
+
+def _empty_org_kpis():
+    return {
+        "active_reporters": 0, "reporting_frequency": None,
+        "corrective_actions_open": 0, "corrective_actions_closed": 0,
+        "safety_actions_overdue": 0, "investigation_backlog": 0,
     }
 
 
@@ -39,8 +65,25 @@ async def get_dashboard_overview(
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
     svc = DashboardService(user)
-    data = svc.get_airline_overview(days=days)
-    return _envelope(data)
+    try:
+        data = svc.get_airline_overview(days=days)
+        return _envelope(data)
+    except Exception as e:
+        logger.error(f"Dashboard overview failed for tenant {user.get('tenant_id')}: {e}")
+        return _envelope({
+            "kpis": _empty_kpis(),
+            "ai_kpis": _empty_ai_kpis(),
+            "org_kpis": _empty_org_kpis(),
+        })
+
+
+def _safe_airline(method_name: str, svc: DashboardService, **kwargs) -> dict:
+    try:
+        fn = getattr(svc, method_name)
+        return fn(**kwargs)
+    except Exception as e:
+        logger.error(f"{method_name} failed for tenant {svc.tenant_id}: {e}")
+        return {}
 
 
 @router.get("/recent")
@@ -52,7 +95,7 @@ async def get_recent_reports(
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
     svc = DashboardService(user)
-    data = svc.get_recent_reports(days=days, page=page, page_size=page_size, cursor=cursor)
+    data = _safe_airline("get_recent_reports", svc, days=days, page=page, page_size=page_size, cursor=cursor)
     return _envelope(data)
 
 
@@ -62,7 +105,7 @@ async def get_risk_distribution(
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
     svc = DashboardService(user)
-    data = svc.get_risk_distribution(days=days)
+    data = _safe_airline("get_risk_distribution", svc, days=days)
     return _envelope(data)
 
 
@@ -72,7 +115,7 @@ async def get_monthly_trends(
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
     svc = DashboardService(user)
-    data = svc.get_monthly_trends(days=days)
+    data = _safe_airline("get_monthly_trends", svc, days=days)
     return _envelope(data)
 
 
@@ -82,7 +125,7 @@ async def get_hazard_frequency(
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
     svc = DashboardService(user)
-    data = svc.get_hazard_frequency(days=days)
+    data = _safe_airline("get_hazard_frequency", svc, days=days)
     return _envelope(data)
 
 
@@ -92,7 +135,7 @@ async def get_actions_summary(
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
     svc = DashboardService(user)
-    data = svc.get_actions_summary(days=days)
+    data = _safe_airline("get_actions_summary", svc, days=days)
     return _envelope(data)
 
 
