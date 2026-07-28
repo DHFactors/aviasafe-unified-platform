@@ -24,7 +24,7 @@ const firebaseConfig = {
 
 // Centralized application configuration (single source of truth)
 const APP_CONFIG = {
-    apiBaseUrl: '',                      // Same-origin by default
+    apiBaseUrl: 'https://aviasafe-unified-platform.onrender.com',
     environment: 'production',
     pagination: { defaultPageSize: 20, maxPageSize: 100 },
 };

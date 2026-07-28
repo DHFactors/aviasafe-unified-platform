@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ── CORS ──
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    ALLOWED_ORIGINS: str = "https://gap-analysis-ssp.web.app,http://localhost:3000,http://localhost:8000"
 
     # ── Firebase ──
     FIREBASE_PROJECT_ID: Optional[str] = None
