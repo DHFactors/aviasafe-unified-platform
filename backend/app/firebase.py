@@ -81,7 +81,7 @@ def get_tenant_metadata(tenant_id: str) -> Optional[Dict[str, Any]]:
 
 def verify_firebase_token(token: str) -> Optional[Dict[str, Any]]:
     try:
-        decoded_token = auth.verify_id_token(token, check_revoked=True)
+        decoded_token = auth.verify_id_token(token, check_revoked=False)
         return decoded_token
     except firebase_admin.auth.ExpiredIdTokenError:
         logger.warning("Expired Firebase ID token")
