@@ -12,12 +12,36 @@
 
 from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from loguru import logger
 
 from app.core.config import settings
-from app.firebase import verify_firebase_token
+from app.firebase import verify_firebase_token, get_db
 
 security = HTTPBearer()
+
+
+def _lookup_tenant_by_email(email: str) -> Optional[Dict[str, Any]]:
+    """Search all tenant documents for a safety_manager with matching email.
+
+    This is a fallback when Firebase Auth custom claims are not available
+    in the ID token (known Firebase propagation issue).
+    """
+    try:
+        db = get_db()
+        tenants = db.collection(settings.FIREBASE_COLLECTION_TENANTS).get()
+        for t in tenants:
+            td = t.to_dict()
+            if not td:
+                continue
+            sm = td.get("safety_manager")
+            if sm and sm.get("email") == email:
+                return {"tenant_id": td.get("tenant_id"), "role": "AIRLINE_ADMIN"}
+            # Also check for CAAN_SMD emails in a separate config
+        return None
+    except Exception as e:
+        logger.warning(f"Tenant lookup failed for {email}: {e}")
+        return None
 
 
 async def get_current_user(
@@ -33,12 +57,21 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    email = decoded_token.get('email', '')
     role = decoded_token.get('role', settings.ROLE_DEFAULT)
     tenant_id = decoded_token.get('tenant_id')
 
+    # Fallback: if no claims in token, look up user by email in Firestore tenants
+    if role == settings.ROLE_DEFAULT and not tenant_id and email:
+        tenant_info = _lookup_tenant_by_email(email)
+        if tenant_info:
+            role = tenant_info["role"]
+            tenant_id = tenant_info["tenant_id"]
+            logger.info(f"Claims resolved via Firestore fallback for {email}: role={role}, tenant={tenant_id}")
+
     return {
         "uid": decoded_token['uid'],
-        "email": decoded_token.get('email', ''),
+        "email": email,
         "role": role,
         "tenant_id": tenant_id,
         "claims": {"role": role, "tenant_id": tenant_id}
