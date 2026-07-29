@@ -1,5 +1,7 @@
 import requests, time
 
+import time
+time.sleep(30)
 base = "https://aviasafe-unified-platform.onrender.com/api/v1/admin"
 r = requests.post(f"{base}/seed-demo-data", json={"setup_key": "aviasafe-e2e-setup-2026"}, timeout=600)
 print(f"Status: {r.status_code}")
@@ -12,4 +14,4 @@ if r.status_code == 200:
     print(f"  Tenants: {result.get('tenants', 0)}")
     print(f"  Users:   {result.get('users', 0)}")
 else:
-    print(f"  Error: {d.get('error', str(d)[:200])}")
+    print(f"  Error: {d.get('error', str(d)[:500])}")

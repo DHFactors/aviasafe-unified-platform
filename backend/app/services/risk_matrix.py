@@ -4,7 +4,7 @@ from loguru import logger
 from app.core.config import settings
 from app.firebase import get_db, get_tenant_collection
 
-RISK_MATRIX_DOC_PATH = "metadata/risk_matrix"
+RISK_MATRIX_DOC_PATH = "risk_matrix"
 
 SEVERITY_LABELS_DEFAULT = {
     "1": "Negligible",
