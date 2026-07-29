@@ -275,16 +275,22 @@ async def fix_tenant_id_mismatch(req: ProvisionRequest):
 
 @router.post("/fix-timestamps", status_code=status.HTTP_200_OK)
 async def fix_timestamps(req: ProvisionRequest):
-    """Convert ISO string timestamps to Firestore Timestamps in report docs."""
+    """Convert ISO string timestamps to Firestore Timestamps in report docs.
+    Checks both hyphenated (provisioned) and underscored (seed) tenant IDs."""
     if req.setup_key != SETUP_SECRET:
         raise HTTPException(status_code=403, detail="Invalid setup key")
     db = get_db()
     fixed = 0
     errors = 0
     TS_FIELDS = {"created_at", "updated_at", "occurrence_date"}
-    tenants = db.collection(settings.FIREBASE_COLLECTION_TENANTS).get()
-    for t in tenants:
-        tid = t.id
+
+    from seed.config import OPERATOR_PROFILES
+    seed_ids = {p["id"] for p in OPERATOR_PROFILES}
+
+    tenant_ids = [t.id for t in db.collection(settings.FIREBASE_COLLECTION_TENANTS).get()]
+    tenant_ids.extend(tid for tid in seed_ids if tid not in tenant_ids)
+
+    for tid in tenant_ids:
         docs = db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("reports").stream()
         for doc in docs:
             data = doc.to_dict()
