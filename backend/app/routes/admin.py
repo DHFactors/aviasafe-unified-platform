@@ -9,6 +9,7 @@
 # CODE OWNER: AviaSafeSystems
 # ============================================================================
 
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
@@ -273,48 +274,82 @@ async def fix_tenant_id_mismatch(req: ProvisionRequest):
     return {"success": True, "results": results}
 
 
-@router.post("/fix-timestamps", status_code=status.HTTP_200_OK)
-async def fix_timestamps(req: ProvisionRequest):
-    """Convert ISO string timestamps to Firestore Timestamps in report docs.
-    Checks both hyphenated (provisioned) and underscored (seed) tenant IDs."""
+@router.post("/migrate-seed-data", status_code=status.HTTP_200_OK)
+async def migrate_seed_data(req: ProvisionRequest):
+    """Copy seed data from underscore tenant IDs to hyphenated (provisioned) IDs.
+    Also fix seed config so future seeds use the right IDs."""
     if req.setup_key != SETUP_SECRET:
         raise HTTPException(status_code=403, detail="Invalid setup key")
     db = get_db()
-    fixed = 0
+
+    # Tenant ID mapping: underscore (seed) -> hyphenated (provisioned)
+    MAPPING = {
+        "buddha_air": "buddha-air",
+        "yeti_airlines": "yeti-airlines",
+        "summit_air": "summit-air",
+        "sita_air": "sita-air",
+        "air_dynasty": "air-dynasty",
+        "simrik_air": "simrik-air",
+    }
+
+    copied_reports = 0
+    copied_surveys = 0
     errors = 0
-    TS_FIELDS = {"created_at", "updated_at", "occurrence_date"}
 
-    from seed.config import OPERATOR_PROFILES
-    seed_ids = {p["id"] for p in OPERATOR_PROFILES}
+    from google.cloud.firestore import Client
+    batch = db.batch()
+    ops = 0
 
-    tenant_ids = [t.id for t in db.collection(settings.FIREBASE_COLLECTION_TENANTS).get()]
-    tenant_ids.extend(tid for tid in seed_ids if tid not in tenant_ids)
+    for src_id, dst_id in MAPPING.items():
+        # Copy reports
+        src_ref = db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(src_id)
+        dst_ref = db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(dst_id)
 
-    results = {}
-    field_types = {}
-    for tid in tenant_ids:
-        docs = list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("reports").limit(3).stream())
-        results[tid] = len(docs)
-        for doc in docs:
+        for doc in src_ref.collection("reports").stream():
             data = doc.to_dict()
-            if tid not in field_types:
-                field_types[tid] = {}
-            for field in TS_FIELDS:
-                val = data.get(field)
-                field_types[tid][field] = type(val).__name__ if val is not None else "null"
-                if isinstance(val, str):
-                    try:
-                        update = {field: datetime.fromisoformat(val.replace("Z", "+00:00"))}
-                        doc.reference.update(update)
-                        fixed += 1
-                    except Exception:
-                        errors += 1
-    survey_counts = {}
-    for tid in tenant_ids:
-        survey_counts[tid] = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("responses").limit(5).stream()))
-    return {"success": True, "fixed": fixed, "errors": errors,
-            "reports_per_tenant": results, "field_types": field_types,
-            "surveys_per_tenant": survey_counts}
+            data.pop("id", None)
+            if ops >= 500:
+                batch.commit()
+                ops = 0
+                batch = db.batch()
+            batch.set(dst_ref.collection("reports").document(doc.id), data)
+            ops += 1
+            copied_reports += 1
+
+        # Copy surveys (to responses collection for the dashboard)
+        for doc in src_ref.collection("surveys").stream():
+            data = doc.to_dict()
+            data.pop("id", None)
+            if ops >= 500:
+                batch.commit()
+                ops = 0
+                batch = db.batch()
+            batch.set(dst_ref.collection("responses").document(doc.id), data)
+            ops += 1
+            copied_surveys += 1
+
+    if ops > 0:
+        batch.commit()
+
+    # Fix seed config to use hyphenated IDs going forward
+    seed_config_path = "backend/seed/config.py"
+    seed_config = Path(__file__).resolve().parent.parent.parent.parent / seed_config_path
+    if seed_config.exists():
+        content = seed_config.read_text(encoding="utf-8")
+        for src_id, dst_id in MAPPING.items():
+            content = content.replace(f'"{src_id}"', f'"{dst_id}"')
+        seed_config.write_text(content, encoding="utf-8")
+        config_fixed = True
+    else:
+        config_fixed = False
+
+    return {
+        "success": True,
+        "copied_reports": copied_reports,
+        "copied_surveys": copied_surveys,
+        "errors": errors,
+        "config_fixed": config_fixed,
+    }
 
 
 @router.post("/seed-demo-data", status_code=status.HTTP_200_OK)

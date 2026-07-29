@@ -74,7 +74,7 @@ SURVEY_DEPARTMENTS = [
 
 OPERATOR_PROFILES = [
     {
-        "id": "buddha_air",
+        "id": "buddha-air",
         "name": "Buddha Air",
         "type": "Scheduled Airline",
         "icao": "BHA",
@@ -113,7 +113,7 @@ OPERATOR_PROFILES = [
         "email_domain": "buddhaair.com",
     },
     {
-        "id": "yeti_airlines",
+        "id": "yeti-airlines",
         "name": "Yeti Airlines",
         "type": "Scheduled Airline",
         "icao": "NYT",
@@ -152,7 +152,7 @@ OPERATOR_PROFILES = [
         "email_domain": "yetiairlines.com",
     },
     {
-        "id": "summit_air",
+        "id": "summit-air",
         "name": "Summit Air",
         "type": "STOL Cargo",
         "icao": "SMM",
@@ -191,7 +191,7 @@ OPERATOR_PROFILES = [
         "email_domain": "summitair.com.np",
     },
     {
-        "id": "sita_air",
+        "id": "sita-air",
         "name": "Sita Air",
         "type": "STOL Passenger/Cargo",
         "icao": "SAA",
@@ -230,7 +230,7 @@ OPERATOR_PROFILES = [
         "email_domain": "sitaair.com.np",
     },
     {
-        "id": "air_dynasty",
+        "id": "air-dynasty",
         "name": "Air Dynasty Heli Services",
         "type": "Helicopter",
         "icao": "ADH",
@@ -269,7 +269,7 @@ OPERATOR_PROFILES = [
         "email_domain": "airdynasty.com.np",
     },
     {
-        "id": "simrik_air",
+        "id": "simrik-air",
         "name": "Simrik Air",
         "type": "Helicopter",
         "icao": "RMK",
@@ -362,16 +362,16 @@ NEPALI_NAMES = [
 ]
 
 AIRCRAFT_REGISTRATIONS = {
-    "buddha_air": ["9N-AKO", "9N-AKQ", "9N-AKR", "9N-AKS", "9N-AKT", "9N-AKU", "9N-AKV",
+    "buddha-air": ["9N-AKO", "9N-AKQ", "9N-AKR", "9N-AKS", "9N-AKT", "9N-AKU", "9N-AKV",
                    "9N-AKW", "9N-AKX", "9N-AKY", "9N-AKZ", "9N-ALB", "9N-ALC", "9N-ALD",
                    "9N-ALE", "9N-ALF", "9N-ALG", "9N-ALH"],
-    "yeti_airlines": ["9N-ALJ", "9N-ALK", "9N-ALL", "9N-ALM", "9N-ALN", "9N-ALP",
+    "yeti-airlines": ["9N-ALJ", "9N-ALK", "9N-ALL", "9N-ALM", "9N-ALN", "9N-ALP",
                       "9N-ALQ", "9N-ALR", "9N-ALS", "9N-ALT", "9N-ALU", "9N-ALV"],
-    "summit_air": ["9N-AMC", "9N-AMD", "9N-AME", "9N-AMF", "9N-AMG", "9N-AMH", "9N-AMI", "9N-AMJ"],
-    "sita_air": ["9N-AMK", "9N-AML", "9N-AMM", "9N-AMN", "9N-AMP", "9N-AMQ"],
-    "air_dynasty": ["9N-AMR", "9N-AMS", "9N-AMT", "9N-AMU", "9N-AMV", "9N-AMW", "9N-AMX",
+    "summit-air": ["9N-AMC", "9N-AMD", "9N-AME", "9N-AMF", "9N-AMG", "9N-AMH", "9N-AMI", "9N-AMJ"],
+    "sita-air": ["9N-AMK", "9N-AML", "9N-AMM", "9N-AMN", "9N-AMP", "9N-AMQ"],
+    "air-dynasty": ["9N-AMR", "9N-AMS", "9N-AMT", "9N-AMU", "9N-AMV", "9N-AMW", "9N-AMX",
                     "9N-AMY", "9N-AMZ", "9N-ANA"],
-    "simrik_air": ["9N-ANB", "9N-ANC", "9N-AND", "9N-ANE", "9N-ANF", "9N-ANG", "9N-ANH"],
+    "simrik-air": ["9N-ANB", "9N-ANC", "9N-AND", "9N-ANE", "9N-ANF", "9N-ANG", "9N-ANH"],
 }
 
 GENERIC_MOR_OCCURRENCE_TYPES = [
