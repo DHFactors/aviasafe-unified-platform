@@ -241,3 +241,32 @@ async def provision_20_airlines(req: ProvisionRequest):
     }
 
     return {"success": True, "summary": summary, "results": results}
+
+
+@router.post("/fix-tenant-ids", status_code=status.HTTP_200_OK)
+async def fix_tenant_id_mismatch(req: ProvisionRequest):
+    """Fix tenant_id mismatch: provisioned users use hyphens but seed data uses underscores."""
+    if req.setup_key != SETUP_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid setup key")
+
+    auth = get_auth()
+    FIXES = {
+        "buddhaair@buddhaair.com": "buddha_air",
+        "info@sitaair.com": "sita_air",
+        "info@summitair.com.np": "summit_air",
+        "info@yetiairlines.com": "yeti_airlines",
+        "info@airdynasty.com": "air_dynasty",
+        "info@simrikair.com": "simrik_air",
+    }
+    results = []
+    for email, correct_tid in FIXES.items():
+        try:
+            user = auth.get_user_by_email(email)
+            existing = user.custom_claims or {}
+            existing["tenant_id"] = correct_tid
+            auth.update_user(user.uid, custom_claims=existing)
+            results.append({"email": email, "tenant_id": correct_tid, "status": "ok"})
+            logger.info(f"Fixed tenant_id for {email}: {correct_tid}")
+        except Exception as e:
+            results.append({"email": email, "status": "error", "detail": str(e)})
+    return {"success": True, "results": results}
