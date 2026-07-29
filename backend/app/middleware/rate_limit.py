@@ -45,7 +45,7 @@ def rate_limit(limit_type: str):
             if not request or not redis_enabled:
                 return await func(*args, **kwargs)
 
-            tenant_id = _get_tenant_id(request) or "anonymous"
+            tenant_id = _get_tenant_id(kwargs) or "anonymous"
             max_count, window_sec = RATE_LIMITS.get(limit_type, (100, 3600))
             period_key = _period_key(window_sec)
             redis_key = f"rl:{limit_type}:{tenant_id}:{period_key}"
@@ -78,15 +78,14 @@ def _find_request(args, kwargs):
     return kwargs.get("request")
 
 
-def _get_tenant_id(request: Request) -> str:
-    user = getattr(request.state, "user", None)
+def _get_tenant_id(kwargs: dict) -> str:
+    user = kwargs.get("user") or kwargs.get("current_user")
     if user and isinstance(user, dict):
         return user.get("tenant_id")
     return None
 
 
 def _period_key(window_sec: int) -> str:
-    now = time.time()
     if window_sec >= 86400:
         return datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return datetime.now(timezone.utc).strftime("%Y-%m-%d:%H")
