@@ -291,28 +291,30 @@ async def fix_timestamps(req: ProvisionRequest):
     tenant_ids.extend(tid for tid in seed_ids if tid not in tenant_ids)
 
     results = {}
+    field_types = {}
     for tid in tenant_ids:
-        docs = list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("reports").stream())
+        docs = list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("reports").limit(3).stream())
         results[tid] = len(docs)
         for doc in docs:
             data = doc.to_dict()
-            update = {}
+            if tid not in field_types:
+                field_types[tid] = {}
             for field in TS_FIELDS:
                 val = data.get(field)
+                field_types[tid][field] = type(val).__name__ if val is not None else "null"
                 if isinstance(val, str):
                     try:
-                        update[field] = datetime.fromisoformat(val.replace("Z", "+00:00"))
+                        update = {field: datetime.fromisoformat(val.replace("Z", "+00:00"))}
+                        doc.reference.update(update)
+                        fixed += 1
                     except Exception:
                         errors += 1
-            if update:
-                doc.reference.update(update)
-                fixed += 1
-    # Also list survey counts
     survey_counts = {}
     for tid in tenant_ids:
-        survey_counts[tid] = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("responses").stream()))
+        survey_counts[tid] = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("responses").limit(5).stream()))
     return {"success": True, "fixed": fixed, "errors": errors,
-            "reports_per_tenant": results, "surveys_per_tenant": survey_counts}
+            "reports_per_tenant": results, "field_types": field_types,
+            "surveys_per_tenant": survey_counts}
 
 
 @router.post("/seed-demo-data", status_code=status.HTTP_200_OK)
