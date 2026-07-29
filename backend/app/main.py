@@ -6,10 +6,14 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from loguru import logger
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 from app.core.config import settings
 from app.core.logging import setup_logging, RequestLoggingMiddleware
 from app.core.metrics import router as metrics_router
 from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
+from app.middleware.rate_limit import limiter
 from app.firebase import initialize_firebase, is_firebase_ready
 from app.routes import reports, dashboard, auth, admin, hazards, can_cap, verification, reporting, flight_diversions
 
@@ -44,6 +48,9 @@ app.add_middleware(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 def _req_id(request: Request) -> str:

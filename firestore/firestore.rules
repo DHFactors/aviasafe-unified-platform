@@ -14,56 +14,163 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.role == 'SUPER_ADMIN';
     }
 
-    function isCaanSmd() {
+    function isCaanSMD() {
       return isAuthenticated() && request.auth.token.role == 'CAAN_SMD';
     }
 
-    function isTenantMember(tenantId) {
-      return isAuthenticated() && request.auth.token.tenant_id == tenantId;
+    function isAirlineAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'AIRLINE_ADMIN';
+    }
+
+    function getTenantId() {
+      return request.auth.token.tenant_id;
+    }
+
+    function isOwnTenant(tenantId) {
+      return isAirlineAdmin() && getTenantId() == tenantId;
+    }
+
+    function isAdminOrCaan() {
+      return isSuperAdmin() || isCaanSMD();
     }
 
     // ========================================================================
-    // SUPER ADMIN: Full system access
+    // TENANTS COLLECTION
     // ========================================================================
-    match /{document=**} {
-      allow read, write: if isSuperAdmin();
+
+    match /tenants/{tenantId} {
+      allow read: if isAuthenticated();
+      allow create: if isSuperAdmin();
+      allow update, delete: if isSuperAdmin();
     }
 
     // ========================================================================
     // TENANT METADATA
-    // Collection: tenants/{tenantId}
-    // - Read: any authenticated user
-    // - Write: SUPER_ADMIN only
     // ========================================================================
-    match /tenants/{tenantId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isSuperAdmin();
+
+    match /tenants/{tenantId}/metadata/{document=**} {
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow write: if isSuperAdmin();
     }
 
     // ========================================================================
-    // SURVEY RESPONSES
-    // Collection: tenants/{tenantId}/responses/{documentId}
-    // - Create: anyone (anonymous submissions allowed)
-    // - Read: tenant member, SUPER_ADMIN, CAAN_SMD, or demo tenant
-    // - Update/Delete: never (immutable — Just Culture protection)
+    // SURVEY RESPONSES — Public submission, immutable audit trail
     // ========================================================================
-    match /tenants/{tenantId}/responses/{document=**} {
+
+    match /tenants/{tenantId}/responses/{responseId} {
+      allow create: if request.resource.data.tenantId == tenantId;
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow update, delete: if false;
+    }
+
+    // ========================================================================
+    // VSR REPORTS — Public submission, tenant-isolated reads
+    // ========================================================================
+
+    match /tenants/{tenantId}/reports/{reportId} {
+      allow create: if request.resource.data.tenantId == tenantId;
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow update: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow delete: if false;
+    }
+
+    // ========================================================================
+    // MOR REPORTS — Authenticated only
+    // ========================================================================
+
+    match /tenants/{tenantId}/mor/{reportId} {
+      allow create: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow update: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow delete: if false;
+    }
+
+    // ========================================================================
+    // HAZARD REGISTER
+    // ========================================================================
+
+    match /tenants/{tenantId}/hazards/{hazardId} {
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow create: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow update: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow delete: if isSuperAdmin();
+    }
+
+    // ========================================================================
+    // CAN/CAP WORKFLOW
+    // ========================================================================
+
+    match /tenants/{tenantId}/can_cap/{canId} {
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow create: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow update: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow delete: if isSuperAdmin();
+    }
+
+    // ========================================================================
+    // VERIFICATION & CLOSURE
+    // ========================================================================
+
+    match /tenants/{tenantId}/verification/{doc=**} {
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow create, update: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow delete: if isSuperAdmin();
+    }
+
+    // ========================================================================
+    // FLIGHT DIVERSIONS
+    // ========================================================================
+
+    match /tenants/{tenantId}/flight_diversions/{doc=**} {
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow create, update: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isSuperAdmin());
+      allow delete: if isSuperAdmin();
+    }
+
+    // ========================================================================
+    // ANALYTICS — CAAN_SMD + SUPER_ADMIN only
+    // ========================================================================
+
+    match /analytics/{document=**} {
+      allow read: if isAuthenticated() &&
+        (isCaanSMD() || isSuperAdmin());
+      allow write: if isSuperAdmin();
+    }
+
+    // ========================================================================
+    // PUBLIC RESPONSES
+    // ========================================================================
+
+    match /public_responses/{doc=**} {
       allow create: if true;
-      allow read: if isTenantMember(tenantId) || isSuperAdmin() || isCaanSmd() || tenantId.matches('demo-.*');
-      allow update, delete: if false;
+      allow read: if isSuperAdmin();
+      allow update, delete: if isSuperAdmin();
     }
 
     // ========================================================================
-    // SAFETY REPORTS (VSR & MOR)
-    // Collection: tenants/{tenantId}/reports/{documentId}
-    // - Create: authenticated tenant member only
-    // - Read: tenant member, SUPER_ADMIN, or CAAN_SMD
-    // - Update/Delete: never (immutable — audit trail)
+    // USERS — Self or SUPER_ADMIN
     // ========================================================================
-    match /tenants/{tenantId}/reports/{document=**} {
-      allow create: if isTenantMember(tenantId);
-      allow read: if isTenantMember(tenantId) || isSuperAdmin() || isCaanSmd();
-      allow update, delete: if false;
+
+    match /users/{uid} {
+      allow read, write: if isAuthenticated() &&
+        (request.auth.uid == uid || isSuperAdmin());
     }
   }
 }

@@ -60,20 +60,43 @@ function loadFirebaseSDK() {
                 scriptAuth.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js';
                 scriptAuth.async = true;
                 scriptAuth.onload = function() {
-                    // Load Storage SDK (optional)
-                    const scriptStorage = document.createElement('script');
-                    scriptStorage.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js';
-                    scriptStorage.async = true;
-                    scriptStorage.onload = function() {
-                        initializeFirebase();
-                        resolve(firebase);
+                    // Load App Check SDK
+                    const scriptAppCheck = document.createElement('script');
+                    scriptAppCheck.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js';
+                    scriptAppCheck.async = true;
+                    scriptAppCheck.onload = function() {
+                        // Load Storage SDK (optional)
+                        const scriptStorage = document.createElement('script');
+                        scriptStorage.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js';
+                        scriptStorage.async = true;
+                        scriptStorage.onload = function() {
+                            initializeFirebase();
+                            initAppCheck();
+                            resolve(firebase);
+                        };
+                        scriptStorage.onerror = function() {
+                            initializeFirebase();
+                            initAppCheck();
+                            resolve(firebase);
+                        };
+                        document.head.appendChild(scriptStorage);
                     };
-                    scriptStorage.onerror = function() {
-                        // Storage is optional, still resolve
-                        initializeFirebase();
-                        resolve(firebase);
+                    scriptAppCheck.onerror = function() {
+                        // App Check is optional
+                        const scriptStorage = document.createElement('script');
+                        scriptStorage.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js';
+                        scriptStorage.async = true;
+                        scriptStorage.onload = function() {
+                            initializeFirebase();
+                            resolve(firebase);
+                        };
+                        scriptStorage.onerror = function() {
+                            initializeFirebase();
+                            resolve(firebase);
+                        };
+                        document.head.appendChild(scriptStorage);
                     };
-                    document.head.appendChild(scriptStorage);
+                    document.head.appendChild(scriptAppCheck);
                 };
                 scriptAuth.onerror = function() {
                     // Auth is optional, still resolve
@@ -137,6 +160,22 @@ function initServices() {
 }
 
 // ============================================================================
+// APP CHECK
+// ============================================================================
+
+const RECAPTCHA_SITE_KEY = '6LcAAAAA'; // TODO: Replace with actual ReCaptcha v3 site key
+
+function initAppCheck() {
+    if (typeof firebase === 'undefined' || !firebase.appCheck) return;
+    try {
+        firebase.appCheck().activate(RECAPTCHA_SITE_KEY, true);
+        console.log('✅ App Check activated');
+    } catch (e) {
+        console.warn('⚠️ App Check activation failed:', e);
+    }
+}
+
+// ============================================================================
 // LOAD AND INITIALIZE
 // ============================================================================
 
@@ -145,6 +184,7 @@ function initServices() {
     // Check if Firebase is already available (from CDN in HTML)
     if (typeof firebase !== 'undefined' && firebase.initializeApp) {
         initializeFirebase();
+        initAppCheck();
         initServices();
         window.firebase = firebase;
         window.auth = auth;

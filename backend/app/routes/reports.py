@@ -9,7 +9,7 @@
 # CODE OWNER: AviaSafeSystems
 # ============================================================================
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status, Request
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from loguru import logger
@@ -20,6 +20,7 @@ from app.middleware.auth import get_tenant_user, get_safety_manager
 from app.services.report_service import ReportService
 from app.services.hazard_service import HazardService
 from app.services.risk_matrix import compute_risk_index, get_risk_level, classify_risk
+from app.middleware.rate_limit import limiter, RATE_LIMITS
 
 router = APIRouter()
 
@@ -45,7 +46,9 @@ async def submit_report(
 
 
 @router.post("/mor", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RATE_LIMITS["mor_submit"])
 async def submit_mor(
+    request: Request,
     report: MorCreate,
     background_tasks: BackgroundTasks,
     user: Dict[str, Any] = Depends(get_tenant_user),
@@ -90,7 +93,9 @@ async def submit_mor(
 
 
 @router.post("/vsr", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RATE_LIMITS["vsr_submit"])
 async def submit_vsr(
+    request: Request,
     report: ReportCreate,
     background_tasks: BackgroundTasks,
     user: Dict[str, Any] = Depends(get_tenant_user),
