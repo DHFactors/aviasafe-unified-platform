@@ -1,11 +1,16 @@
-import requests, time
+import requests, time, json
 
-time.sleep(30)
+# Wait for Render to build & deploy
+time.sleep(180)
+
 base = "https://aviasafe-unified-platform.onrender.com/api/v1/admin"
 SK = "aviasafe-e2e-setup-2026"
 
 r = requests.post(f"{base}/seed-demo-data", json={"setup_key": SK}, timeout=600)
 d = r.json()
 print(f"Status: {r.status_code}")
-import json
-print(json.dumps(d, indent=2)[:2000])
+if d.get("success"):
+    res = d.get("result", {})
+    print(json.dumps(res, indent=2))
+else:
+    print(json.dumps(d, indent=2)[:2000])

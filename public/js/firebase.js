@@ -30,6 +30,7 @@ const APP_CONFIG = {
 };
 
 window.APP_CONFIG = APP_CONFIG;
+window.API_BASE_URL = APP_CONFIG.apiBaseUrl;
 window.__FIREBASE_CONFIG__ = firebaseConfig;
 
 // ============================================================================
