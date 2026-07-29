@@ -274,6 +274,35 @@ async def fix_tenant_id_mismatch(req: ProvisionRequest):
     return {"success": True, "results": results}
 
 
+@router.post("/check-data", status_code=status.HTTP_200_OK)
+async def check_data(req: ProvisionRequest):
+    """Debug: check how many docs exist under each tenant path."""
+    if req.setup_key != SETUP_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid setup key")
+    db = get_db()
+    from app.core.config import settings
+
+    ids_to_check = [
+        "buddha_air", "buddha-air",
+        "yeti_airlines", "yeti-airlines",
+        "sita_air", "sita-air",
+        "summit_air", "summit-air",
+        "air_dynasty", "air-dynasty",
+        "simrik_air", "simrik-air",
+    ]
+    result = {}
+    for tid in ids_to_check:
+        reports = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid)
+                          .collection(settings.FIREBASE_COLLECTION_REPORTS).limit(1000).stream()))
+        surveys = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid)
+                          .collection("surveys").limit(1000).stream()))
+        responses = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid)
+                          .collection("responses").limit(1000).stream()))
+        if reports or surveys or responses:
+            result[tid] = {"reports": reports, "surveys": surveys, "responses": responses}
+    return {"success": True, "data": result}
+
+
 @router.post("/migrate-seed-data", status_code=status.HTTP_200_OK)
 async def migrate_seed_data(req: ProvisionRequest):
     """Copy seed data from underscore tenant IDs to hyphenated (provisioned) IDs.
