@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     CROSS_TENANT_ROLES: List[str] = ["CAAN_SMD", "SUPER_ADMIN"]
     SUPER_ADMIN_ROLES: List[str] = ["SUPER_ADMIN"]
 
+    # ── Upstash Redis ──
+    REDIS_URL: str = ""
+    REDIS_ENABLED: bool = False
+
     # ── Rate limiting ──
     RATE_LIMIT_PER_MINUTE: int = 60
 

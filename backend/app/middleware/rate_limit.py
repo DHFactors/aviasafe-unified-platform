@@ -1,4 +1,3 @@
-import os
 import functools
 from datetime import datetime, timezone, timedelta
 
@@ -7,8 +6,10 @@ import redis.asyncio as aioredis
 from fastapi import HTTPException, Request
 from loguru import logger
 
-redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-redis_enabled = os.getenv("REDIS_ENABLED", "true").lower() == "true"
+from app.core.config import settings
+
+redis_url = settings.REDIS_URL
+redis_enabled = settings.REDIS_ENABLED
 
 _redis_client = None
 
