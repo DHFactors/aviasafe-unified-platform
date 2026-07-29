@@ -24,40 +24,33 @@ function waitForFirebase() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await waitForFirebase();
-    const user = firebase.auth().currentUser;
-    if (!user) {
+    const session = await getCurrentUser();
+    if (!session) {
         window.location.href = '/login.html';
         return;
     }
 
-    try {
-        const tokenResult = await user.getIdTokenResult();
-        const role = tokenResult.claims.role;
-        const tenantId = tokenResult.claims.tenant_id;
+    const { role, tenantId } = session;
 
-        if (role !== 'AIRLINE_ADMIN' && role !== 'CAAN_SMD' && role !== 'SUPER_ADMIN') {
-            showError('Unauthorized role. Contact your administrator.');
-            return;
-        }
-
-        document.getElementById('dashboardSection').style.display = 'block';
-        document.getElementById('logoutBtn').style.display = 'block';
-
-        const header = document.getElementById('tenantTitle');
-        if (tenantId) {
-            header.textContent = `${tenantId.toUpperCase()} — Safety Dashboard`;
-        } else {
-            header.textContent = 'Cross-Tenant Safety Overview';
-        }
-
-        if (role === 'AIRLINE_ADMIN' || role === 'CAAN_SMD') {
-            document.getElementById('riskMatrixSection').style.display = 'block';
-            await loadRiskMatrixConfig();
-            setupRiskMatrixForm();
-        }
-    } catch {
-        window.location.href = '/login.html';
+    if (role !== 'AIRLINE_ADMIN' && role !== 'CAAN_SMD' && role !== 'SUPER_ADMIN') {
+        showError('Unauthorized role. Contact your administrator.');
         return;
+    }
+
+    document.getElementById('dashboardSection').style.display = 'block';
+    document.getElementById('logoutBtn').style.display = 'block';
+
+    const header = document.getElementById('tenantTitle');
+    if (tenantId) {
+        header.textContent = `${tenantId.toUpperCase()} — Safety Dashboard`;
+    } else {
+        header.textContent = 'Cross-Tenant Safety Overview';
+    }
+
+    if (role === 'AIRLINE_ADMIN' || role === 'CAAN_SMD') {
+        document.getElementById('riskMatrixSection').style.display = 'block';
+        await loadRiskMatrixConfig();
+        setupRiskMatrixForm();
     }
 
     document.getElementById('logoutBtn').addEventListener('click', async () => {
