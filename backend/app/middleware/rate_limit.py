@@ -12,6 +12,9 @@ from app.core.config import settings
 redis_url = settings.REDIS_URL or os.getenv("REDIS_URL", "")
 redis_enabled = settings.REDIS_ENABLED or os.getenv("REDIS_ENABLED", "").lower() == "true"
 
+if not redis_url:
+    logger.warning("REDIS_URL not set — rate limiting disabled. Set in Render dashboard or backend/.env")
+
 _redis_client = None
 
 async def get_redis():
@@ -20,7 +23,13 @@ async def get_redis():
         return None
     if _redis_client is None:
         try:
-            _redis_client = aioredis.from_url(redis_url, ssl=True, socket_connect_timeout=3)
+            kwargs = dict(socket_connect_timeout=3)
+            if not redis_url.startswith("rediss://"):
+                from redis.asyncio.connection import SSLConnection
+                kwargs["connection_class"] = SSLConnection
+            import ssl
+            kwargs["ssl_cert_reqs"] = ssl.CERT_NONE
+            _redis_client = aioredis.from_url(redis_url, **kwargs)
             await _redis_client.ping()
             logger.info("Connected to Upstash Redis")
         except Exception as e:
