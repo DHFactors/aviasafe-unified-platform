@@ -15,6 +15,7 @@ from typing import Dict, Any, Optional, List
 from loguru import logger
 from datetime import datetime, timezone
 
+from app.core.config import settings
 from app.firebase import get_auth, get_db
 from app.middleware.auth import get_safety_manager, get_admin_user
 from app.services.risk_matrix import (
@@ -270,6 +271,35 @@ async def fix_tenant_id_mismatch(req: ProvisionRequest):
         except Exception as e:
             results.append({"email": email, "status": "error", "detail": str(e)})
     return {"success": True, "results": results}
+
+
+@router.post("/fix-timestamps", status_code=status.HTTP_200_OK)
+async def fix_timestamps(req: ProvisionRequest):
+    """Convert ISO string timestamps to Firestore Timestamps in report docs."""
+    if req.setup_key != SETUP_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid setup key")
+    db = get_db()
+    fixed = 0
+    errors = 0
+    TS_FIELDS = {"created_at", "updated_at", "occurrence_date"}
+    tenants = db.collection(settings.FIREBASE_COLLECTION_TENANTS).get()
+    for t in tenants:
+        tid = t.id
+        docs = db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("reports").stream()
+        for doc in docs:
+            data = doc.to_dict()
+            update = {}
+            for field in TS_FIELDS:
+                val = data.get(field)
+                if isinstance(val, str):
+                    try:
+                        update[field] = datetime.fromisoformat(val.replace("Z", "+00:00"))
+                    except Exception:
+                        errors += 1
+            if update:
+                doc.reference.update(update)
+                fixed += 1
+    return {"success": True, "fixed": fixed, "errors": errors}
 
 
 @router.post("/seed-demo-data", status_code=status.HTTP_200_OK)
