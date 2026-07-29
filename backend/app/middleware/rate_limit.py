@@ -1,7 +1,6 @@
 import os
-import time
 import functools
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import redis.asyncio as aioredis
 
@@ -29,11 +28,11 @@ async def get_redis():
 
 
 RATE_LIMITS = {
-    "vsr_submit":    (500,  86400),  # 500/day
-    "survey_submit": (500,  86400),  # 500/day
-    "mor_submit":    (100,  86400),  # 100/day
-    "dashboard":     (1000, 3600),   # 1000/hour
-    "auth_attempts": (50,   3600),   # 50/hour
+    "vsr_submit":    (50,  86400),   # 50/day  (beta)
+    "survey_submit": (100, 86400),   # 100/day (beta)
+    "mor_submit":    (20,  86400),   # 20/day  (beta)
+    "dashboard":     (500, 3600),    # 500/hour (beta)
+    "auth_attempts": (50,  3600),    # 50/hour
 }
 
 
@@ -52,15 +51,45 @@ def rate_limit(limit_type: str):
 
             try:
                 r = await get_redis()
-                if r:
-                    count = await r.incr(redis_key)
-                    if count == 1:
-                        await r.expire(redis_key, window_sec)
-                    if count > max_count:
-                        raise HTTPException(
-                            status_code=429,
-                            detail=f"Rate limit exceeded for {limit_type}. Max {max_count} per {_window_label(window_sec)}.",
-                        )
+                if not r:
+                    return await func(*args, **kwargs)
+
+                count = await r.incr(redis_key)
+                if count == 1:
+                    await r.expire(redis_key, window_sec)
+
+                ttl = await r.ttl(redis_key)
+                remaining = max(0, max_count - count)
+
+                resp_headers = {
+                    "X-RateLimit-Limit": str(max_count),
+                    "X-RateLimit-Remaining": str(remaining),
+                    "X-RateLimit-Reset": str(int(_reset_epoch(window_sec))),
+                }
+
+                if count > max_count:
+                    retry_after = max(1, int(ttl))
+                    raise HTTPException(
+                        status_code=429,
+                        detail={
+                            "success": False,
+                            "error": "Rate limit exceeded",
+                            "message": f"Max {max_count} requests per {_window_label(window_sec)}. Try again in {retry_after}s.",
+                            "retry_after": retry_after,
+                            "limit": max_count,
+                            "remaining": 0,
+                            "reset": _reset_iso(window_sec),
+                        },
+                        headers=resp_headers,
+                    )
+
+                # Attach rate limit info to request state for downstream use
+                request.state.rate_limit = {
+                    "limit": max_count,
+                    "remaining": remaining,
+                    "reset": _reset_iso(window_sec),
+                }
+
             except HTTPException:
                 raise
             except Exception as e:
@@ -97,3 +126,17 @@ def _window_label(window_sec: int) -> str:
     if window_sec >= 3600:
         return "hour"
     return f"{window_sec}s"
+
+
+def _reset_epoch(window_sec: int) -> float:
+    now = datetime.now(timezone.utc)
+    if window_sec >= 86400:
+        reset = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    else:
+        reset = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+    return reset.timestamp()
+
+
+def _reset_iso(window_sec: int) -> str:
+    epoch = _reset_epoch(window_sec)
+    return datetime.fromtimestamp(epoch, tz=timezone.utc).isoformat()

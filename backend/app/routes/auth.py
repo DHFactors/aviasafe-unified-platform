@@ -15,6 +15,7 @@ from typing import Optional
 
 from app.core.config import settings
 from app.firebase import get_auth, verify_firebase_token, create_custom_claims
+from app.middleware.rate_limit import rate_limit
 
 router = APIRouter()
 
@@ -45,8 +46,9 @@ class DebugVerifyRequest(BaseModel):
 
 
 @router.post("/verify")
-async def verify_token(request: LoginRequest):
-    decoded_token = verify_firebase_token(request.id_token)
+@rate_limit("auth_attempts")
+async def verify_token(request: Request, body: LoginRequest):
+    decoded_token = verify_firebase_token(body.id_token)
     if not decoded_token:
         raise HTTPException(status_code=401, detail="Invalid token")
     role = decoded_token.get('role', settings.ROLE_DEFAULT)
