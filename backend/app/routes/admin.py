@@ -290,8 +290,10 @@ async def fix_timestamps(req: ProvisionRequest):
     tenant_ids = [t.id for t in db.collection(settings.FIREBASE_COLLECTION_TENANTS).get()]
     tenant_ids.extend(tid for tid in seed_ids if tid not in tenant_ids)
 
+    results = {}
     for tid in tenant_ids:
-        docs = db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("reports").stream()
+        docs = list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("reports").stream())
+        results[tid] = len(docs)
         for doc in docs:
             data = doc.to_dict()
             update = {}
@@ -305,7 +307,12 @@ async def fix_timestamps(req: ProvisionRequest):
             if update:
                 doc.reference.update(update)
                 fixed += 1
-    return {"success": True, "fixed": fixed, "errors": errors}
+    # Also list survey counts
+    survey_counts = {}
+    for tid in tenant_ids:
+        survey_counts[tid] = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid).collection("responses").stream()))
+    return {"success": True, "fixed": fixed, "errors": errors,
+            "reports_per_tenant": results, "surveys_per_tenant": survey_counts}
 
 
 @router.post("/seed-demo-data", status_code=status.HTTP_200_OK)
