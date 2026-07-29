@@ -78,13 +78,16 @@ async def get_dashboard_overview(
         })
 
 
-def _safe_airline(method_name: str, svc: DashboardService, **kwargs) -> dict:
+LIST_METHODS = {"get_risk_distribution", "get_monthly_trends", "get_hazard_frequency"}
+
+
+def _safe_airline(method_name: str, svc: DashboardService, **kwargs):
     try:
         fn = getattr(svc, method_name)
         return fn(**kwargs)
     except Exception as e:
         logger.error(f"{method_name} failed for tenant {svc.tenant_id}: {e}")
-        return {}
+        return [] if method_name in LIST_METHODS else {}
 
 
 @router.get("/recent")

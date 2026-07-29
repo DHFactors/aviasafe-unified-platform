@@ -3,6 +3,10 @@ let currentPage = 1;
 let currentDays = 90;
 const PAGE_SIZE = 10;
 
+function safeArray(data) {
+    return Array.isArray(data) ? data : [];
+}
+
 function waitForFirebase() {
     return new Promise(resolve => {
         if (typeof firebase !== 'undefined' && firebase.auth) {
@@ -22,11 +26,16 @@ function waitForFirebase() {
     });
 }
 
+var dashboardRedirecting = false;
+
 document.addEventListener('DOMContentLoaded', async () => {
     await waitForFirebase();
     const session = await getCurrentUser();
     if (!session) {
-        window.location.href = '/login.html';
+        if (!dashboardRedirecting) {
+            dashboardRedirecting = true;
+            window.location.href = '/login.html';
+        }
         return;
     }
 
@@ -114,8 +123,8 @@ async function loadRiskDistribution() {
     setLoading(el);
 
     try {
-        const data = await DashboardAPI.getRiskDistribution(currentDays);
-        if (!data || data.length === 0) {
+        const data = safeArray(await DashboardAPI.getRiskDistribution(currentDays));
+        if (data.length === 0) {
             setEmpty(el, 'No risk data available');
             return;
         }
@@ -131,8 +140,8 @@ async function loadMonthlyTrends() {
     setLoading(el);
 
     try {
-        const data = await DashboardAPI.getMonthlyTrends(currentDays * 2 > 730 ? 730 : currentDays * 2);
-        if (!data || data.length === 0) {
+        const data = safeArray(await DashboardAPI.getMonthlyTrends(currentDays * 2 > 730 ? 730 : currentDays * 2));
+        if (data.length === 0) {
             setEmpty(el, 'No trend data available');
             return;
         }
@@ -148,8 +157,8 @@ async function loadHazardFrequency() {
     setLoading(el);
 
     try {
-        const data = await DashboardAPI.getHazardFrequency(currentDays);
-        if (!data || data.length === 0) {
+        const data = safeArray(await DashboardAPI.getHazardFrequency(currentDays));
+        if (data.length === 0) {
             setEmpty(el, 'No hazard data available');
             return;
         }

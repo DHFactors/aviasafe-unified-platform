@@ -20,16 +20,24 @@ const ApiClient = {
         });
     },
 
+    _tokenRedirecting: false,
+
     _getToken: async () => {
         await ApiClient._waitForFirebase();
         const session = await getCurrentUser();
         if (!session) {
-            window.location.href = '/login.html';
+            if (!ApiClient._tokenRedirecting) {
+                ApiClient._tokenRedirecting = true;
+                window.location.href = '/login.html';
+            }
             return null;
         }
         const user = firebase.auth().currentUser;
         if (!user) {
-            window.location.href = '/login.html';
+            if (!ApiClient._tokenRedirecting) {
+                ApiClient._tokenRedirecting = true;
+                window.location.href = '/login.html';
+            }
             return null;
         }
         try {

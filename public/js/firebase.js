@@ -197,27 +197,23 @@ async function getCurrentUser() {
         var resolved = false;
         var unsubscribe = firebase.auth().onAuthStateChanged(async function(user) {
             if (resolved) return;
+            if (!user) return;
             resolved = true;
             unsubscribe();
-            if (user) {
-                try {
-                    var tokenResult = await user.getIdTokenResult(true);
-                    var claims = tokenResult.claims || {};
-                    resolve({
-                        uid: user.uid,
-                        email: user.email,
-                        role: claims.role || 'USER',
-                        tenantId: claims.tenant_id || null,
-                        claims: claims
-                    });
-                } catch (error) {
-                    resolve(null);
-                }
-            } else {
+            try {
+                var tokenResult = await user.getIdTokenResult(true);
+                var claims = tokenResult.claims || {};
+                resolve({
+                    uid: user.uid,
+                    email: user.email,
+                    role: claims.role || 'USER',
+                    tenantId: claims.tenant_id || null,
+                    claims: claims
+                });
+            } catch (error) {
                 resolve(null);
             }
         });
-        // Safety timeout — resolve with null if auth never fires
         setTimeout(function() {
             if (!resolved) {
                 resolved = true;
