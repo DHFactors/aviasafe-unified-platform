@@ -1,10 +1,7 @@
 import requests, time
 
-print("Waiting for Render deploy...")
-time.sleep(90)
-
 base = "https://aviasafe-unified-platform.onrender.com/api/v1/admin"
-r = requests.post(f"{base}/seed-demo-data", json={"setup_key": "aviasafe-e2e-setup-2026"}, timeout=300)
+r = requests.post(f"{base}/seed-demo-data", json={"setup_key": "aviasafe-e2e-setup-2026"}, timeout=600)
 print(f"Status: {r.status_code}")
 d = r.json()
 if r.status_code == 200:
@@ -15,4 +12,4 @@ if r.status_code == 200:
     print(f"  Tenants: {result.get('tenants', 0)}")
     print(f"  Users:   {result.get('users', 0)}")
 else:
-    print(f"  Error: {d.get('error', 'unknown')}")
+    print(f"  Error: {d.get('error', str(d)[:200])}")
