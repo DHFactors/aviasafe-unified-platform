@@ -352,6 +352,21 @@ async def migrate_seed_data(req: ProvisionRequest):
     }
 
 
+@router.post("/create-seed-users", status_code=status.HTTP_200_OK)
+async def create_seed_users(req: ProvisionRequest):
+    """Create seed users in Firebase Auth (skips users that already exist)."""
+    if req.setup_key != SETUP_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid setup key")
+    from seed.users import create_all_users
+    from app.firebase import get_auth
+    try:
+        created = create_all_users(get_auth())
+        return {"success": True, "created": len(created), "users": created}
+    except Exception as e:
+        logger.error(f"Create seed users failed: {e}")
+        return {"success": False, "error": str(e)}
+
+
 @router.post("/seed-demo-data", status_code=status.HTTP_200_OK)
 async def seed_demo_data(req: ProvisionRequest):
     """Run the demo data seeder against production Firestore."""
