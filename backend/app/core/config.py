@@ -1,6 +1,14 @@
+from pathlib import Path
+from dotenv import load_dotenv
+
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 from enum import Enum
+
+# Ensure .env is loaded into os.environ regardless of pydantic-settings path resolution
+_env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+if _env_path.exists():
+    load_dotenv(_env_path, override=False)
 
 
 class AuthRole(str, Enum):
@@ -77,9 +85,9 @@ class Settings(BaseSettings):
     CROSS_TENANT_ROLES: List[str] = ["CAAN_SMD", "SUPER_ADMIN"]
     SUPER_ADMIN_ROLES: List[str] = ["SUPER_ADMIN"]
 
-    # ── Upstash Redis ──
+    # ── Upstash Redis (enabled when REDIS_URL is non-empty) ──
     REDIS_URL: str = ""
-    REDIS_ENABLED: bool = False
+    REDIS_ENABLED: bool = True
 
     # ── Rate limiting ──
     RATE_LIMIT_PER_MINUTE: int = 60
@@ -89,7 +97,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
     WORKERS: int = 1
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "case_sensitive": True, "extra": "ignore"}
+    model_config = {"env_file": "backend/.env", "env_file_encoding": "utf-8", "case_sensitive": True, "extra": "ignore"}
 
 
 settings = Settings()

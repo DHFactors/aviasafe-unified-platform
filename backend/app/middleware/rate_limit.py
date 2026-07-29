@@ -1,3 +1,4 @@
+import os
 import functools
 from datetime import datetime, timezone, timedelta
 
@@ -8,8 +9,8 @@ from loguru import logger
 
 from app.core.config import settings
 
-redis_url = settings.REDIS_URL
-redis_enabled = settings.REDIS_ENABLED
+redis_url = settings.REDIS_URL or os.getenv("REDIS_URL", "")
+redis_enabled = settings.REDIS_ENABLED or os.getenv("REDIS_ENABLED", "").lower() == "true"
 
 _redis_client = None
 
