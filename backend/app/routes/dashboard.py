@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, Query
 from typing import Dict, Any, Optional
 from datetime import datetime
 
+from app.core.config import settings
 from app.middleware.auth import get_current_user, get_tenant_user, get_caan_user, get_admin_user
 from app.services.dashboard_service import DashboardService
 from loguru import logger
