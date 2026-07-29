@@ -128,6 +128,23 @@ async def setup_test_user_claims(req: SetupClaimsRequest):
     return {"success": True, "results": results}
 
 
+@router.post("/seed-demo-data", status_code=status.HTTP_200_OK)
+async def seed_demo_data(req: ProvisionRequest):
+    """Run the demo data seeder against production Firestore."""
+    if req.setup_key != SETUP_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid setup key")
+
+    from seed.runner import run
+    from app.firebase import get_db, get_auth
+
+    try:
+        result = run(db=get_db(), auth=get_auth(), force=True)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Seed failed: {e}")
+        return {"success": False, "error": str(e)}
+
+
 class ProvisionRequest(BaseModel):
     setup_key: str
 
