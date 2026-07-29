@@ -20,7 +20,7 @@ from app.middleware.auth import get_tenant_user, get_safety_manager
 from app.services.report_service import ReportService
 from app.services.hazard_service import HazardService
 from app.services.risk_matrix import compute_risk_index, get_risk_level, classify_risk
-from app.middleware.rate_limit import limiter, RATE_LIMITS
+from app.middleware.rate_limit import rate_limit
 
 router = APIRouter()
 
@@ -46,7 +46,7 @@ async def submit_report(
 
 
 @router.post("/mor", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit(RATE_LIMITS["mor_submit"])
+@rate_limit("mor_submit")
 async def submit_mor(
     request: Request,
     report: MorCreate,
@@ -93,7 +93,7 @@ async def submit_mor(
 
 
 @router.post("/vsr", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit(RATE_LIMITS["vsr_submit"])
+@rate_limit("vsr_submit")
 async def submit_vsr(
     request: Request,
     report: ReportCreate,
