@@ -90,12 +90,15 @@ def _safe_airline(method_name: str, svc: DashboardService, **kwargs) -> dict:
 async def get_recent_reports(
     days: int = Query(90, ge=1, le=365),
     page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=100),
+    page_size: int = Query(10, ge=1),
     cursor: Optional[str] = Query(None),
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
+    clamped = min(page_size, settings.REPO_MAX_PAGE_SIZE)
+    if clamped != page_size:
+        logger.info(f"page_size clamped from {page_size} to {clamped} for tenant {user.get('tenant_id')}")
     svc = DashboardService(user)
-    data = _safe_airline("get_recent_reports", svc, days=days, page=page, page_size=page_size, cursor=cursor)
+    data = _safe_airline("get_recent_reports", svc, days=days, page=page, page_size=clamped, cursor=cursor)
     return _envelope(data)
 
 

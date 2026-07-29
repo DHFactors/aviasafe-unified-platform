@@ -43,6 +43,15 @@ async def list_verifications(
     return [_to_verification_response(d) for d in docs]
 
 
+@router.get("/verifications/stats", response_model=VerificationStats)
+async def get_verification_stats(
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    service = _get_service(user)
+    stats = service.get_verification_stats(user)
+    return stats
+
+
 @router.get("/verifications/{verification_id}", response_model=dict)
 async def get_verification(
     verification_id: str,
@@ -53,15 +62,6 @@ async def get_verification(
     if not doc:
         raise HTTPException(status_code=404, detail="Verification not found")
     return _to_verification_response(doc)
-
-
-@router.get("/verifications/stats", response_model=VerificationStats)
-async def get_verification_stats(
-    user: Dict[str, Any] = Depends(get_current_user),
-):
-    service = _get_service(user)
-    stats = service.get_verification_stats(user)
-    return stats
 
 
 # ── Closure Endpoints ──
