@@ -65,9 +65,12 @@ async def get_dashboard_overview(
     days: int = Query(90, ge=1, le=365),
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
+    logger.info(f"Dashboard overview request: user={user.get('email')}, role={user.get('role')}, tenant_id={user.get('tenant_id')}, days={days}")
     svc = DashboardService(user)
     try:
         data = svc.get_airline_overview(days=days)
+        kpi_count = (data.get("kpis") or {}).get("total_reports", -1)
+        logger.info(f"Dashboard overview result for tenant {user.get('tenant_id')}: total_reports={kpi_count}")
         return _envelope(data)
     except Exception as e:
         logger.error(f"Dashboard overview failed for tenant {user.get('tenant_id')}: {e}")

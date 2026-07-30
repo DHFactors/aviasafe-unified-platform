@@ -226,13 +226,15 @@ class DashboardService:
     def _base_filter(self, days: int = DEFAULT_DAYS, **overrides) -> ReportFilter:
         """Build a tenant-scoped filter with a default date range."""
         now = datetime.now(timezone.utc)
+        date_from = now - timedelta(days=days)
         params = dict(
             tenant_id=self.tenant_id,
             cross_tenant=False,
-            date_from=now - timedelta(days=days),
+            date_from=date_from,
             date_to=now,
         )
         params.update(overrides)
+        logger.info(f"_base_filter: tenant_id={self.tenant_id}, days={days}, date_from={date_from}, date_to={now}")
         return ReportFilter(**params)
 
     def _caan_filter(self, days: int = DEFAULT_DAYS, **overrides) -> ReportFilter:

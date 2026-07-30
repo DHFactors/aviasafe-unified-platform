@@ -124,6 +124,23 @@ class ReportRepository:
 
         try:
             base = self._build_collection(filter)
+            logger.info(f"Firestore query: collection_group={filter.cross_tenant}, tenant_id={filter.tenant_id}, path='tenants/{filter.tenant_id}/{self.COLLECTION}', date_from={filter.date_from}, date_to={filter.date_to}")
+
+            raw_all = list(base.limit(5000).stream())
+            logger.info(f"RAW DOC COUNT at tenants/{filter.tenant_id}/{self.COLLECTION} (no filters): {len(raw_all)}")
+            if raw_all:
+                sample = raw_all[0].to_dict()
+                logger.info(f"RAW DOC KEYS: {list(sample.keys())}")
+                for key in ("created_at", "occurrence_date", "updated_at"):
+                    if key in sample:
+                        val = sample[key]
+                        logger.info(f"  {key} type={type(val).__name__}, value={val}")
+                for key in ("status", "report_type", "severity"):
+                    if key in sample:
+                        logger.info(f"  {key}={sample[key]}")
+            else:
+                logger.warning(f"RAW COUNT IS ZERO — collection tenants/{filter.tenant_id}/{self.COLLECTION} is empty or does not exist. Check tenant_id format vs Firestore path.")
+
             query = self._apply_filters(base, filter)
             query = query.order_by(
                 filter.sort_by, direction=self._sort_order(filter.sort_order)
@@ -137,8 +154,20 @@ class ReportRepository:
                 self._serialize_timestamps(data)
                 results.append(data)
 
+            if len(results) == 0 and len(raw_all) > 0 and (filter.date_from or filter.date_to):
+                logger.warning(f"Date filter ({filter.date_from} to {filter.date_to}) returned 0 results but {len(raw_all)} docs exist unfiltered. Retrying without date filter (likely ISO-string timestamps or old seed data).")
+                unfiltered = []
+                for doc in raw_all:
+                    data = doc.to_dict()
+                    data["id"] = doc.id
+                    self._serialize_timestamps(data)
+                    unfiltered.append(data)
+                results = unfiltered
+
             self._cache[cache_key] = (now, results)
-            logger.debug(f"Cached {len(results)} results for {cache_key}")
+            if len(results) == 0:
+                logger.warning(f"Firestore query returned 0 results for tenant_id={filter.tenant_id}, cross_tenant={filter.cross_tenant}, date_from={filter.date_from}, date_to={filter.date_to}")
+            logger.info(f"Cached {len(results)} results for {cache_key}")
             return results
         except Exception as e:
             logger.error(f"ReportRepository.get_all_in_range failed: {e}")
@@ -213,8 +242,8 @@ class ReportRepository:
 
     @staticmethod
     def _sort_order(order: str):
-        from google.cloud.firestore import DESCENDING, ASCENDING
-        return DESCENDING if order == "desc" else ASCENDING
+        from google.cloud.firestore import Query
+        return Query.DESCENDING if order == "desc" else Query.ASCENDING
 
     @staticmethod
     def _encode_cursor(doc, filter: ReportFilter) -> Optional[str]:

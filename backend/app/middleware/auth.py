@@ -61,6 +61,12 @@ async def get_current_user(
     role = decoded_token.get('role', settings.ROLE_DEFAULT)
     tenant_id = decoded_token.get('tenant_id')
 
+    if tenant_id:
+        normalized = tenant_id.replace('_', '-')
+        if normalized != tenant_id:
+            logger.info(f"Normalized tenant_id for {email}: '{tenant_id}' -> '{normalized}'")
+            tenant_id = normalized
+
     # Fallback: if no claims in token, look up user by email in Firestore tenants
     if role == settings.ROLE_DEFAULT and not tenant_id and email:
         tenant_info = _lookup_tenant_by_email(email)
@@ -68,6 +74,8 @@ async def get_current_user(
             role = tenant_info["role"]
             tenant_id = tenant_info["tenant_id"]
             logger.info(f"Claims resolved via Firestore fallback for {email}: role={role}, tenant={tenant_id}")
+
+    logger.info(f"Authenticated user {email}: role={role}, tenant_id={tenant_id}")
 
     return {
         "uid": decoded_token['uid'],
