@@ -167,6 +167,19 @@ const RECAPTCHA_SITE_KEY = '6LcAAAAA'; // TODO: Replace with actual ReCaptcha v3
 
 function initAppCheck() {
     if (typeof firebase === 'undefined' || !firebase.appCheck) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('appcheck') === 'false') {
+        console.log('ℹ️ App Check skipped via ?appcheck=false');
+        return;
+    }
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        console.log('ℹ️ App Check skipped (localhost)');
+        return;
+    }
+    if (RECAPTCHA_SITE_KEY === '6LcAAAAA' || RECAPTCHA_SITE_KEY.length < 20) {
+        console.warn('⚠️ App Check skipped — placeholder/invalid reCAPTCHA key. Set RECAPTCHA_SITE_KEY in firebase.js');
+        return;
+    }
     try {
         firebase.appCheck().activate(RECAPTCHA_SITE_KEY, true);
         console.log('✅ App Check activated');
