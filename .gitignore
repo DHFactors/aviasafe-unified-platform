@@ -3,6 +3,10 @@
 backend/.env
 *.env
 
+# reCAPTCHA / App Check keys
+recaptch.txt
+*recaptch*
+
 # Firebase service account key
 service-account.json
 *.service-account.json
@@ -11,8 +15,13 @@ service-account.json
 .venv/
 venv/
 env/
+
+# Python cache & build artifacts
 __pycache__/
 *.pyc
+.pytest_cache/
+.coverage
+*.egg-info/
 
 # Node.js
 node_modules/
