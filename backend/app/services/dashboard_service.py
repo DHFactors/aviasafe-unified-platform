@@ -234,7 +234,7 @@ class DashboardService:
             date_to=now,
         )
         params.update(overrides)
-        logger.info(f"_base_filter: tenant_id={self.tenant_id}, days={days}, date_from={date_from}, date_to={now}")
+        logger.debug(f"_base_filter: tenant_id={self.tenant_id}, days={days}, date_from={date_from}, date_to={now}")
         return ReportFilter(**params)
 
     def _caan_filter(self, days: int = DEFAULT_DAYS, **overrides) -> ReportFilter:
