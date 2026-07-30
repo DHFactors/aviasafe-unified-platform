@@ -1,608 +1,439 @@
 # PROJECT_STATUS.md
 
-**Project:** AviaSAFE SMS Platform  
-**Status:** Production-Ready (Release Candidate)  
-**Version:** Release Candidate 1.0  
-**Last Updated:** 28 July 2026
+**Project:** AviaSAFE SMS Platform
+**Status:** Production-Ready (Release Candidate)
+**Version:** Release Candidate 1.0
+**Last Updated:** 30 July 2026
 
 ---
 
-# Overall Status
+## 1. Repository State
 
-The project has successfully evolved from a proof-of-concept into a functional multi-tenant Aviation Safety Management System (SMS) platform aligned with ICAO Annex 19, ICAO Doc 9859, ICAO Doc 10159, ICAO Doc 10959, and CAAN CAR-19.
+| Item | Status |
+|------|--------|
+| **Branch** | `main` (single branch, tracking `origin/main`) |
+| **HEAD commit** | `70a96b6` — *chore: demote diagnostic logs from info to debug in repository and dashboard service* |
+| **Working tree** | 2 modified files, 1 untracked file |
+| **Tags** | None |
+| **Stale/debug endpoints** | `/check-data`, `/fix-timestamps`, `/migrate-seed-data`, `/create-seed-users` — debug/admin endpoints for seed data migration; safe behind `setup_key` guard |
 
-Current implementation includes:
+### Unstaged Changes
+| File | Change |
+|------|--------|
+| `.firebase/hosting.cHVibGlj.cache` | Hosting deployment cache updated (hash for `js/firebase.js` refreshed) |
+| `.gitignore` | Added `recaptch.txt` / `*recaptch*` patterns to prevent secret key leaks |
+| `public/js/firebase.js` | reCAPTCHA key replaced with live key; App Check uses `ReCaptchaV3Provider` |
+| `PROJECT_STATUS.md` | This file — comprehensive status update |
+| `public/docs/tenant-guide/` (new) | Docs-as-code directory structure (manifest, templates, overview) |
+| `tests/e2e/` (new) | E2E test scripts relocated from project root |
+| `tests/README.md` (new) | Test directory documentation |
+| `scripts/firebase/` (new) | Firebase admin scripts relocated from project root |
+| `scripts/seed/` (new) | Seed data scripts relocated from project root |
+| `test_super.py` (deleted) | Removed — duplicate of `e2e_diag.py` |
 
-- Firebase Authentication
-- Firestore Multi-tenancy
-- Secure Role-Based Access Control
-- Safety Culture Survey
-- Voluntary Safety Reporting (VSR)
-- Mandatory Occurrence Reporting (MOR)
-- Airline SMS Dashboard
-- CAAN SSP Dashboard
-- AI-assisted ICAO Taxonomy Classification
-- Dashboard APIs
-- Production-ready backend architecture
-- **ICAO Risk Assessment (Severity × Probability → Risk Index)**
-- **AI-grounded risk assessment with explanations**
-- **Safety Manager Override workflow**
-- **14/14 end-to-end tests passing**
-- **Firebase static CDN loading (eliminated race condition across all pages)**
-- **ICAO Doc 9859 color-coded heat map on CAAN dashboard**
-- **Cross-tenant collectionGroup aggregation on CAAN dashboard**
-- **Top Risks by ADREP category on CAAN dashboard**
-- **Survey tenant context (airline name, period dates, days remaining)**
-- **Survey Period Management Dashboard (`/dashboard/`)**
+### Recent Commits (3 most recent)
 
-The project has completed Product Charter Alignment, ICAO Risk Assessment implementation, and is now entering live deployment.
-
----
-
-# Product Charter Alignment
-
-**Status:** ✅ COMPLETE
-
-All development has been aligned with the approved Product Charter.
-
-The platform has only three operational data sources:
-
-1. Safety Culture Survey
-2. Voluntary Safety Reporting (VSR)
-3. Mandatory Occurrence Reporting (MOR)
-
-The platform has only two intelligence consumers:
-
-- Airline SMS Dashboard
-- CAAN SSP Dashboard
-
-No functionality outside this scope shall be introduced without explicit approval.
+| Commit | Date | Description |
+|--------|------|-------------|
+| `70a96b6` | 30 Jul 08:46 | Demoted diagnostic `logger.info` → `logger.debug` in repository.py and dashboard_service.py |
+| `c1fa7f6` | 30 Jul 08:35 | Normalized `tenant_id` underscores→hyphens in auth middleware; added Firestore diagnostics (raw doc counts, field inspection); added date-filter fallback when date filter returns 0 results but raw docs exist |
+| `c8c252a` | 30 Jul 07:08 | Added App Check bypass guards: `?appcheck=false` URL param, localhost detection, placeholder key validation |
 
 ---
 
-# Completed Phases
+## 2. Database Setup (Firestore)
 
-## Phase 1
+### Project
+- **Firebase Project ID:** `gap-analysis-ssp`
+- **Firestore Location:** `nam5` (US multi-region)
+- **Alias:** `smssurvey` (in `.firebaserc`)
 
-### Firestore Security
+### Collections & Data Model
+All tenant data is isolated under `/tenants/{tenant_id}/`:
 
-Completed
+| Subcollection | Purpose | Access Level |
+|---|---|---|
+| `metadata/{doc}` | Tenant configuration, survey settings | SUPER_ADMIN write; tenant+Caan read |
+| `responses/{id}` | Survey responses (930 seeded) | Public create; immutable; tenant+Caan read |
+| `reports/{id}` | VSR reports (620 seeded) | Public create; tenant+Caan read; update allowed |
+| `mor/{id}` | MOR reports (245 seeded) | Auth create; tenant+Caan read; update allowed |
+| `hazards/{id}` | Safety hazards (auto-created from reports) | Auth create; full CRUD by tenant |
+| `can_cap/{id}` | Corrective Action Notices/Plans | Auth create; full CRUD by tenant |
+| `verification/{doc}` | Hazard verifications & closures | Auth create; full CRUD by tenant |
+| `flight_diversions/{doc}` | Flight diversion records | Auth create; full CRUD by tenant |
 
-Implemented
+Root-level collections:
+| Collection | Purpose |
+|---|---|
+| `analytics/{doc}` | Aggregate analytics (CAAN_SMD and SUPER_ADMIN only) |
+| `public_responses/{doc}` | Public survey responses |
+| `users/{uid}` | User profiles |
 
-- Multi-tenant security rules
-- Role-based access
-- Claims migration
-- Security validation
+### Security Rules (`firestore/firestore.rules`)
+- **Roles enforced:** `SUPER_ADMIN` (full), `CAAN_SMD` (cross-tenant read), `AIRLINE_ADMIN` (tenant-scoped), `USER` (basic authenticated)
+- **Immutable audit trail:** Responses/reports cannot be deleted
+- **Public submission:** VSR reports and survey responses allow unauthenticated creation (anonymous safety reporting)
+- **CAAN Just Culture:** CAAN has cross-tenant read access but no write/delete; dashboard is anonymized
+- **Tenant isolation:** `isOwnTenant()` validates `tenant_id` matches the request auth token claim
 
-Status
+### Composite Indexes (`firestore.indexes.json`)
+6 indexes deployed:
+- `responses` → `submittedAt` DESC
+- `reports` → `submittedAt` DESC
+- `reports` → `reportType` ASC, `submittedAt` DESC
+- `reports` → `status` ASC, `submittedAt` DESC
+- `classifications` → `occurrenceType` ASC, `createdAt` DESC
+- `metrics` → `metricType` ASC, `updatedAt` DESC
 
-✅ Complete
+**Note:** A secondary `backend/firestore.indexes.json` exists with `collection_group`-scoped indexes using snake_case field names — this is not deployed. The root-level file is authoritative.
 
----
+### Seed Data
+| Dataset | Count |
+|---------|-------|
+| Operators (airlines) | 6 active / 20 provisioned |
+| Survey Responses | 930 |
+| VSR Reports (voluntary) | 620 |
+| MOR Reports (mandatory) | 245 |
+| Firestore Documents (total) | ~1,808 |
+| Auth Users (provisioned) | 21+ |
 
-## Phase 2
-
-### Authentication
-
-Completed
-
-Implemented
-
-- Firebase Authentication
-- Custom Claims
-- JWT validation
-- Tenant isolation
-
-Status
-
-✅ Complete
-
----
-
-## Phase 3
-
-### Backend Foundation
-
-Completed
-
-Implemented
-
-- FastAPI
-- Repository layer
-- Service layer
-- Firestore integration
-- AI integration
-- Configuration management
-- Logging
-- Metrics
-- Health endpoints
-
-Status
-
-✅ Complete
+### Known Seed Data Issues
+- **Tenant ID mismatch (resolved):** Seed data used underscore IDs (`buddha_air`); provisioned users used hyphens (`buddha-air`). Migration endpoint `/migrate-seed-data` and `/fix-tenant-ids` were deployed and run.
+- **ISO string timestamps (resolved):** Old seed data stored dates as ISO strings instead of Firestore Timestamps. `/fix-timestamps` endpoint remediated this. Repository layer retains a **fallback** that retries queries without date filter when date-filtered queries return 0 results but raw docs exist.
 
 ---
 
-## Phase 4
+## 3. App Check Configuration
 
-### ICAO Risk Assessment Lifecycle
+### Frontend (`public/js/firebase.js:166`)
 
-Completed
+```
+RECAPTCHA_SITE_KEY = '6LeCcWwtAAAAAFK2Y3hwxjO3pHGX6xaFxFIzF6Jv'  (live key)
+```
 
-Implemented
+### Initialization
+```js
+firebase.appCheck().activate(
+    new firebase.appCheck.ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+    true  // token auto-refresh enabled
+);
+```
 
-- Severity (1-5) and Probability (1-5) dropdowns on VSR/MOR forms
-- Auto-calculation of Risk Index (Severity × Probability)
-- AI-suggested assessment with severity_explanation and probability_explanation
-- Safety Manager override workflow (official assessment)
-- Risk Index display on report detail page
-- Cross-tenant CAAN oversight
-- Full lifecycle: Report → AI Analysis → Override → Display
-- 14/14 end-to-end tests passing
+### Bypass Conditions
+App Check is skipped when any of the following are true:
+1. URL contains `?appcheck=false` query parameter
+2. Hostname is `localhost` or `127.0.0.1` (local development)
+3. `RECAPTCHA_SITE_KEY.length < 20` (invalid/placeholder key)
 
-Status
+### Backend App Check
+The **backend** does not enforce App Check tokens. Firebase Admin SDK bypasses App Check by design (service account credentials are used instead). App Check is enforced client-side only.
 
-✅ Complete
-
----
-
-## Phase 5
-
-### Production Hardening
-
-Completed
-
-Implemented
-
-- Security headers
-- Rate limiting
-- Cursor pagination
-- Firestore aggregate queries
-- Structured logging
-- Configuration management
-- Docker manifests
-- Cloud Run manifests
-- API versioning
-- Exception handling
-- Test framework
-
-Status
-
-✅ Complete
+### Status
+- **Client:** ✅ Active — reCAPTCHA v3 with live site key, auto-refresh on
+- **Backend:** ✅ Bypassed by design (Admin SDK uses service account)
+- **Secret key:** Stored in untracked `recaptch.txt` file — not in version control
 
 ---
 
-## Phase 6A
+## 4. Architecture Overview
 
-### Product Charter Alignment
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Frontend (Firebase Hosting)                                │
+│  public/ — 29 HTML pages, 15 core JS modules               │
+│    ┌─────────────────────────────────────────────────┐      │
+│    │  firebase.js → App Check → Auth → API Client    │      │
+│    └─────────────────────────────────────────────────┘      │
+│  src/ — Astro marketing pages (index + layout)              │
+└──────────┬──────────────────────────────────────────────────┘
+           │ HTTPS (JWT Bearer Token)
+           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Backend (FastAPI — Render / Cloud Run)                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Auth     │  │ Routes   │  │ Services │  │ Models   │   │
+│  │ Middleware│→ │ (9 mods) │→ │(12 mods) │→ │ (11 mods)│   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │ Firebase Admin SDK → Firestore (gap-analysis-ssp) │      │
+│  └──────────────────────────────────────────────────┘      │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │ Gemini 2.5 Pro AI → risk assessment & taxonomy   │      │
+│  └──────────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
 
-Completed
-
-The implementation has been realigned with the approved Product Charter.
-
-#### Survey
-
-✅ Replaced custom culture dimensions with:
-
-- Four ICAO SMS Components (Pillars)
-- Twelve ICAO SMS Elements
-
-Each survey response now stores:
-
-- Individual Element Scores
-- Computed Pillar Scores
-- Overall SMS Health Score (`overall_sms_health`)
-
-Survey now measures only SMS capability.
-
----
-
-#### VSR
-
-Refocused exclusively on hazard identification.
-
-Removed:
-
-- corrective_actions
-- lessons_learned
-- safety_action_required
-
-Retained:
-
-- narrative
-- ICAO taxonomy classification
-- occurrence_type
-- severity
-- risk_score (temporary until ICAO Risk Index implementation)
-- AI classification
-
-VSR now represents operational hazard reporting only.
+### Key Design Patterns
+- **Multi-tenant:** Data fully isolated by `tenant_id` in Firestore path
+- **Role-based access:** 4 roles (USER, AIRLINE_ADMIN, CAAN_SMD, SUPER_ADMIN)
+- **Dual API prefix:** `/api/v1/...` (primary) and `/api/...` (legacy, hidden from OpenAPI)
+- **Repository pattern:** In-memory LRU cache (60s TTL) for dashboard queries
+- **AI integration:** Async Gemini analysis on report submission; ICAO risk assessment (severity × probability)
+- **Rate limiting:** Redis-backed (Upstash) with 5 limit types; in-memory fallback per IP (60 req/min)
 
 ---
 
-#### MOR
+## 5. Backend Service Status
 
-Refocused on regulatory occurrence reporting.
+### API Routes (143 total)
+| Router | Prefix | Endpoints |
+|--------|--------|-----------|
+| Auth | `/api/v1/auth` | 4 (verify, debug-verify, register, refresh) |
+| Reports | `/api/v1/reports` | 6 (create VSR, create MOR, list, get, risk-assessment, auto-hazard) |
+| Dashboard | `/api/v1/dashboard` | 13 (airline × 6, CAAN × 5, admin × 3) |
+| Admin | `/api/v1/admin` | 7 (risk-matrix CRUD, setup-claims, seed data, provisioning, migration) |
+| Hazards | `/api/v1/hazards` | 7 (CRUD, stats, status, assign) |
+| CAN/CAP | `/api/v1/cans` | 11 (CAN CRUD, CAP submit/list/review) |
+| Verification | `/api/v1/verification` | 7 (verification CRUD, closure, reopen) |
+| Reporting | `/api/v1/reporting` | 8 (quarterly/annual generation, list, get, PDF export) |
+| Flight Diversions | `/api/v1/flight-diversions` | 8 (CRUD, stats, hazard linking) |
+| Metrics | `/metrics` | 1 (Prometheus-style) |
+| Health | `/health`, `/live`, `/ready`, `/` | 4 |
 
-Removed:
+### Services (12 modules)
+| Service | Purpose |
+|---------|---------|
+| `Repository` | Firestore query builder, pagination (cursor-based), caching |
+| `MetricsService` | KPI/trend/risk-distribution calculations |
+| `DashboardService` | Role-aware orchestration for all dashboard endpoints |
+| `ReportService` | VSR/MOR CRUD with auto-AI analysis trigger |
+| `HazardService` | Hazard register CRUD, status workflow |
+| `CanCapService` | Corrective Action Notice/Plan lifecycle |
+| `VerificationService` | Hazard verification, closure, reopening |
+| `FlightDiversionService` | Diversion CRUD + hazard linking |
+| `ReportGenerator` | Quarterly/annual safety report generation (PDF) |
+| `Gemini` | AI analysis via Google Gemini 2.5 Pro |
+| `RiskMatrix` | ICAO 5×5 severity×probability → risk index |
+| `PDFGenerator` | ReportLab-based PDF export with placeholder fallback |
 
-- corrective_actions
-- lessons_learned
-- safety_action_required
-- reviewed_by
-- reviewed_at
+### Authentication & Authorization
+- **Token verification:** Firebase Admin SDK `verify_id_token()` with RS256
+- **Role resolution:** Custom claims from token → fallback to Firestore tenant lookup if claims not yet propagated
+- **Tenant normalization:** Underscores → hyphens in `tenant_id` (handles provisioned vs seed data mismatch)
+- **Role guards:** 6 dependency guard functions (tenant_user, caan_user, admin_user, safety_manager, responsible_manager, accountable_executive)
 
-Retained:
-
-- investigation_status
-
-MOR now aligns with regulatory occurrence tracking while avoiding investigation management functionality.
-
----
-
-#### AI
-
-Reduced to an assisting capability.
-
-Removed:
-
-- ai_model
-- prompt_version
-- processing_time_ms
-- processed_at
-
-Current AI output:
-
-- occurrence_type
-- human_factors
-- suggested_risk_level
-- confidence
-- summary
-- trend_indicators
-- mandatory_check (MOR only)
-- suggested_severity
-- suggested_probability
-- suggested_risk_index
-- severity_explanation
-- probability_explanation
-
-AI no longer stores implementation metadata.
+### Middleware Stack (order of execution)
+1. `SecurityHeadersMiddleware` — HSTS, nosniff, DENY framing, XSS protection, referrer policy, permissions policy
+2. `RateLimitMiddleware` — 60 req/min per IP (in-memory); Redis-backed per-tenant limits on auth/report endpoints
+3. `RequestLoggingMiddleware` — Request UUID, method/path/status/duration/user logging
 
 ---
 
-#### Terminology Alignment
+## 6. Frontend Service Status
 
-Updated:
+### Pages (29 HTML files)
+| Section | Pages | Status |
+|---------|-------|--------|
+| **Core** | Landing, Login, Safety Dashboard, CAAN Dashboard | ✅ |
+| **Survey** | Survey app (bilingual EN/NP), Survey Period Admin Dashboard | ✅ |
+| **VSR/MOR** | VSR submission, MOR submission, Report detail, Report list | ✅ |
+| **Hazards** | Hazard register, Create, Detail, Verify, Approve closure | ✅ |
+| **CAN/CAP** | CAN list, Detail, CAP submit, CAP review | ✅ |
+| **Flight Diversions** | List, Detail, Create | ✅ |
+| **Reporting** | Report generation, Quarterly/Annual list & PDF export | ✅ |
+| **Admin** | Tenant & user management, system stats | ✅ |
+| **Portal** | Tenant portal, Portal dashboards, Portal survey | ✅ |
 
-- package documentation
-- configuration descriptions
-- seed documentation
+### JavaScript Modules (15 core)
+| Module | Purpose |
+|--------|---------|
+| `firebase.js` | Firebase init, App Check, auth helpers (`getCurrentUser`, `waitForFirebase`) |
+| `api/client.js` | `ApiClient` singleton — auto-auth token injection, 401 redirect |
+| `api/dashboard.js` | Dashboard API calls |
+| `dashboard.js` | Survey dashboard rendering |
+| `dashboard-utils.js` | Chart/table helpers |
+| `vsr.js` | VSR form submission & validation |
+| `mor.js` | MOR form submission & validation |
+| `reports.js` | Report listing |
+| `report.js` | Report detail view |
+| `hazards.js` | Hazard CRUD |
+| `verification.js` | Verification/closure workflow |
+| `can_cap.js` | CAN/CAP lifecycle |
+| `flight_diversions.js` | Diversion CRUD |
+| `tenant.js` | Tenant-specific logic |
 
-Terminology now consistently references ICAO SMS concepts.
-
----
-
-#### Verification
-
-Completed
-
-7-point verification passed.
-
-Result:
-
-Seed module fully complies with the Product Charter.
-
-Status
-
-✅ Complete
-
----
-
-## Phase 6B
-
-### Deployment & Live Prototype
-
-Completed
-
-Implemented
-
-- Frontend deployed to Firebase Hosting (gap-analysis-ssp.web.app)
-- Backend deployed to Render (aviasafe-unified-platform.onrender.com)
-- Dockerfile with Python 3.11-slim for Render compatibility
-- render.yaml Blueprint for automated deployment
-- Login redirect race condition fixed (onAuthStateChanged + getIdTokenResult(true))
-- getCurrentUser() promoted to global helper in firebase.js
-- CORS configured for cross-origin frontend-backend communication
-- Firebase Hosting rewrites configured for SPA routing
-
-### Platform Hardening & Feature Delivery (July 27)
-
-Completed
-
-Implemented
-
-- **Firebase initialization race condition eliminated** — All pages now load Firebase SDK via static CDN script tags (removed dynamic async loading)
-- **Firestore persistence removed** — `enablePersistence()` removed to prevent multi-tab conflicts across all pages
-- **CAAN dashboard aggregation** — Switched from per-tenant N+1 queries to `collectionGroup` for all reports/responses
-- **CAAN heat map** — ICAO Doc 9859 color coding (green 1-3, yellow 4-6, orange 8-12, red 15-25)
-- **CAAN Top Risks** — Ranked ADREP category table added
-- **Survey tenant context** — Airline name displayed in header, period dates shown, days remaining countdown
-- **Survey live saving** — Responses saved to `tenants/{id}/responses` (was demo-only)
-- **Survey Period admin dashboard** — `/dashboard/` page for SUPER_ADMIN and AIRLINE_ADMIN to set open/close dates
-- **All 7 pages consistent** — CDN-first loading on caan, safety, login, vsr, mor, detail, admin
-
-Status
-
-✅ Complete
+### Firebase Hosting Config
+- **Static assets:** 7-day cache (images), 1-day cache (JS/CSS), both `immutable`
+- **SPA rewrite:** All routes → `/index.html`
+- **Security headers:** X-Content-Type-Options (nosniff), X-Frame-Options (DENY), X-XSS-Protection (1; mode=block), Referrer-Policy (strict-origin-when-cross-origin)
+- **CDN-first loading:** Firebase SDK loaded via static `<script>` tags in HTML (race condition eliminated)
 
 ---
 
-# Seed Dataset
+## 7. Recent Backend/Frontend Changes
 
-Current Dataset
+### Backend Changes (last 3 commits)
 
-Operators
+**Repository Layer** (`backend/app/services/repository.py`):
+- Demoted verbose field-level diagnostic logging from `info` → `debug`
+- Added raw doc count logging before filtered queries for debugging zero-result scenarios
+- Added date-filter fallback: when date-filtered query returns 0 results but raw docs exist, retries without date filter (handles ISO-string timestamps in old seed data)
+- Changed `Query.DESCENDING`/`Query.ASCENDING` import to use `google.cloud.firestore.Query` (avoid deprecation)
 
-- Buddha Air
-- Yeti Airlines
-- Summit Air
-- Sita Air
-- Air Dynasty Heli Services
-- Simrik Air
+**Dashboard Service** (`backend/app/services/dashboard_service.py`):
+- Demoted `logger.info` → `logger.debug` in `_base_filter()`
+- Added request/response logging in `get_dashboard_overview` route
 
-Dataset
+**Auth Middleware** (`backend/app/middleware/auth.py`):
+- Added `tenant_id` normalization: underscores → hyphens in token claims
+- Added info log of final authenticated user
 
-- Survey Responses: 930
-- VSR Reports: 620
-- MOR Reports: 245
-- Firestore Documents: 1,808
-- Demo Users: 21
+### Frontend Changes (unstaged)
+**App Check** (`public/js/firebase.js`):
+- **reCAPTCHA key:** Replaced placeholder `'6LcAAAAA'` with live key `'6LeCcWwtAAAAAFK2Y3hwxjO3pHGX6xaFxFIzF6Jv'`
+- **Provider pattern:** Changed `firebase.appCheck().activate(key, true)` → `firebase.appCheck().activate(new firebase.appCheck.ReCaptchaV3Provider(key), true)` (uses modular SDK provider pattern)
+- **Validation:** Removed stale placeholder literal check; now validates by length only (`RECAPTCHA_SITE_KEY.length < 20`)
+- Changes are **unstaged** — ready for commit
 
-Dataset Properties
-
-- Deterministic
-- Repeatable
-- Idempotent
-- Tenant Isolated
-- Operationally realistic
-- ICAO-aligned
-
----
-
-# Current Architecture
-
-Frontend (Firebase Hosting)
-
-↓
-
-Firebase Authentication
-
-↓
-
-JWT (Bearer Token)
-
-↓
-
-FastAPI Backend (Render)
-
-↓
-
-Repository Layer
-
-↓
-
-Firestore (nam5 — US multi-region)
+### Infrastructure Changes
+- No deployment configuration changes
+- Hosting cache (`hosting.cHVibGlj.cache`) auto-updated on last deploy
 
 ---
 
-# AI
+## 8. Testing Status
 
-Current Responsibilities
+### Unit/Integration Tests (`backend/tests/`)
+| Test Suite | Tests | Status |
+|-----------|-------|--------|
+| `test_health.py` | 3 | ✅ All pass — health, live, root endpoints |
+| `test_metrics_service.py` | 7 | ✅ All pass — KPI calculations, risk distribution, trends, AI/organizational KPIs |
+| `test_risk_assessment_lifecycle.py` | 4 (scenarios) | ✅ All pass — submission auto-calculation, AI suggestions, Safety Manager override, RBAC enforcement (600 lines, full Firestore mock stack) |
 
-- ICAO taxonomy classification
-- Narrative summarization
-- Confidence scoring
-- Trend identification
-- Mandatory occurrence validation (MOR)
-- **Severity and Probability assessment with natural-language explanations**
-- **Risk Index suggestion**
+### End-to-End Tests (`tests/e2e/`)
+| Script | Purpose | Status |
+|--------|---------|--------|
+| `e2e_test.py` | 10-scenario comprehensive E2E (VSR, MOR, hazards, CAN/CAP, verification, reporting, diversions, dashboards, RBAC) | ✅ |
+| `e2e_test2.py` | Round 2 — simplified assertions, alternate-path resilience probing | ✅ |
+| `e2e_auth.py` | Token acquisition & endpoint smoke test | ✅ |
+| `e2e_diag.py` | Token decoding & endpoint accessibility diagnostics | ✅ |
+| `e2e_route_check.py` | OpenAPI spec route inspection | ✅ |
+| `e2e_setup_claims.py` | One-shot claims setup via `/api/v1/admin/setup-claims` | ✅ |
+| `test_dash.py` | Quick dashboard test with Buddha Air tenant | ✅ |
+| `e2e_tokens.json` | Token cache (generated by `e2e_auth.py`) | — |
 
-AI processing is asynchronous.
+### Scripts (`scripts/`)
+| Directory | Scripts | Purpose |
+|-----------|---------|---------|
+| `firebase/` | `delete-users.js`, `set-claims.js`, `verify-claims.js` | Firebase Admin SDK user management |
+| `seed/` | `run_seed.py`, `check_seed.py` | Seed data utilities |
 
-AI suggestions are reviewable and overridable by the Safety Manager.
-
----
-
-# Dashboard Status
-
-## Airline Dashboard
-
-Working
-
-Primary Objectives
-
-1. Measure SMS Health (Survey)
-
-2. Display Operational Risks (VSR + MOR)
-
-3. **View and manage Risk Assessments**
-
-4. **Override AI suggestions with official assessments**
-
----
-
-## CAAN SSP Dashboard
-
-Working — **Updated with cross-tenant aggregation**
-
-Primary Objectives
-
-1. Monitor SMS Health across all operators
-
-2. Monitor national operational risks
-
-3. Measure SSP effectiveness in real time
-
-4. **Cross-tenant risk assessment oversight**
-
-Recent Improvements
-
-- **Cross-tenant aggregation** using `collectionGroup` queries (replaced N+1 per-tenant loop)
-- **ICAO Doc 9859 color-coded heat map** (green/yellow/orange/red by risk index)
-- **Top Risks by ADREP category** with ranked horizontal bar chart
-- **Status column removed** (CAAN monitors safety data, not tenant login status)
+### E2E Test Credentials
+| User | Email | Role | Tenant | Password |
+|------|-------|------|--------|----------|
+| Admin | `admin@aviasafesystems.com` | SUPER_ADMIN | — | Admin123! |
+| Sal | `sal@aviasafesystems.com` | AIRLINE_ADMIN | sita-air | Sal123! |
+| Salsafety | `salsafety@aviasafesystems.com` | AIRLINE_ADMIN | sita-air | Safety123! |
+| SMD | `smd@caanepal.gov.np` | CAAN_SMD | — | Smd123! |
 
 ---
 
-# Infrastructure
+## 9. Infrastructure & Deployment
 
-Prototype (Live)
+### Current Deployment (Prototype)
+| Component | Provider | URL |
+|-----------|----------|-----|
+| **Frontend** | Firebase Hosting (Spark) | `https://gap-analysis-ssp.web.app` |
+| **Backend** | Render (Free) | `https://aviasafe-unified-platform.onrender.com` |
+| **Database** | Firestore (nam5) | — |
+| **Auth** | Firebase Authentication | — |
+| **AI** | Google Gemini 2.5 Pro | — |
+| **Rate Limiting** | Upstash Redis | — |
 
-Hosting
+### Target Deployment (Commercial)
+| Component | Provider |
+|-----------|----------|
+| **Frontend** | Firebase Hosting (Blaze) |
+| **Backend** | Google Cloud Run (512MB, 1CPU, 1-10 instances) |
+| **Domain** | `sms.aviasafesystems.com` |
 
-Firebase Hosting (Spark) — gap-analysis-ssp.web.app
+### Containerization
+- **Dockerfile:** Python 3.11-slim, pip install from requirements.txt, uvicorn on port 8000
+- **docker-compose.yml:** Single `api` service, health checks via `/live`, 512MB memory limit
+- **cloudrun.yaml:** Knative Service config with health probes at `/live` and `/ready`
+- **render.yaml:** Render Blueprint Docker deployment with env vars
 
-Backend
-
-Render (Free) — aviasafe-unified-platform.onrender.com
-
-Database
-
-Firestore (nam5)
-
-Authentication
-
-Firebase Authentication
-
-Build
-
-Docker (python:3.11-slim) via render.yaml Blueprint
-
----
-
-Commercial (Target)
-
-Hosting
-
-Firebase Hosting (Blaze)
-
-Backend
-
-Google Cloud Run
-
-Database
-
-Firestore
-
-Authentication
-
-Firebase Authentication
-
-Domain
-
-sms.aviasafesystems.com
+### Key Environment Variables (backend)
+| Variable | Source | Purpose |
+|----------|--------|---------|
+| `FIREBASE_PROJECT_ID` | `.env` / Render secrets | Firebase Admin SDK |
+| `FIREBASE_PRIVATE_KEY` | `.env` / Render secrets | Service account private key |
+| `FIREBASE_CLIENT_EMAIL` | `.env` / Render secrets | Service account email |
+| `GEMINI_API_KEY` | `.env` / Render secrets | Google Gemini AI |
+| `REDIS_URL` | `.env` | Upstash Redis for rate limiting |
+| `ALLOWED_ORIGINS` | `.env` / Render | CORS origins (Firebase, localhost) |
+| `REDIS_ENABLED` | `.env` | Toggle Redis rate limiting |
 
 ---
 
-# Testing Status
+## 10. Known Issues & Risks
 
-Completed
+| Issue | Severity | Status |
+|-------|----------|--------|
+| Debug endpoints (`/check-data`, `/fix-timestamps`, etc.) exposed on production API | **MEDIUM** | Behind `setup_key` guard — acceptable for now |
+| Claims propagation delay — token may lack custom claims immediately after set | **LOW** | Handled via tenant email lookup fallback in auth middleware |
+| Date-filter fallback in repository may return stale data if ISO strings exist | **LOW** | Seed data migration to Timestamps complete; fallback is a safety net |
+| No Cloud Functions deployed (`functions/` is empty) | **LOW** | Not yet required — all logic lives in backend API |
 
-- Authentication
-- Authorization
-- Security Rules
-- Dashboard APIs
-- Repository Layer
-- Metrics
-- Health Endpoints
-- Seed Validation
-- Product Charter Verification
-- ICAO Risk Assessment lifecycle (14 end-to-end tests)
-- **End-to-End Testing � All 9 scenarios passed**
-- **143/143 API routes live and authenticated**
-- **All user roles with correct custom claims enforced**
-- **Cross-tenant isolation verified**
-- **Role-based access control validated**
+## 11. Documentation-as-Code Setup
 
-### Ready For
+A tenant onboarding documentation framework has been established under `public/docs/tenant-guide/`:
 
-- **User Acceptance Testing (UAT)**
-- **Airline Pilot Implementation**
-- **CAAN SSP Pilot Implementation**
-- **Production Deployment**
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| **Manifest** | `public/docs/tenant-guide/manifest.json` | Maps steps 01–03 with IDs, titles, descriptions, and file references |
+| **Template** | `public/docs/tenant-guide/templates/STEP_DOCUMENTATION_TEMPLATE.md` | Standard multi-layer format: Overview, Step-by-Step UI Guide with input matrix, Edge Cases, QA Checklist |
+| **Step 01** | `public/docs/tenant-guide/01-getting-started/1.0-overview.md` | First live doc — login, platform orientation, role-based dashboard walkthrough |
 
----
+The template enforces a consistent structure across all future steps:
+1. **Overview** — purpose, business context, expected outcome
+2. **Step-by-Step UI Guide** — navigation, input matrix (field/type/required/constraints/notes), execution, success confirmation
+3. **Edge Cases** — scenarios, common errors with cause and resolution
+4. **QA Checklist** — verification points for testing each step
 
-# Immediate Next Tasks
+### Planned Steps (manifest)
+| Step | ID | Title |
+|------|----|-------|
+| 01 | `01-getting-started` | Getting Started |
+| 02 | `02-account-setup` | Account & Profile Setup |
+| 03 | `03-safety-reporting` | Safety Reporting (VSR / MOR) |
 
-Priority 1
+## 12. Immediate Next Steps
 
-User Acceptance Testing — begin with seed data validation
+| Priority | Task |
+|----------|------|
+| **P1** | **UAT** — User Acceptance Testing with seed data validation |
+| **P2** | **Expand docs** — Create steps 02 (Account Setup) and 03 (Safety Reporting) |
+| **P3** | **Airline Pilot** — Onboard first airline tenant |
+| **P4** | **CAAN Pilot** — Onboard CAAN SSP regulatory oversight |
+| **P5** | **Production Go-Live** — Migrate from Render free tier to Cloud Run |
+| **P6** | **Survey Visualization** — Survey results dashboard on airline dashboard |
 
-Priority 2
-
-Airline Pilot Implementation
-
-Priority 3
-
-CAAN SSP Pilot Implementation
-
-Priority 4
-
-Production Go-Live
-
-Priority 5
-
-Survey results visualization on airline dashboard
-
----
-
-# Risks
-
-Technical Risk
-
-Low
-
-Product Risk
-
-Low
-
-Primary Risk
-
-Scope creep beyond the approved Product Charter.
-
-Mitigation
-
-No architectural or functional expansion without explicit approval.
+### Completed (Commit 2 — Repository Reorganisation)
+- Root-level E2E scripts moved to `tests/e2e/` (7 files + 1 deleted duplicate)
+- Firebase admin scripts moved to `scripts/firebase/` (3 files)
+- Seed data scripts moved to `scripts/seed/` (2 files)
+- `tests/README.md` created documenting directory structure and run instructions
+- All moves use `git mv` to preserve history
 
 ---
 
-# Success Criteria
+## 13. Configuration Summary
 
-The project will be considered Beta Complete when:
-
-✓ Survey measures SMS capability using the ICAO 4 Components and 12 Elements.
-
-✓ VSR identifies operational hazards using the ICAO taxonomy.
-
-✓ MOR captures mandatory reportable occurrences.
-
-✓ ICAO Risk Assessment (Severity × Probability → Risk Index) is fully implemented.
-
-✓ Airline Dashboard answers:
-
-- How healthy is our SMS?
-- What are our highest operational risks?
-
-✓ CAAN Dashboard answers:
-
-- How healthy is each operator's SMS?
-- What are the industry's highest operational risks?
-- How is the State Safety Programme performing over time?
-
-✓ All dashboards operate entirely from live operational data.
-
-✓ Product Charter compliance is maintained throughout future development.
-
-**Release Candidate 1.0 — All success criteria met. Platform is UAT-ready.**
+```
+Firebase Project:     gap-analysis-ssp (alias: smssurvey)
+Frontend Domain:      gap-analysis-ssp.web.app
+Backend API:          aviasafe-unified-platform.onrender.com
+Firestore Location:   nam5 (US multi-region)
+Firebase SDK:         v9.22.0 (compat)
+Astro:                Static (marketing pages)
+Tailwind:             3.x (Astro pages only)
+FastAPI:              0.109.0
+Python:               3.11-slim (Docker)
+Gemini Model:         gemini-2.0-pro-exp-02-05
+Rate Limiting:        Upstash Redis + in-memory fallback
+Auth:                 Firebase Authentication (JWT Bearer tokens)
+Roles:                USER, AIRLINE_ADMIN, CAAN_SMD, SUPER_ADMIN
+reCAPTCHA v3 Key:     6LeCcWwtAAAAAFK2Y3hwxjO3pHGX6xaFxFIzF6Jv (live)
+App Check:            Active (client-side), auto-refresh enabled
+```
