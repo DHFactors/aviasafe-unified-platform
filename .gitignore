@@ -26,6 +26,9 @@ __pycache__/
 # Node.js
 node_modules/
 
+# Runtime logs
+backend/logs/
+
 # IDE and System Files
 .vscode/
 .idea/
