@@ -1,15 +1,24 @@
 # UAT Readiness Report
 
 **Project:** AviaSAFE SMS Platform
-**Version:** Release Candidate 1.0
-**Date:** 28 July 2026
-**Status:** Ready for User Acceptance Testing
+**Version:** Release Candidate 1.0 (original) — **superseded by RC-1/R-2/R-3, see status report**
+**Date:** 28 July 2026 (original) — updated 2 Aug 2026
+**Status:** Development complete; RC-1 and RC-2 hardening complete; RC-3 (documentation &
+operational readiness) in progress. See
+[PROJECT_STATUS_REPORT_02AUG2026.md](../PROJECT_STATUS_REPORT_02AUG2026.md) for the authoritative
+current status.
 
 ---
 
 ## Executive Summary
 
-The AviaSAFE SMS Platform has completed development and End-to-End (E2E) testing. All 9 test scenarios passed, all 143 API routes are live and authenticated, and role-based access control is enforced correctly across all modules. The platform is now ready for User Acceptance Testing (UAT) with airline safety managers and CAAN regulatory personnel.
+The AviaSAFE SMS Platform has completed development and End-to-End (E2E) testing. All 9 test
+scenarios passed, all business API routes are live and authenticated, and role-based access control
+is enforced correctly across all modules. The platform is ready for User Acceptance Testing (UAT)
+with airline safety managers and CAAN regulatory personnel.
+
+> **Credential policy:** passwords are **env-driven** and never documented in plaintext. Substitute
+> the configured password (see `DEFAULT_SEED_PASSWORD` / `DEFAULT_PROVISION_PASSWORD`).
 
 ---
 
@@ -68,9 +77,10 @@ Scenarios:
   9. Role-Based Access — PASS (all roles correct)
 
 ### API Route Verification
-- Total routes: 143
-- Authenticated routes: 143
-- Public routes: 5 (/, /health, /live, /ready, /metrics)
+- Canonical v1 business routes: **73** (see [API.md](./API.md) for the full inventory)
+- Legacy `/api` aliases exist for backward compatibility (hidden from OpenAPI)
+- Total registered routes (incl. system): ~153
+- Public routes: `/, /health, /live, /ready, /metrics`
 
 ---
 
@@ -88,7 +98,7 @@ Scenarios:
 ## UAT Test Scenarios
 
 ### Airline UAT
-1. Login as Airline Admin (sal@aviasafesystems.com / Sal123!)
+1. Login as Airline Admin (`sal@aviasafesystems.com` / env password)
 2. Submit a VSR at /report/vsr.html
 3. Submit a MOR at /report/mor.html
 4. View Hazard Register at /hazards/
@@ -103,7 +113,7 @@ Scenarios:
 13. View Dashboard at /safety.html
 
 ### CAAN UAT
-1. Login as CAAN SMD (smd@caanepal.gov.np / Smd123!)
+1. Login as CAAN SMD (`smd@caanepal.gov.np` / env password)
 2. View CAAN Dashboard at /caan.html
 3. Verify all tenants hazards visible in hazard register
 4. Verify CAN/CAP data accessible across tenants
@@ -146,7 +156,7 @@ Scenarios:
 
 ### Go Criteria (all met)
 All 9 E2E scenarios pass
-All 143 API routes authenticated and working
+All business API routes authenticated and working
 Role-based access control enforced
 Cross-tenant isolation verified
 Frontend deployed and accessible

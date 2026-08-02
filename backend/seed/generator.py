@@ -3,6 +3,8 @@ import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 
+from app.services.risk_matrix import compute_risk_index, get_risk_level
+
 GLOBAL_SEED = 42
 
 
@@ -120,19 +122,6 @@ SEVERITY_STR_TO_LEVEL = {"Low": 2, "Medium": 3, "High": 4, "Critical": 5}
 LEVEL_TO_SEVERITY_STR = {1: "Negligible", 2: "Minor", 3: "Major", 4: "Hazardous", 5: "Catastrophic"}
 LEVEL_TO_PROBABILITY_STR = {1: "Extremely Improbable", 2: "Improbable", 3: "Remote", 4: "Occasional", 5: "Frequent"}
 
-RISK_THRESHOLDS = {"low_max": 5, "medium_max": 9, "high_max": 15}
-
-
-def get_risk_level_from_index(risk_index: int) -> str:
-    if risk_index <= RISK_THRESHOLDS["low_max"]:
-        return "Low"
-    elif risk_index <= RISK_THRESHOLDS["medium_max"]:
-        return "Medium"
-    elif risk_index <= RISK_THRESHOLDS["high_max"]:
-        return "High"
-    else:
-        return "Very High"
-
 
 def generate_icao_severity(rng: SeededRandom, risk_mean: float, risk_std: float) -> int:
     raw = rng.gauss(risk_mean * 5 + 1, risk_std * 5)
@@ -164,8 +153,8 @@ def generate_ai_analysis(
     risk_mean = 0.6 if is_mandatory else 0.4
     ai_severity = generate_icao_severity(rng, risk_mean, 0.2)
     ai_probability = generate_icao_probability(rng, risk_mean, 0.2)
-    ai_risk_index = ai_severity * ai_probability
-    ai_risk_level = get_risk_level_from_index(ai_risk_index)
+    ai_risk_index = compute_risk_index(ai_severity, ai_probability)
+    ai_risk_level = get_risk_level(ai_risk_index)
     confidence = round(rng.uniform(0.75, 0.98), 2)
 
     risk_level_str = severity_from_risk(

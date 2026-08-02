@@ -25,6 +25,8 @@ async def create_verification(
     verification: VerificationCreate,
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     service = _get_service(user)
     try:
         stored = service.create_verification(hazard_id, verification.model_dump(), user)
@@ -73,6 +75,8 @@ async def create_closure(
     closure: ClosureCreate,
     user: Dict[str, Any] = Depends(get_accountable_executive),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     service = _get_service(user)
     try:
         stored = service.create_closure(hazard_id, closure.model_dump(), user)
@@ -102,6 +106,8 @@ async def reopen_hazard(
     reason: str = Query(..., min_length=5),
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user.get("tenant_id", "default")
     service = VerificationService(tenant_id)
     updated = service.reopen_hazard(hazard_id, reason, user)

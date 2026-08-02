@@ -9,7 +9,7 @@
 # CODE OWNER: AviaSafeSystems
 # ============================================================================
 
-from pathlib import Path
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
@@ -26,6 +26,22 @@ from app.services.risk_matrix import (
 )
 
 router = APIRouter()
+
+
+def _verify_admin_setup(setup_key: str) -> None:
+    """Second factor for admin provisioning endpoints.
+
+    The setup key is a defense-in-depth secret loaded from the environment. It
+    never grants access by itself — callers must also present a SUPER_ADMIN
+    Firebase ID token (enforced via the `get_admin_user` dependency).
+    """
+    if not settings.SETUP_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin setup is not configured on this server",
+        )
+    if not setup_key or not secrets.compare_digest(setup_key, settings.SETUP_SECRET):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid setup key")
 
 
 class RiskMatrixThresholds(BaseModel):
@@ -83,7 +99,7 @@ async def update_risk_matrix(
         "updated_by": user["uid"],
         "updated_at": now,
     }
-    set_risk_matrix_config(tenant_id, data)
+    set_risk_matrix_config(tenant_id, data, updated_by=user["uid"])
     logger.info(f"Risk matrix updated for tenant {tenant_id} by {user['uid']}")
     return data
 
@@ -93,16 +109,16 @@ class SetupClaimsRequest(BaseModel):
     users: List[dict]
 
 
-SETUP_SECRET = "aviasafe-e2e-setup-2026"
-
-
 @router.post("/setup-claims")
-async def setup_test_user_claims(req: SetupClaimsRequest):
-    """One-time endpoint to set custom claims on test users.
-    Protected by a setup key to prevent unauthorized use.
+async def setup_test_user_claims(
+    req: SetupClaimsRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Set custom claims on users.
+
+    Requires a SUPER_ADMIN Bearer token and the admin setup key (env).
     """
-    if req.setup_key != SETUP_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid setup key")
+    _verify_admin_setup(req.setup_key)
 
     results = []
     auth = get_auth()
@@ -122,7 +138,6 @@ async def setup_test_user_claims(req: SetupClaimsRequest):
             auth.update_user(uid, custom_claims=claims)
             results.append({"email": email, "uid": uid, "role": role, "tenant_id": tenant_id, "status": "ok"})
             logger.info(f"Claims set for {email}: role={role}, tenant_id={tenant_id}")
-            logger.info(f"Claims set for {email}: role={role}, tenant_id={tenant_id}")
         except Exception as e:
             results.append({"email": email, "status": "error", "detail": str(e)})
             logger.error(f"Failed to set claims for {email}: {e}")
@@ -130,7 +145,7 @@ async def setup_test_user_claims(req: SetupClaimsRequest):
     return {"success": True, "results": results}
 
 
-class ProvisionRequest(BaseModel):
+class AdminSetupRequest(BaseModel):
     setup_key: str
 
 
@@ -157,14 +172,19 @@ AIRLINES = [
     {"id": "simrik-air", "name": "Simrik Air", "icao": "SMK", "email": "info@simrikair.com"},
 ]
 
-STANDARD_PASSWORD = "AviaSAFE2026!Secure"
-
-
 @router.post("/provision-airlines", status_code=status.HTTP_200_OK)
-async def provision_20_airlines(req: ProvisionRequest):
+async def provision_20_airlines(
+    req: AdminSetupRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
     """Batch-provision all 20 Nepali airlines: create Auth users, set claims, create Firestore tenants."""
-    if req.setup_key != SETUP_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid setup key")
+    _verify_admin_setup(req.setup_key)
+
+    if not settings.DEFAULT_PROVISION_PASSWORD:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="DEFAULT_PROVISION_PASSWORD is not configured on this server",
+        )
 
     auth = get_auth()
     db = get_db()
@@ -182,7 +202,7 @@ async def provision_20_airlines(req: ProvisionRequest):
             try:
                 user = auth.create_user(
                     email=email,
-                    password=STANDARD_PASSWORD,
+                    password=settings.DEFAULT_PROVISION_PASSWORD,
                     email_verified=True,
                     display_name=f"{name} Safety Manager",
                 )
@@ -246,10 +266,12 @@ async def provision_20_airlines(req: ProvisionRequest):
 
 
 @router.post("/fix-tenant-ids", status_code=status.HTTP_200_OK)
-async def fix_tenant_id_mismatch(req: ProvisionRequest):
+async def fix_tenant_id_mismatch(
+    req: AdminSetupRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
     """Fix tenant_id mismatch: provisioned users use hyphens but seed data uses underscores."""
-    if req.setup_key != SETUP_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid setup key")
+    _verify_admin_setup(req.setup_key)
 
     auth = get_auth()
     FIXES = {
@@ -274,120 +296,16 @@ async def fix_tenant_id_mismatch(req: ProvisionRequest):
     return {"success": True, "results": results}
 
 
-@router.post("/check-data", status_code=status.HTTP_200_OK)
-async def check_data(req: ProvisionRequest):
-    """Debug: check how many docs exist under each tenant path."""
-    if req.setup_key != SETUP_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid setup key")
-    db = get_db()
-    from app.core.config import settings
-
-    ids_to_check = [
-        "buddha_air", "buddha-air",
-        "yeti_airlines", "yeti-airlines",
-        "sita_air", "sita-air",
-        "summit_air", "summit-air",
-        "air_dynasty", "air-dynasty",
-        "simrik_air", "simrik-air",
-    ]
-    result = {}
-    for tid in ids_to_check:
-        reports = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid)
-                          .collection(settings.FIREBASE_COLLECTION_REPORTS).limit(1000).stream()))
-        surveys = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid)
-                          .collection("surveys").limit(1000).stream()))
-        responses = len(list(db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tid)
-                          .collection("responses").limit(1000).stream()))
-        if reports or surveys or responses:
-            result[tid] = {"reports": reports, "surveys": surveys, "responses": responses}
-    return {"success": True, "data": result}
-
-
-@router.post("/migrate-seed-data", status_code=status.HTTP_200_OK)
-async def migrate_seed_data(req: ProvisionRequest):
-    """Copy seed data from underscore tenant IDs to hyphenated (provisioned) IDs.
-    Also fix seed config so future seeds use the right IDs."""
-    if req.setup_key != SETUP_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid setup key")
-    db = get_db()
-
-    # Tenant ID mapping: underscore (seed) -> hyphenated (provisioned)
-    MAPPING = {
-        "buddha_air": "buddha-air",
-        "yeti_airlines": "yeti-airlines",
-        "summit_air": "summit-air",
-        "sita_air": "sita-air",
-        "air_dynasty": "air-dynasty",
-        "simrik_air": "simrik-air",
-    }
-
-    copied_reports = 0
-    copied_surveys = 0
-    errors = 0
-
-    from google.cloud.firestore import Client
-    batch = db.batch()
-    ops = 0
-
-    for src_id, dst_id in MAPPING.items():
-        # Copy reports
-        src_ref = db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(src_id)
-        dst_ref = db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(dst_id)
-
-        for doc in src_ref.collection("reports").stream():
-            data = doc.to_dict()
-            data.pop("id", None)
-            if ops >= 500:
-                batch.commit()
-                ops = 0
-                batch = db.batch()
-            batch.set(dst_ref.collection("reports").document(doc.id), data)
-            ops += 1
-            copied_reports += 1
-
-        # Copy surveys (to responses collection for the dashboard)
-        for doc in src_ref.collection("surveys").stream():
-            data = doc.to_dict()
-            data.pop("id", None)
-            if ops >= 500:
-                batch.commit()
-                ops = 0
-                batch = db.batch()
-            batch.set(dst_ref.collection("responses").document(doc.id), data)
-            ops += 1
-            copied_surveys += 1
-
-    if ops > 0:
-        batch.commit()
-
-    # Fix seed config to use hyphenated IDs going forward
-    seed_config_path = "backend/seed/config.py"
-    seed_config = Path(__file__).resolve().parent.parent.parent.parent / seed_config_path
-    if seed_config.exists():
-        content = seed_config.read_text(encoding="utf-8")
-        for src_id, dst_id in MAPPING.items():
-            content = content.replace(f'"{src_id}"', f'"{dst_id}"')
-        seed_config.write_text(content, encoding="utf-8")
-        config_fixed = True
-    else:
-        config_fixed = False
-
-    return {
-        "success": True,
-        "copied_reports": copied_reports,
-        "copied_surveys": copied_surveys,
-        "errors": errors,
-        "config_fixed": config_fixed,
-    }
-
-
 @router.post("/create-seed-users", status_code=status.HTTP_200_OK)
-async def create_seed_users(req: ProvisionRequest):
+async def create_seed_users(
+    req: AdminSetupRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
     """Create seed users in Firebase Auth (skips users that already exist)."""
-    if req.setup_key != SETUP_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid setup key")
+    if settings.DISABLE_DESTRUCTIVE_ENDPOINTS:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint disabled")
+    _verify_admin_setup(req.setup_key)
     from seed.users import create_all_users
-    from app.firebase import get_auth
     try:
         created = create_all_users(get_auth())
         return {"success": True, "created": len(created), "users": created}
@@ -397,12 +315,15 @@ async def create_seed_users(req: ProvisionRequest):
 
 
 @router.post("/seed-demo-data", status_code=status.HTTP_200_OK)
-async def seed_demo_data(req: ProvisionRequest):
+async def seed_demo_data(
+    req: AdminSetupRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
     """Run the demo data seeder against production Firestore."""
-    if req.setup_key != SETUP_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid setup key")
+    if settings.DISABLE_DESTRUCTIVE_ENDPOINTS:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint disabled")
+    _verify_admin_setup(req.setup_key)
     from seed.runner import run
-    from app.firebase import get_db, get_auth
     try:
         result = run(db=get_db(), auth=get_auth(), force=True)
         return {"success": True, "result": result}

@@ -19,7 +19,7 @@ from app.models.hazard import HazardCreate, HazardSource, HazardTaxonomy, Hazard
 from app.middleware.auth import get_tenant_user, get_safety_manager
 from app.services.report_service import ReportService
 from app.services.hazard_service import HazardService
-from app.services.risk_matrix import compute_risk_index, get_risk_level, classify_risk
+from app.services.risk_matrix import compute_risk_index, get_risk_level
 from app.middleware.rate_limit import rate_limit
 
 router = APIRouter()
@@ -266,7 +266,7 @@ def _determine_hazard_taxonomy(occurrence_category: Optional[str]) -> str:
 def _determine_hazard_priority(severity_level: Optional[int], probability_level: Optional[int]) -> str:
     if severity_level is None or probability_level is None:
         return "M"
-    risk = severity_level * probability_level
+    risk = compute_risk_index(severity_level, probability_level)
     if risk >= 12:
         return "H"
     elif risk >= 6:

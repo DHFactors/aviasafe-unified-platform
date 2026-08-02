@@ -20,13 +20,13 @@ from seed.generator import (
     generate_ai_analysis,
     generate_icao_severity,
     generate_icao_probability,
-    get_risk_level_from_index,
     severity_from_risk,
     SEVERITY_STR_TO_LEVEL,
     LEVEL_TO_SEVERITY_STR,
     LEVEL_TO_PROBABILITY_STR,
     _make_id,
 )
+from app.services.risk_matrix import compute_risk_index, get_risk_level
 
 
 def _generate_airport(rng: SeededRandom, profile: dict) -> str:
@@ -47,8 +47,8 @@ def _generate_icao_risk_fields(
 ) -> dict:
     severity_level = SEVERITY_STR_TO_LEVEL.get(severity_str, 3)
     probability_level = generate_icao_probability(rng, risk_mean, risk_std)
-    risk_index = severity_level * probability_level
-    risk_level = get_risk_level_from_index(risk_index)
+    risk_index = compute_risk_index(severity_level, probability_level)
+    risk_level = get_risk_level(risk_index)
     return {
         "severity_level": severity_level,
         "probability_level": probability_level,

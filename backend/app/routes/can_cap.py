@@ -20,6 +20,8 @@ async def issue_can(
     can: CANCreate,
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = CanCapService(tenant_id)
     stored = service.issue_can(can.model_dump(), user)
@@ -82,6 +84,8 @@ async def update_can_status(
     status: CANStatus,
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = CanCapService(tenant_id)
     updated = service.update_can_status(can_id, status.value, user)
@@ -95,6 +99,8 @@ async def delete_can(
     can_id: str,
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = CanCapService(tenant_id)
     deleted = service.delete_can(can_id)
@@ -110,6 +116,8 @@ async def submit_cap(
     cap: CAPCreate,
     user: Dict[str, Any] = Depends(get_responsible_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = CanCapService(tenant_id)
     try:
@@ -119,7 +127,7 @@ async def submit_cap(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/{can_id}/caps", response_model=List[CAPResponse])
+@router.get("/{can_id}/caps", response_model=List[dict])
 async def list_caps(
     can_id: str,
     user: Dict[str, Any] = Depends(get_current_user),
@@ -149,6 +157,8 @@ async def update_cap(
     data: CAPUpdate,
     user: Dict[str, Any] = Depends(get_responsible_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = CanCapService(tenant_id)
     payload = {k: v for k, v in data.model_dump().items() if v is not None}
@@ -164,6 +174,8 @@ async def review_cap(
     review: CAPReview,
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = CanCapService(tenant_id)
     updated = service.review_cap(cap_id, review.model_dump(), user)
@@ -178,6 +190,8 @@ async def update_cap_status(
     status: CAPStatus,
     user: Dict[str, Any] = Depends(get_responsible_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = CanCapService(tenant_id)
     updated = service.update_cap(cap_id, {"status": status.value}, user)

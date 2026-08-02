@@ -11,12 +11,12 @@ import { MASTER_QUESTIONS } from '../survey/default_q.js';
 
 // ── FIREBASE CONFIGURATION ──
 const firebaseConfig = {
-    apiKey: "AIzaSyFakeKey_ForTestingPhaseOnly2026",
+    apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
     authDomain: "gap-analysis-ssp.firebaseapp.com",
     projectId: "gap-analysis-ssp",
     storageBucket: "gap-analysis-ssp.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "1:1234567890:web:abcdef123456"
+    messagingSenderId: "817614332543",
+    appId: "1:817614332543:web:01224a312e8478b24d554a"
 };
 
 let db, auth;
@@ -55,21 +55,10 @@ function bindEvents(signInWithEmailAndPassword, signOut) {
         msg.style.color = "var(--navy)";
 
         try {
-            // Note: In a live environment, Firebase Auth handles this. 
-            // For our demo architectural routing, we extract the tenant from the email.
-            // e.g., safety@sitaair.com.np -> sita-air
             await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
             msg.style.color = "var(--alert)";
             msg.textContent = "Authentication Failed. Please check your credentials.";
-            
-            // DEMO FALLBACK: Since we haven't created live Auth users in the console yet, 
-            // we will bypass strict auth for this exact session to verify the data pipe.
-            if (email.includes("sitaair")) {
-                currentTenant = "sita-air";
-                loadDashboardUI();
-                fetchTenantData();
-            }
         }
     });
 

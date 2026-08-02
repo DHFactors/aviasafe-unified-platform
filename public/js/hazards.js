@@ -63,19 +63,21 @@ function calculateRiskIndex(severity, probability) {
     return severity * probability;
 }
 
+const ICAO_THRESHOLDS = { lowMax: 5, mediumMax: 9, highMax: 15 };
+
 function classifyHazardRisk(riskIndex) {
     if (riskIndex == null) return 'Unknown';
-    if (riskIndex <= 3) return 'Low';
-    if (riskIndex <= 6) return 'Medium';
-    if (riskIndex <= 12) return 'High';
+    if (riskIndex <= ICAO_THRESHOLDS.lowMax) return 'Low';
+    if (riskIndex <= ICAO_THRESHOLDS.mediumMax) return 'Medium';
+    if (riskIndex <= ICAO_THRESHOLDS.highMax) return 'High';
     return 'Very High';
 }
 
 function getRiskOutcome(severity, probability) {
     const ri = calculateRiskIndex(severity, probability);
     if (ri == null) return null;
-    if (ri <= 3) return 'Acceptable';
-    if (ri <= 6) return 'Tolerable';
+    if (ri <= ICAO_THRESHOLDS.lowMax) return 'Acceptable';
+    if (ri <= ICAO_THRESHOLDS.mediumMax) return 'Tolerable';
     return 'Intolerable';
 }
 

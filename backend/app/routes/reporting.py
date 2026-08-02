@@ -9,6 +9,7 @@ from app.middleware.auth import get_current_user, get_tenant_user
 from app.services.report_generator import ReportGenerator
 from app.services.pdf_generator import generate_report_pdf
 from app.firebase import get_tenant_collection, get_cross_tenant_collection
+from app.core.config import settings
 
 router = APIRouter()
 REPORT_COLLECTION = "reporting"
@@ -37,11 +38,11 @@ async def generate_quarterly_report(
     tenant_id: Optional[str] = Query(None),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
+    if user.get("role") not in settings.CROSS_TENANT_ROLES:
+        tenant_id = None
     effective_tenant = tenant_id or user.get("tenant_id")
-    if user.get("role") == "AIRLINE_ADMIN":
-        effective_tenant = user.get("tenant_id")
-        if not effective_tenant:
-            raise HTTPException(403, "No tenant assigned")
+    if user.get("role") not in settings.CROSS_TENANT_ROLES and not effective_tenant:
+        raise HTTPException(403, "No tenant assigned")
 
     generator = ReportGenerator(effective_tenant)
     report_data = generator.generate_quarterly_report(year, quarter, user)
@@ -83,9 +84,9 @@ async def list_quarterly_reports(
     tenant_id: Optional[str] = Query(None),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
+    if user.get("role") not in settings.CROSS_TENANT_ROLES:
+        tenant_id = None
     effective_tenant = tenant_id or user.get("tenant_id")
-    if user.get("role") == "AIRLINE_ADMIN":
-        effective_tenant = user.get("tenant_id")
 
     try:
         if effective_tenant:
@@ -193,11 +194,11 @@ async def generate_annual_report(
     tenant_id: Optional[str] = Query(None),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
+    if user.get("role") not in settings.CROSS_TENANT_ROLES:
+        tenant_id = None
     effective_tenant = tenant_id or user.get("tenant_id")
-    if user.get("role") == "AIRLINE_ADMIN":
-        effective_tenant = user.get("tenant_id")
-        if not effective_tenant:
-            raise HTTPException(403, "No tenant assigned")
+    if user.get("role") not in settings.CROSS_TENANT_ROLES and not effective_tenant:
+        raise HTTPException(403, "No tenant assigned")
 
     generator = ReportGenerator(effective_tenant)
     report_data = generator.generate_annual_report(year, user)
@@ -239,9 +240,9 @@ async def list_annual_reports(
     tenant_id: Optional[str] = Query(None),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
+    if user.get("role") not in settings.CROSS_TENANT_ROLES:
+        tenant_id = None
     effective_tenant = tenant_id or user.get("tenant_id")
-    if user.get("role") == "AIRLINE_ADMIN":
-        effective_tenant = user.get("tenant_id")
 
     try:
         if effective_tenant:

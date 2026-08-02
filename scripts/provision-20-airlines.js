@@ -2,7 +2,13 @@ const admin = require('firebase-admin');
 const path = require('path');
 const fs = require('fs');
 
-const STANDARD_PASSWORD = 'AviaSAFE2026!Secure';
+// Password is env-driven — no hardcoded default. Provisioning fails fast if unset.
+const STANDARD_PASSWORD = process.env.DEFAULT_PROVISION_PASSWORD;
+
+if (!STANDARD_PASSWORD) {
+  console.error('ERROR: DEFAULT_PROVISION_PASSWORD environment variable is required.');
+  process.exit(1);
+}
 
 const AIRLINES = [
   { id: 'buddha-air', name: 'Buddha Air', icao: 'BHA', email: 'buddhaair@buddhaair.com' },

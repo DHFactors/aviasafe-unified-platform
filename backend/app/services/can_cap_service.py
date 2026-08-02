@@ -112,7 +112,7 @@ class CanCapService:
 
                     # Attach latest CAP
                     try:
-                        caps = self._caps_collection(doc.id).order_by("created_at", direction="DESCENDING").limit(1).get()
+                        caps = doc.reference.collection(CAP_SUBCOLLECTION).order_by("created_at", direction="DESCENDING").limit(1).get()
                         if caps:
                             cap_data = caps[0].to_dict()
                             cap_data["id"] = caps[0].id
@@ -296,18 +296,21 @@ class CanCapService:
 
     def list_caps(self, can_id: str, user: dict) -> List[dict]:
         try:
-            docs = self._can_collection().get()
-            can_doc_id = None
+            if user.get("role") in settings.CROSS_TENANT_ROLES:
+                docs = get_cross_tenant_collection(CAN_COLLECTION).get()
+            else:
+                docs = self._can_collection().get()
+            can_doc = None
             for doc in docs:
                 data = doc.to_dict()
                 if doc.id == can_id or data.get("can_reference") == can_id:
-                    can_doc_id = doc.id
+                    can_doc = doc
                     break
 
-            if not can_doc_id:
+            if not can_doc:
                 return []
 
-            caps = self._caps_collection(can_doc_id).get()
+            caps = can_doc.reference.collection(CAP_SUBCOLLECTION).get()
             results = []
             for cap in caps:
                 data = cap.to_dict()
@@ -329,7 +332,7 @@ class CanCapService:
                 all_cans = self._can_collection().get()
 
             for can_doc in all_cans:
-                caps = self._caps_collection(can_doc.id).get()
+                caps = can_doc.reference.collection(CAP_SUBCOLLECTION).get()
                 for cap in caps:
                     if cap.id == cap_id:
                         data = cap.to_dict()
@@ -445,7 +448,7 @@ class CanCapService:
             total = 0
 
             for can_doc in cans:
-                caps = self._caps_collection(can_doc.id).get()
+                caps = can_doc.reference.collection(CAP_SUBCOLLECTION).get()
                 for cap in caps:
                     data = cap.to_dict()
                     status = data.get("status", "In Progress")

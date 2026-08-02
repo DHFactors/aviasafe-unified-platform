@@ -1,9 +1,16 @@
+import os
 import requests
 
 BASE = 'https://aviasafe-unified-platform.onrender.com'
 
+TOKEN = os.environ.get('SUPER_ADMIN_ID_TOKEN')
+SETUP_KEY = os.environ.get('SETUP_SECRET')
+
+if not TOKEN or not SETUP_KEY:
+    raise SystemExit('SUPER_ADMIN_ID_TOKEN and SETUP_SECRET env vars are required')
+
 payload = {
-    'setup_key': 'aviasafe-e2e-setup-2026',
+    'setup_key': SETUP_KEY,
     'users': [
         {'email': 'admin@aviasafesystems.com', 'role': 'SUPER_ADMIN'},
         {'email': 'sal@aviasafesystems.com', 'role': 'AIRLINE_ADMIN', 'tenant_id': 'sita-air'},
@@ -12,7 +19,8 @@ payload = {
     ]
 }
 
-r = requests.post(BASE + '/api/v1/admin/setup-claims', json=payload, timeout=30)
+headers = {'Authorization': f'Bearer {TOKEN}'}
+r = requests.post(BASE + '/api/v1/admin/setup-claims', json=payload, headers=headers, timeout=30)
 
 print('Status:', r.status_code)
 data = r.json()

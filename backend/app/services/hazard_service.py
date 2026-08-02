@@ -5,7 +5,12 @@ from loguru import logger
 
 from app.core.config import settings
 from app.firebase import get_tenant_collection, get_cross_tenant_collection
-from app.services.risk_matrix import classify_risk, risk_outcome
+from app.services.risk_matrix import (
+    compute_risk_index,
+    classify_risk,
+    risk_outcome,
+    get_thresholds,
+)
 
 
 def generate_hazard_id(tenant_id: str, taxonomy: str, year: int, sequence: int) -> str:
@@ -60,15 +65,16 @@ class HazardService:
         risk_out = payload.get("risk_outcome")
 
         if severity is not None and probability is not None:
-            computed_risk_index = severity * probability
+            computed_risk_index = compute_risk_index(severity, probability)
+            thresholds = get_thresholds(self.tenant_id)
             if risk_index is None:
                 risk_index = computed_risk_index
             if risk_level is None:
-                risk_level = classify_risk(computed_risk_index)
+                risk_level = classify_risk(computed_risk_index, thresholds)
             if risk_out is None:
-                risk_out = risk_outcome(severity, probability)
+                risk_out = risk_outcome(severity, probability, thresholds)
         elif risk_index is not None and risk_level is None:
-            risk_level = classify_risk(risk_index)
+            risk_level = classify_risk(risk_index, get_thresholds(self.tenant_id))
 
         taxonomy = payload.get("taxonomy", "Other")
         sequence = self._get_next_sequence(taxonomy, year)
@@ -208,9 +214,10 @@ class HazardService:
                 sev = payload.get("severity", target_doc.get("severity"))
                 prob = payload.get("probability", target_doc.get("probability"))
                 if sev is not None and prob is not None:
-                    payload["risk_index"] = sev * prob
-                    payload["risk_level"] = classify_risk(sev * prob)
-                    payload["risk_outcome"] = risk_outcome(sev, prob)
+                    thresholds = get_thresholds(self.tenant_id)
+                    payload["risk_index"] = compute_risk_index(sev, prob)
+                    payload["risk_level"] = classify_risk(compute_risk_index(sev, prob), thresholds)
+                    payload["risk_outcome"] = risk_outcome(sev, prob, thresholds)
 
             payload["updated_at"] = datetime.now(timezone.utc)
             ref.update(payload)

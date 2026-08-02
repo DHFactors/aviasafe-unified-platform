@@ -1,13 +1,20 @@
-# Aviasafe Demo Guide — ICAO SMS Platform
+# AviaSafe Demo Guide — ICAO SMS Platform
+
+> **Credential policy (RC-1/RC-3):** demo/seed/provisioning passwords are **environment-driven** —
+> they are never hardcoded and never documented in plaintext. When you run the seed pipeline or
+> provisioning, the password is whatever is set in the backend environment
+> (`DEFAULT_SEED_PASSWORD` / `DEFAULT_PROVISION_PASSWORD`). Substitute `<seed-password>` below with
+> the configured value.
 
 ## Prerequisites
 
 1. Firestore emulator running + Firebase Auth emulator seeded
-2. Backend running on `localhost:8080`
+2. Backend running on `localhost:8000`
 3. Frontend Hosting emulator on `localhost:5000`
-4. All seed users created (`python -m seed.run`)
+4. All seed users created (`python -m seed.runner`) — requires `FIREBASE_*` + `DEFAULT_SEED_PASSWORD`
+   in `backend/.env`
 
-## User Matrix (password: `Demo@123456`)
+## User Matrix (password: `<seed-password>`)
 
 | Role | Example Email | Tenant Scope |
 |------|--------------|--------------|
@@ -16,7 +23,8 @@
 | **AIRLINE_ADMIN** | `safety.buddha_air@buddhaair.com` | `buddha_air` |
 | **USER** | `manager.buddha_air@buddhaair.com` | `buddha_air` (read-only submit) |
 
-Use any operator from the 6 profiles: `buddha_air`, `yeti_airlines`, `summit_air`, `sita_air`, `air_dynasty`, `simrik_air`.
+Use any operator from the 6 profiles: `buddha_air`, `yeti_airlines`, `summit_air`, `sita_air`,
+`air_dynasty`, `simrik_air`.
 
 ---
 
@@ -24,7 +32,7 @@ Use any operator from the 6 profiles: `buddha_air`, `yeti_airlines`, `summit_air
 
 ### 1. USER — Report Submission *(2 min)*
 
-**Login:** `manager.buddha_air@buddhaair.com` / `Demo@123456`
+**Login:** `manager.buddha_air@buddhaair.com` / `<seed-password>`
 
 - Land on **airline dashboard** (`/`) — sees reports list (read-only, no edit controls)
 - Click **"Submit Report"** → choose **MOR** (Mandatory Occurrence Report)
@@ -43,7 +51,7 @@ Use any operator from the 6 profiles: `buddha_air`, `yeti_airlines`, `summit_air
 
 ### 2. AIRLINE_ADMIN — Safety Management *(5 min)*
 
-**Login:** `safety.buddha_air@buddhaair.com` / `Demo@123456`
+**Login:** `safety.buddha_air@buddhaair.com` / `<seed-password>`
 
 **a) Dashboard overview**
 - Reports table with risk_index, risk_level, severity_level, probability_level columns
@@ -54,7 +62,6 @@ Use any operator from the 6 profiles: `buddha_air`, `yeti_airlines`, `summit_air
 - Navigate to `/report/detail.html?id=<report_id>`
 - Shows **AI Assistant panel** with:
   - Suggested severity (1-5) + probability (1-5) with ICAO-grounded explanations
-  - Example: "Severity 4 — hazardous, life-threatening injuries per NTSB precedent"
   - AI confidence score
 - **Key demo moment:** The AI references real aviation precedents (NTSB, EASA)
 
@@ -79,7 +86,7 @@ Use any operator from the 6 profiles: `buddha_air`, `yeti_airlines`, `summit_air
 
 ### 3. CAAN_SMD — Regulatory Oversight *(3 min)*
 
-**Login:** `sms.inspector@caan.gov.np` / `Demo@123456`
+**Login:** `sms.inspector@caan.gov.np` / `<seed-password>`
 
 **a) Regulator Dashboard (`/caan.html`)**
 - Cross-tenant view of all operators' reports
@@ -103,7 +110,7 @@ Use any operator from the 6 profiles: `buddha_air`, `yeti_airlines`, `summit_air
 
 ### 4. SUPER_ADMIN — System Administration *(2 min)*
 
-**Login:** `safety.director@caan.gov.np` / `Demo@123456`
+**Login:** `safety.director@caan.gov.np` / `<seed-password>`
 
 - Full access to all endpoints (cross-tenant)
 - Admin panel at `/admin/`:
@@ -135,21 +142,40 @@ This is the **core demo** — run this sequence to show the full value:
 ## Quick Credential Reference Card
 
 ```
-SUPER_ADMIN:   safety.director@caan.gov.np       / Demo@123456
-CAAN_SMD:      sms.inspector@caan.gov.np          / Demo@123456
-               director.safety@caan.gov.np        / Demo@123456
+All demo accounts use the SAME password:  <seed-password>
+(provided by the DEFAULT_SEED_PASSWORD environment variable — never committed)
+
+SUPER_ADMIN:   safety.director@caan.gov.np
+CAAN_SMD:      sms.inspector@caan.gov.np
+               director.safety@caan.gov.np
 
 Buddha Air:
-  AIRLINE_ADMIN:  safety.buddha_air@buddhaair.com / Demo@123456
-  AIRLINE_ADMIN:  ae.buddha_air@buddhaair.com     / Demo@123456
-  USER:           manager.buddha_air@buddhaair.com / Demo@123456
+  AIRLINE_ADMIN:  safety.buddha_air@buddhaair.com
+  AIRLINE_ADMIN:  ae.buddha_air@buddhaair.com
+  USER:           manager.buddha_air@buddhaair.com
 
 Yeti Airlines:
-  AIRLINE_ADMIN:  safety.yeti_airlines@yetiairlines.com / Demo@123456
-  USER:           manager.yeti_airlines@yetiairlines.com / Demo@123456
+  AIRLINE_ADMIN:  safety.yeti_airlines@yetiairlines.com
+  USER:           manager.yeti_airlines@yetiairlines.com
 
-Summit Air:       safety.summit_air@summitair.com.np / Demo@123456
-Sita Air:         safety.sita_air@sitaair.com.np     / Demo@123456
-Air Dynasty:      safety.air_dynasty@airdynasty.com.np / Demo@123456
-Simrik Air:       safety.simrik_air@simrikair.com    / Demo@123456
+Summit Air:       safety.summit_air@summitair.com.np
+Sita Air:         safety.sita_air@sitaair.com.np
+Air Dynasty:      safety.air_dynasty@airdynasty.com.np
+Simrik Air:       safety.simrik_air@simrikair.com
 ```
+
+---
+
+## Local Setup (quick)
+
+```bash
+cd backend
+python -m venv .venv && .venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env          # then set FIREBASE_* + DEFAULT_SEED_PASSWORD
+uvicorn app.main:app --reload --port 8000
+python -m seed.runner           # idempotent; --force to re-seed
+```
+
+See [docs/INSTALLATION.md](./docs/INSTALLATION.md) and
+[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for details.

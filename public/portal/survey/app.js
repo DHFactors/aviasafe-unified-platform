@@ -13,12 +13,12 @@ import { MASTER_QUESTIONS } from './default_q.js';
 // ── MULTI-TENANT CONFIGURATION MATRIX ──
 // Firebase configuration parameters (Safe for public clients as security is enforced via Firestore Rules)
 const firebaseConfig = {
-    apiKey: "AIzaSyFakeKey_ForTestingPhaseOnly2026",
+    apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
     authDomain: "gap-analysis-ssp.firebaseapp.com",
     projectId: "gap-analysis-ssp",
     storageBucket: "gap-analysis-ssp.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "1:1234567890:web:abcdef123456"
+    messagingSenderId: "817614332543",
+    appId: "1:817614332543:web:01224a312e8478b24d554a"
 };
 
 // ── STATE MANAGEMENT ──
@@ -255,6 +255,7 @@ async function executeSubmission(e, db, collection, addDoc) {
 
     const payload = {
         airline_id: activeTenantId,
+        tenantId: activeTenantId,
         version_id: 3,
         language_used: currentLang,
         department: document.getElementById('department')?.value || null,

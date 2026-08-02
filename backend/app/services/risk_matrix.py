@@ -59,7 +59,7 @@ def compute_risk_index(severity: int, probability: int) -> int:
 
 
 def get_risk_level(risk_index: int, thresholds: Optional[dict] = None) -> str:
-    if thresholds is None:
+    if not thresholds:
         thresholds = THRESHOLDS_DEFAULT
     if risk_index <= thresholds["low_max"]:
         return "Low"
@@ -92,7 +92,7 @@ def set_risk_matrix_config(tenant_id: str, config: dict, updated_by: str) -> dic
     base = get_risk_matrix_config(tenant_id)
     base.update(config)
     base["updated_by"] = updated_by
-    base["updated_at"] = datetime.now(timezone.utc).isoformat()
+    base["updated_at"] = datetime.now(timezone.utc)
 
     doc_ref = (
         get_tenant_collection(tenant_id, settings.FIREBASE_COLLECTION_METADATA)
@@ -102,59 +102,31 @@ def set_risk_matrix_config(tenant_id: str, config: dict, updated_by: str) -> dic
     return base
 
 
-def get_icao_level_from_string(severity_str: Optional[str], risk_score: Optional[float]) -> int:
-    mapping = {
-        "Low": 2,
-        "Medium": 3,
-        "High": 4,
-        "Critical": 5,
-    }
-    if severity_str and severity_str in mapping:
-        return mapping[severity_str]
-    if risk_score is not None:
-        if risk_score <= 0.2:
-            return 1
-        elif risk_score <= 0.4:
-            return 2
-        elif risk_score <= 0.6:
-            return 3
-        elif risk_score <= 0.8:
-            return 4
-        else:
-            return 5
-    return 3
+def get_thresholds(tenant_id: str) -> dict:
+    """Return the effective risk-matrix thresholds for a tenant.
+
+    Falls back to the platform defaults when no stored config exists, when the
+    stored config carries no thresholds, or when the lookup fails.
+    """
+    try:
+        config = get_risk_matrix_config(tenant_id)
+    except Exception as e:
+        logger.warning(f"Failed to load risk matrix for {tenant_id}: {e}")
+        return dict(THRESHOLDS_DEFAULT)
+    return config.get("thresholds") or dict(THRESHOLDS_DEFAULT)
 
 
-def get_icao_probability_from_likelihood(likelihood: Optional[str], risk_score: Optional[float]) -> int:
-    mapping = {
-        "Extremely Improbable": 1,
-        "Improbable": 2,
-        "Remote": 3,
-        "Occasional": 4,
-        "Frequent": 5,
-        "Probable": 4,
-    }
-    if likelihood and likelihood in mapping:
-        return mapping[likelihood]
-    return get_icao_level_from_string(None, risk_score)
+def classify_risk(risk_index: int, thresholds: Optional[dict] = None) -> str:
+    return get_risk_level(risk_index, thresholds)
 
 
-def classify_risk(risk_index: int) -> str:
-    if risk_index <= 3:
-        return "Low"
-    elif risk_index <= 6:
-        return "Medium"
-    elif risk_index <= 12:
-        return "High"
-    else:
-        return "Very High"
-
-
-def risk_outcome(severity: int, probability: int) -> str:
-    risk_index = severity * probability
-    if risk_index <= 3:
+def risk_outcome(severity: int, probability: int, thresholds: Optional[dict] = None) -> str:
+    risk_index = compute_risk_index(severity, probability)
+    if not thresholds:
+        thresholds = THRESHOLDS_DEFAULT
+    if risk_index <= thresholds["low_max"]:
         return "Acceptable"
-    elif risk_index <= 6:
+    elif risk_index <= thresholds["medium_max"]:
         return "Tolerable"
     else:
         return "Intolerable"

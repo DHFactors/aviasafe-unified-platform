@@ -102,6 +102,8 @@ async def link_diversion_to_hazard(
     hazard_id: str = Query(..., min_length=1),
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = FlightDiversionService(tenant_id)
     updated = service.link_to_hazard(diversion_id, hazard_id, user)
@@ -115,6 +117,8 @@ async def unlink_diversion_from_hazard(
     diversion_id: str,
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
+    if not user.get("tenant_id"):
+        raise HTTPException(status_code=403, detail="Tenant access required")
     tenant_id = user["tenant_id"]
     service = FlightDiversionService(tenant_id)
     updated = service.unlink_from_hazard(diversion_id, user)

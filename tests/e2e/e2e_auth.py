@@ -1,15 +1,20 @@
-import requests, json, sys
+import requests, json, sys, os
 
 API_KEY = 'AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc'
 FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + API_KEY
 BASE_API = 'https://aviasafe-unified-platform.onrender.com'
 
 users = {
-    'airline_admin': {'email': 'sal@aviasafesystems.com', 'password': 'Sal123!'},
-    'caan_smd': {'email': 'smd@caanepal.gov.np', 'password': 'Smd123!'},
-    'super_admin': {'email': 'admin@aviasafesystems.com', 'password': 'Admin123!'},
-    'safety': {'email': 'salsafety@aviasafesystems.com', 'password': 'Safety123!'},
+    'airline_admin': {'email': 'sal@aviasafesystems.com', 'password': os.environ.get('AVIASAFE_PW_AIRLINE', '')},
+    'caan_smd': {'email': 'smd@caanepal.gov.np', 'password': os.environ.get('AVIASAFE_PW_CAAN', '')},
+    'super_admin': {'email': 'admin@aviasafesystems.com', 'password': os.environ.get('AVIASAFE_PW_ADMIN', '')},
+    'safety': {'email': 'salsafety@aviasafesystems.com', 'password': os.environ.get('AVIASAFE_PW_SAFETY', '')},
 }
+
+missing = [name for name, c in users.items() if not c['password']]
+if missing:
+    print(f'ERROR: missing env vars for: {", ".join(missing)} (AVIASAFE_PW_AIRLINE/CAAN/ADMIN/SAFETY)')
+    sys.exit(1)
 
 tokens = {}
 for name, creds in users.items():

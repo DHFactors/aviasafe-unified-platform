@@ -59,7 +59,8 @@ service cloud.firestore {
     // ========================================================================
 
     match /tenants/{tenantId}/responses/{responseId} {
-      allow create: if request.resource.data.tenantId == tenantId;
+      allow create: if request.resource.data.tenantId == tenantId ||
+                        request.resource.data.airline_id == tenantId;
       allow read: if isAuthenticated() &&
         (isOwnTenant(tenantId) || isAdminOrCaan());
       allow update, delete: if false;

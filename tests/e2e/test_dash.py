@@ -1,11 +1,15 @@
-import requests, json
+import requests, json, os
 
 API_KEY = 'AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc'
+PASSWORD = os.environ.get('DEFAULT_SEED_PASSWORD')
+
+if not PASSWORD:
+    raise SystemExit('DEFAULT_SEED_PASSWORD env var is required')
 
 login_url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}'
 r = requests.post(login_url, json={
     'email': 'safety.buddha-air@buddhaair.com',
-    'password': 'Demo@123456',
+    'password': PASSWORD,
     'returnSecureToken': True
 }, timeout=30)
 

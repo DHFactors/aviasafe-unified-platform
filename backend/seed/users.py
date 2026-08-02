@@ -1,6 +1,6 @@
 from loguru import logger
 
-from seed.config import DEMO_USERS, OPERATOR_PROFILES, NEPALI_NAMES
+from seed.config import DEMO_USERS, OPERATOR_PROFILES, NEPALI_NAMES, DEMO_USER_PASSWORD
 from seed.generator import SeededRandom
 
 
@@ -51,7 +51,7 @@ def create_all_users(auth) -> list:
         sm_user = {
             "uid": sm_uid,
             "email": f"safety.{op_id}@{domain}",
-            "password": "Demo@123456",
+            "password": DEMO_USER_PASSWORD,
             "full_name": sm_name,
             "organization": profile["name"],
             "role": "AIRLINE_ADMIN",
@@ -64,7 +64,7 @@ def create_all_users(auth) -> list:
         ae_user = {
             "uid": ae_uid,
             "email": f"ae.{op_id}@{domain}",
-            "password": "Demo@123456",
+            "password": DEMO_USER_PASSWORD,
             "full_name": ae_name,
             "organization": profile["name"],
             "role": "AIRLINE_ADMIN",
@@ -77,7 +77,7 @@ def create_all_users(auth) -> list:
         mgr_user = {
             "uid": mgr_uid,
             "email": f"manager.{op_id}@{domain}",
-            "password": "Demo@123456",
+            "password": DEMO_USER_PASSWORD,
             "full_name": mgr_name,
             "organization": profile["name"],
             "role": "USER",

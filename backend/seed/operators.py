@@ -67,7 +67,7 @@ def create_tenant(db, profile: dict) -> dict:
     )
     risk_matrix_config = _default_matrix_config()
     risk_matrix_config["updated_by"] = "seed"
-    risk_matrix_config["updated_at"] = now.isoformat()
+    risk_matrix_config["updated_at"] = now
     risk_matrix_ref.set(risk_matrix_config, merge=True)
 
     return tenant_id

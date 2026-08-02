@@ -41,10 +41,6 @@ class RegisterRequest(BaseModel):
     tenant_id: Optional[str] = None
 
 
-class DebugVerifyRequest(BaseModel):
-    id_token: str
-
-
 @router.post("/verify")
 @rate_limit("auth_attempts")
 async def verify_token(request: Request, body: LoginRequest):
@@ -59,20 +55,6 @@ async def verify_token(request: Request, body: LoginRequest):
         "role": role,
         "tenant_id": tenant_id,
     }
-
-
-@router.post("/debug-verify")
-async def debug_verify_token(request: DebugVerifyRequest):
-    try:
-        auth = get_auth()
-        decoded = auth.verify_id_token(request.id_token, check_revoked=False)
-        return {"success": True, "decoded": dict(decoded)}
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "error_type": type(e).__name__,
-        }
 
 @router.post("/register")
 async def register_user(request: RegisterRequest):

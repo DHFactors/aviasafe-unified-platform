@@ -27,10 +27,11 @@ from app.core.config import settings
 
 class MockDocumentSnapshot:
     """Simulates a Firestore document snapshot."""
-    def __init__(self, data: dict, doc_id: str = None):
+    def __init__(self, data: dict, doc_id: str = None, ref=None):
         self._data = dict(data) if data else {}
         self._data["id"] = doc_id or "mock_id"
         self.id = doc_id or "mock_id"
+        self.reference = ref
         self.exists = True
 
     def to_dict(self):
@@ -59,12 +60,15 @@ class MockDocumentReference:
         self._stored.update(data)
 
     def get(self):
-        return MockDocumentSnapshot(self._stored, self.id)
+        return MockDocumentSnapshot(self._stored, self.id, ref=self)
 
     def collection(self, subcollection: str):
         if subcollection not in self._subcollections:
             self._subcollections[subcollection] = MockCollectionReference()
         return self._subcollections[subcollection]
+
+    def delete(self):
+        pass
 
 
 class MockCollectionReference:
@@ -91,12 +95,15 @@ class MockCollectionReference:
         return write_result, doc
 
     def get(self):
-        return list(self._docs.values())
+        return [doc.get() for doc in self._docs.values()]
 
     def limit(self, n: int):
         return self
 
     def where(self, field: str, op: str, value):
+        return self
+
+    def order_by(self, field: str, **kwargs):
         return self
 
     def stream(self):
@@ -133,21 +140,49 @@ class _TopLevelCollection:
     def document(self, doc_id: str = None):
         return self._ref.document(doc_id)
 
+    def add(self, data: dict):
+        return self._ref.add(data)
+
+    def where(self, field: str, op: str, value):
+        return self._ref.where(field, op, value)
+
+    def get(self):
+        return self._ref.get()
+
 
 class _CollectionGroupMock:
-    """Minimal collection group mock for cross-tenant queries."""
+    """Collection group mock that traverses tenant sub-collections.
+
+    This makes cross-tenant (collection_group) queries observable in tests so
+    the CAAN_SMD / SUPER_ADMIN cross-tenant paths are actually exercised.
+    """
     def __init__(self, collection_name: str, client: MockFirestoreClient):
         self._name = collection_name
         self._client = client
+        self._filters = []
+
+    def where(self, field: str, op: str, value):
+        self._filters.append((field, op, value))
+        return self
 
     def limit(self, n: int):
         return self
 
-    def where(self, field: str, op: str, value):
-        return self
-
     def get(self):
-        return []
+        results = []
+        tenants = self._client._tenants.get("tenants")
+        if tenants:
+            for tenant_doc in tenants._docs.values():
+                for sub_name, sub_ref in tenant_doc._subcollections.items():
+                    if sub_name != self._name:
+                        continue
+                    for doc_id, doc_ref in sub_ref._docs.items():
+                        snap = MockDocumentSnapshot(dict(doc_ref._stored), doc_id, ref=doc_ref)
+                        results.append(snap)
+        for field, op, value in self._filters:
+            if field == "__name__" and op == "==":
+                results = [r for r in results if r.id == value]
+        return results
 
 
 # ============================================================================
@@ -180,9 +215,9 @@ def mock_firebase_and_gemini(monkeypatch):
         if token == "AIRLINE_ADMIN_TOKEN":
             claims = {"role": "AIRLINE_ADMIN", "tenant_id": "test_airline"}
         elif token == "SUPER_ADMIN_TOKEN":
-            claims = {"role": "SUPER_ADMIN", "tenant_id": "test_airline"}
+            claims = {"role": "SUPER_ADMIN", "tenant_id": None}
         elif token == "CAAN_SMD_TOKEN":
-            claims = {"role": "CAAN_SMD", "tenant_id": "test_airline"}
+            claims = {"role": "CAAN_SMD", "tenant_id": None}
         elif token == "USER_TOKEN":
             claims = {"role": "USER", "tenant_id": None}
         return {"uid": "mock_user", "email": "test@aviasafe.com", **claims}
@@ -598,3 +633,129 @@ class TestFullLifecycle:
                           headers=_auth_header("USER_TOKEN"))
         # USER has no tenant_id, so get_tenant_user should reject
         assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
+
+
+# ============================================================================
+# RC-4 UAT regression tests — cross-tenant & authorization findings
+# ============================================================================
+
+class TestCrossTenantAndAuthorization:
+    """Regression tests for verified RC-4 defects (UAT-001/002/003/007)."""
+
+    def test_caan_confirm_lands_in_owner_tenant(self, client):
+        """CAAN (no tenant claim) confirms a report created by an airline;
+        the update must land on the airline's report (cross-tenant)."""
+        body = {
+            "narrative": "Regulator confirmation of cross-tenant assessment.",
+            "location": "KTM",
+            "occurrence_date": datetime.now(timezone.utc).isoformat(),
+            "report_type": "mandatory",
+        }
+        resp = client.post("/api/v1/reports/", json=body,
+                           headers=_auth_header("AIRLINE_ADMIN_TOKEN"))
+        assert resp.status_code == 201, resp.text
+        report_id = resp.json()["id"]
+
+        override = {"severity": 4, "probability": 2, "notes": "CAAN cross-tenant confirmation."}
+        resp2 = client.put(f"/api/v1/reports/{report_id}/risk-assessment",
+                           json=override,
+                           headers=_auth_header("CAAN_SMD_TOKEN"))
+        assert resp2.status_code == 200, f"Expected 200, got {resp2.status_code}: {resp2.text}"
+        assert resp2.json()["risk_index"] == 8, resp2.text
+
+        # The owner airline must now see the CAAN-confirmed assessment
+        resp3 = client.get(f"/api/v1/reports/{report_id}",
+                           headers=_auth_header("AIRLINE_ADMIN_TOKEN"))
+        assert resp3.status_code == 200, resp3.text
+        confirmed = resp3.json()
+        assert confirmed["risk_assessment"]["severity"] == 4, resp3.text
+        assert confirmed["risk_level"] == "Medium"
+
+    def test_caan_reads_can_caps_across_tenants(self, client):
+        """CAAN can list CAPs and latest-CAP across tenants (UAT-002)."""
+        can_body = {
+            "hazard_id": "haz-1",
+            "title": "Engine vibration during climb",
+            "description": "Observed persistent engine vibration during climb.",
+            "required_action": "Inspect and rectify per maintenance manual.",
+            "target_completion_date": "2026-12-31T00:00:00Z",
+            "assigned_to": "Engineer A",
+            "assigned_to_uid": "user-1",
+            "priority": "High",
+        }
+        resp = client.post("/api/v1/cans/", json=can_body,
+                           headers=_auth_header("AIRLINE_ADMIN_TOKEN"))
+        assert resp.status_code == 201, f"Expected 201, got {resp.status_code}: {resp.text}"
+        can_id = resp.json()["id"]
+
+        cap_body = {
+            "can_id": can_id,
+            "action_plan": "Perform full engine inspection and replace vibration sensors.",
+            "timeline": "30 days",
+            "resources_required": "Borescope kit",
+            "target_completion_date": "2026-12-31T00:00:00Z",
+        }
+        resp2 = client.post(f"/api/v1/cans/{can_id}/caps", json=cap_body,
+                            headers=_auth_header("AIRLINE_ADMIN_TOKEN"))
+        assert resp2.status_code == 201, f"Expected 201, got {resp2.status_code}: {resp2.text}"
+        cap_id = resp2.json()["id"]
+
+        resp3 = client.get(f"/api/v1/cans/{can_id}",
+                           headers=_auth_header("CAAN_SMD_TOKEN"))
+        assert resp3.status_code == 200, resp3.text
+        assert resp3.json().get("latest_cap") is not None, "latest_cap should be present for CAAN"
+
+        resp4 = client.get(f"/api/v1/cans/{can_id}/caps",
+                           headers=_auth_header("CAAN_SMD_TOKEN"))
+        assert resp4.status_code == 200, resp4.text
+        caps = resp4.json()
+        assert any(c["id"] == cap_id for c in caps), f"CAAN should see the CAP, got {caps}"
+
+    def test_caan_cannot_write_can_without_tenant(self, client):
+        """Cross-tenant roles cannot write CAN/CAP without a tenant (UAT-007)."""
+        body = {
+            "hazard_id": "haz-1",
+            "title": "Engine vibration during climb",
+            "description": "Observed persistent engine vibration during climb.",
+            "required_action": "Inspect and rectify per maintenance manual.",
+            "target_completion_date": "2026-12-31T00:00:00Z",
+            "assigned_to": "Engineer A",
+            "assigned_to_uid": "user-1",
+            "priority": "High",
+        }
+        resp = client.post("/api/v1/cans/", json=body,
+                           headers=_auth_header("CAAN_SMD_TOKEN"))
+        assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
+
+    def test_user_cannot_override_tenant_for_report(self, client):
+        """USER cannot select another tenant when generating reports (UAT-003)."""
+        resp = client.post(
+            "/api/v1/reporting/quarterly?year=2026&quarter=1&tenant_id=other_airline",
+            json={},
+            headers=_auth_header("USER_TOKEN"),
+        )
+        # USER has no tenant claim and must not be able to reach another tenant
+        assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
+
+    def test_airline_admin_still_generates_own_tenant_report(self, client):
+        """AIRLINE_ADMIN report generation for their own tenant still works."""
+        resp = client.post(
+            "/api/v1/reporting/quarterly?year=2026&quarter=1",
+            json={},
+            headers=_auth_header("AIRLINE_ADMIN_TOKEN"),
+        )
+        assert resp.status_code == 201, f"Expected 201, got {resp.status_code}: {resp.text}"
+        data = resp.json()
+        assert data["tenant_id"] == "test-airline", resp.text
+
+    def test_caan_generates_national_report(self, client):
+        """CAAN can still generate a national (cross-tenant) quarterly report."""
+        resp = client.post(
+            "/api/v1/reporting/quarterly?year=2026&quarter=1",
+            json={},
+            headers=_auth_header("CAAN_SMD_TOKEN"),
+        )
+        assert resp.status_code == 201, f"Expected 201, got {resp.status_code}: {resp.text}"
+        data = resp.json()
+        assert data["tenant_id"] is None, resp.text
+        assert data["report_type"] == "quarterly"

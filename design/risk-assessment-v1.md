@@ -1,5 +1,13 @@
 # ICAO SMS Risk Assessment — Design Specification v1
 
+> **Implementation status (RC-2, updated 2 Aug 2026):** this design spec is implemented. One
+> correction was applied during RC-2: `risk_level` is classified from the tenant-configurable risk
+> matrix (`low_max=5, medium_max=9, high_max=15` by default) into
+> `"Low" | "Medium" | "High" | "Very High"` — the design's `"Extreme"` bucket is not used. See
+> `backend/app/services/risk_matrix.py` (canonical logic) and `backend/tests/test_risk_matrix.py`
+> (16 tests) for the authoritative behavior. Thresholds are stored per tenant in
+> `tenants/{t}/metadata/risk_matrix`.
+
 ## 1. Firestore Schema
 
 ### Report Document (tenants/{t}/reports/{r}) — New Fields

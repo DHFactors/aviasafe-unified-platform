@@ -1,9 +1,10 @@
 # PROJECT_STATUS.md
 
 **Project:** AviaSAFE SMS Platform
-**Status:** Production-Ready (Release Candidate)
-**Version:** Release Candidate 1.0
-**Last Updated:** 30 July 2026
+**Status:** Production-Ready (Release Candidate) — **superseded as the status authority by
+`PROJECT_STATUS_REPORT_02AUG2026.md`** (RC-1, RC-2, RC-3 current state)
+**Version:** Release Candidate 1.0 (original) — updated 2 Aug 2026
+**Last Updated:** 2 August 2026
 
 ---
 
@@ -12,10 +13,10 @@
 | Item | Status |
 |------|--------|
 | **Branch** | `main` (single branch, tracking `origin/main`) |
-| **HEAD commit** | `70a96b6` — *chore: demote diagnostic logs from info to debug in repository and dashboard service* |
-| **Working tree** | 2 modified files, 1 untracked file |
+| **HEAD commit** | RC-1/RC-2 hardening changes are present in the working tree (see status report); see `git log --oneline -10` for current HEAD |
+| **Working tree** | RC-1 + RC-2 + RC-3 doc changes uncommitted |
 | **Tags** | None |
-| **Stale/debug endpoints** | `/check-data`, `/fix-timestamps`, `/migrate-seed-data`, `/create-seed-users` — debug/admin endpoints for seed data migration; safe behind `setup_key` guard |
+| **Stale/debug endpoints** | RC-1 **closed** debug endpoints (`/check-data`, `/debug-verify`, etc.) and destructive seed endpoints are disabled in production (`DISABLE_DESTRUCTIVE_ENDPOINTS=true` → 404). `/fix-tenant-ids` remains as a documented admin utility |
 
 ### Unstaged Changes
 | File | Change |
@@ -98,8 +99,8 @@ Root-level collections:
 | Auth Users (provisioned) | 21+ |
 
 ### Known Seed Data Issues
-- **Tenant ID mismatch (resolved):** Seed data used underscore IDs (`buddha_air`); provisioned users used hyphens (`buddha-air`). Migration endpoint `/migrate-seed-data` and `/fix-tenant-ids` were deployed and run.
-- **ISO string timestamps (resolved):** Old seed data stored dates as ISO strings instead of Firestore Timestamps. `/fix-timestamps` endpoint remediated this. Repository layer retains a **fallback** that retries queries without date filter when date-filtered queries return 0 results but raw docs exist.
+- **Tenant ID mismatch (resolved):** Seed data used underscore IDs (`buddha_air`); provisioned users used hyphens (`buddha-air`). `/fix-tenant-ids` reconciles drift; the auth middleware normalizes `_`→`-` automatically.
+- **ISO string timestamps (resolved):** Seed data previously stored ISO strings; now stored as Firestore Timestamps. Repository layer retains a **fallback** that retries queries without date filter when date-filtered queries return 0 results but raw docs exist.
 
 ---
 
@@ -175,20 +176,23 @@ The **backend** does not enforce App Check tokens. Firebase Admin SDK bypasses A
 
 ## 5. Backend Service Status
 
-### API Routes (143 total)
+### API Routes (73 v1 business routes + legacy aliases + system routes; ~153 total registered)
 | Router | Prefix | Endpoints |
 |--------|--------|-----------|
-| Auth | `/api/v1/auth` | 4 (verify, debug-verify, register, refresh) |
-| Reports | `/api/v1/reports` | 6 (create VSR, create MOR, list, get, risk-assessment, auto-hazard) |
-| Dashboard | `/api/v1/dashboard` | 13 (airline × 6, CAAN × 5, admin × 3) |
-| Admin | `/api/v1/admin` | 7 (risk-matrix CRUD, setup-claims, seed data, provisioning, migration) |
+| Auth | `/api/v1/auth` | 3 (register, verify, refresh) |
+| Reports | `/api/v1/reports` | 6 (create, list, VSR, MOR, get, risk-assessment) |
+| Dashboard | `/api/v1/dashboard` | 14 (overview, recent, actions, risk, trends, hazards, CAAN ×5, admin ×3) |
+| Admin | `/api/v1/admin` | 7 (setup-claims, provision-airlines, fix-tenant-ids, risk-matrix GET/PUT, seed-demo-data, create-seed-users) |
 | Hazards | `/api/v1/hazards` | 7 (CRUD, stats, status, assign) |
-| CAN/CAP | `/api/v1/cans` | 11 (CAN CRUD, CAP submit/list/review) |
+| CAN/CAP | `/api/v1/cans` | 12 (CAN CRUD, CAP submit/list/review/status) |
 | Verification | `/api/v1/verification` | 7 (verification CRUD, closure, reopen) |
 | Reporting | `/api/v1/reporting` | 8 (quarterly/annual generation, list, get, PDF export) |
 | Flight Diversions | `/api/v1/flight-diversions` | 8 (CRUD, stats, hazard linking) |
 | Metrics | `/metrics` | 1 (Prometheus-style) |
 | Health | `/health`, `/live`, `/ready`, `/` | 4 |
+
+> Every `/api/v1` route has a legacy `/api` twin (hidden from OpenAPI). Full inventory in
+> [docs/API.md](./docs/API.md).
 
 ### Services (12 modules)
 | Service | Purpose |
@@ -293,12 +297,13 @@ The **backend** does not enforce App Check tokens. Firebase Admin SDK bypasses A
 
 ## 8. Testing Status
 
-### Unit/Integration Tests (`backend/tests/`)
+### Unit/Integration Tests (`backend/tests/`) — **40 tests, all passing (RC-2)**
 | Test Suite | Tests | Status |
 |-----------|-------|--------|
 | `test_health.py` | 3 | ✅ All pass — health, live, root endpoints |
 | `test_metrics_service.py` | 7 | ✅ All pass — KPI calculations, risk distribution, trends, AI/organizational KPIs |
-| `test_risk_assessment_lifecycle.py` | 4 (scenarios) | ✅ All pass — submission auto-calculation, AI suggestions, Safety Manager override, RBAC enforcement (600 lines, full Firestore mock stack) |
+| `test_risk_assessment_lifecycle.py` | 14 | ✅ All pass — submission auto-calculation, AI suggestions, Safety Manager override, RBAC enforcement (600 lines, full Firestore mock stack) |
+| `test_risk_matrix.py` | 16 | ✅ All pass — canonical `compute_risk_index`/`get_risk_level`/`classify_risk`/`risk_outcome` boundaries, empty-threshold robustness, custom thresholds, hazard/report classification + threshold plumbing (RC-2) |
 
 ### End-to-End Tests (`tests/e2e/`)
 | Script | Purpose | Status |
@@ -318,13 +323,16 @@ The **backend** does not enforce App Check tokens. Firebase Admin SDK bypasses A
 | `firebase/` | `delete-users.js`, `set-claims.js`, `verify-claims.js` | Firebase Admin SDK user management |
 | `seed/` | `run_seed.py`, `check_seed.py` | Seed data utilities |
 
-### E2E Test Credentials
-| User | Email | Role | Tenant | Password |
-|------|-------|------|--------|----------|
-| Admin | `admin@aviasafesystems.com` | SUPER_ADMIN | — | Admin123! |
-| Sal | `sal@aviasafesystems.com` | AIRLINE_ADMIN | sita-air | Sal123! |
-| Salsafety | `salsafety@aviasafesystems.com` | AIRLINE_ADMIN | sita-air | Safety123! |
-| SMD | `smd@caanepal.gov.np` | CAAN_SMD | — | Smd123! |
+### E2E Test Accounts
+> Passwords are **env-driven** (`DEFAULT_SEED_PASSWORD` / `DEFAULT_PROVISION_PASSWORD`) — never
+> hardcoded or documented.
+
+| User | Email | Role | Tenant |
+|------|-------|------|--------|
+| Admin | `admin@aviasafesystems.com` | SUPER_ADMIN | — |
+| Sal | `sal@aviasafesystems.com` | AIRLINE_ADMIN | sita-air |
+| Salsafety | `salsafety@aviasafesystems.com` | AIRLINE_ADMIN | sita-air |
+| SMD | `smd@caanepal.gov.np` | CAAN_SMD | — |
 
 ---
 
@@ -370,10 +378,11 @@ The **backend** does not enforce App Check tokens. Firebase Admin SDK bypasses A
 
 | Issue | Severity | Status |
 |-------|----------|--------|
-| Debug endpoints (`/check-data`, `/fix-timestamps`, etc.) exposed on production API | **MEDIUM** | Behind `setup_key` guard — acceptable for now |
+| Debug endpoints exposed on production API | ~~MEDIUM~~ | ✅ **Resolved (RC-1)** — debug endpoints closed; destructive seed endpoints return 404 in production |
 | Claims propagation delay — token may lack custom claims immediately after set | **LOW** | Handled via tenant email lookup fallback in auth middleware |
 | Date-filter fallback in repository may return stale data if ISO strings exist | **LOW** | Seed data migration to Timestamps complete; fallback is a safety net |
 | No Cloud Functions deployed (`functions/` is empty) | **LOW** | Not yet required — all logic lives in backend API |
+| No automated Firestore backups / PITR | **MEDIUM** | Open — operator action required (see [docs/KNOWN_LIMITATIONS.md](./docs/KNOWN_LIMITATIONS.md)) |
 
 ## 11. Documentation-as-Code Setup
 
@@ -398,16 +407,18 @@ The template enforces a consistent structure across all future steps:
 | 02 | `02-account-setup` | Account & Profile Setup |
 | 03 | `03-safety-reporting` | Safety Reporting (VSR / MOR) |
 
+> **RC-3 note:** steps 02 and 03 were authored and wired into the manifest during RC-3.
+
 ## 12. Immediate Next Steps
 
 | Priority | Task |
 |----------|------|
-| **P1** | **UAT** — User Acceptance Testing with seed data validation |
-| **P2** | **Expand docs** — Create steps 02 (Account Setup) and 03 (Safety Reporting) |
+| **P1** | **RC-3 completion** — documentation & operational readiness (in progress) |
+| **P2** | **RC-4** — Charter re-alignment (survey refactor to 4 components / 12 elements) |
 | **P3** | **Airline Pilot** — Onboard first airline tenant |
 | **P4** | **CAAN Pilot** — Onboard CAAN SSP regulatory oversight |
 | **P5** | **Production Go-Live** — Migrate from Render free tier to Cloud Run |
-| **P6** | **Survey Visualization** — Survey results dashboard on airline dashboard |
+| **P6** | **RC-5/RC-6** — Platform hygiene, CI, backups, App Check server-side enforcement |
 
 ### Completed (Commit 2 — Repository Reorganisation)
 - Root-level E2E scripts moved to `tests/e2e/` (7 files + 1 deleted duplicate)

@@ -92,6 +92,19 @@ class Settings(BaseSettings):
     # ── Rate limiting ──
     RATE_LIMIT_PER_MINUTE: int = 60
 
+    # ── Admin security (env-only; RC-1) ──
+    # Setup key used as a second factor on admin provisioning endpoints. Never
+    # hardcoded; must be provided via the environment. Access is never granted
+    # by the key alone — a SUPER_ADMIN Firebase ID token is always required.
+    SETUP_SECRET: Optional[str] = None
+    # Password used by /provision-airlines. No hardcoded fallback.
+    DEFAULT_PROVISION_PASSWORD: Optional[str] = None
+    # Password used by the seed data pipeline (backend/seed). No hardcoded fallback.
+    DEFAULT_SEED_PASSWORD: Optional[str] = None
+    # When True (default), data-destructive endpoints (/seed-demo-data,
+    # /create-seed-users) return 404. Disable only in non-production environments.
+    DISABLE_DESTRUCTIVE_ENDPOINTS: bool = True
+
     # ── Server ──
     HOST: str = "0.0.0.0"
     PORT: int = 8000

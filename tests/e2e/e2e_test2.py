@@ -1,8 +1,18 @@
-import requests, json, sys
+import requests, json, sys, os
 
 API_KEY = 'AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc'
 FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + API_KEY
 BASE_API = 'https://aviasafe-unified-platform.onrender.com'
+
+E2E_USERS = [
+    ('airline_admin', 'sal@aviasafesystems.com', os.environ.get('AVIASAFE_PW_AIRLINE', '')),
+    ('caan_smd', 'smd@caanepal.gov.np', os.environ.get('AVIASAFE_PW_CAAN', '')),
+    ('super_admin', 'admin@aviasafesystems.com', os.environ.get('AVIASAFE_PW_ADMIN', '')),
+    ('safety', 'salsafety@aviasafesystems.com', os.environ.get('AVIASAFE_PW_SAFETY', '')),
+]
+
+if any(not pw for _, _, pw in E2E_USERS):
+    raise SystemExit('Set AVIASAFE_PW_AIRLINE, AVIASAFE_PW_CAAN, AVIASAFE_PW_ADMIN, AVIASAFE_PW_SAFETY env vars')
 
 results = []
 passed_total = 0
@@ -42,12 +52,7 @@ print('=' * 70)
 # --- GET FRESH TOKENS ---
 print('\n[SETUP] Getting fresh tokens with claims...')
 tokens = {}
-for name, email, pw in [
-    ('airline_admin', 'sal@aviasafesystems.com', 'Sal123!'),
-    ('caan_smd', 'smd@caanepal.gov.np', 'Smd123!'),
-    ('super_admin', 'admin@aviasafesystems.com', 'Admin123!'),
-    ('safety', 'salsafety@aviasafesystems.com', 'Safety123!'),
-]:
+for name, email, pw in E2E_USERS:
     tok = get_token(email, pw)
     tokens[name] = tok
     if tok:

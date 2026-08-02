@@ -6,31 +6,62 @@
  * regulator via Firebase Auth, and aggregates the macro-level State Safety Programme data.
  */
 
-// ── EVENT BINDING & MOCK AUTHENTICATION ──
-document.addEventListener('DOMContentLoaded', () => {
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
+// ── FIREBASE CONFIGURATION ──
+const firebaseConfig = {
+    apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
+    authDomain: "gap-analysis-ssp.firebaseapp.com",
+    projectId: "gap-analysis-ssp",
+    storageBucket: "gap-analysis-ssp.appspot.com",
+    messagingSenderId: "817614332543",
+    appId: "1:817614332543:web:01224a312e8478b24d554a"
+};
 
-    loginBtn.addEventListener('click', () => {
-        const email = document.getElementById('emailInput').value.trim();
+// ── REAL AUTHENTICATION (Firebase Auth) ──
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+        const { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
         const msg = document.getElementById('authMessage');
-        
-        msg.textContent = "Authenticating...";
-        msg.style.color = "var(--navy)";
 
-        // DEMO FALLBACK: Bypassing strict Firebase Auth for this session to verify the UI pipe
-        if (email === "smd@caanepal.gov.np" || email === "demo@caan.gov.np") {
-            loadDashboardUI();
-            fetchAggregatedSSPData();
-        } else {
-            msg.style.color = "var(--alert)";
-            msg.textContent = "Unauthorized. CAAN domain credentials required.";
-        }
-    });
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
 
-    logoutBtn.addEventListener('click', () => {
-        window.location.reload();
-    });
+            msg.textContent = "Authenticating...";
+            msg.style.color = "var(--navy)";
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                msg.style.color = "var(--alert)";
+                msg.textContent = "Authentication Failed. Please check your credentials.";
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.reload();
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loadDashboardUI();
+                fetchAggregatedSSPData();
+            } else {
+                document.getElementById('authSection').style.display = 'block';
+                document.getElementById('dashboardSection').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'none';
+            }
+        });
+    } catch (e) {
+        console.error("Firebase SDK initialization failure: ", e);
+    }
 });
 
 function loadDashboardUI() {

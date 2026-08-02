@@ -163,7 +163,7 @@ function initServices() {
 // APP CHECK
 // ============================================================================
 
-const RECAPTCHA_SITE_KEY = '6LcAAAAA'; // TODO: Replace with actual ReCaptcha v3 site key
+const RECAPTCHA_SITE_KEY = '6LeCcWwtAAAAAFK2Y3hwxjO3pHGX6xaFxFIzF6Jv';
 
 function initAppCheck() {
     if (typeof firebase === 'undefined' || !firebase.appCheck) return;
@@ -176,12 +176,12 @@ function initAppCheck() {
         console.log('ℹ️ App Check skipped (localhost)');
         return;
     }
-    if (RECAPTCHA_SITE_KEY === '6LcAAAAA' || RECAPTCHA_SITE_KEY.length < 20) {
-        console.warn('⚠️ App Check skipped — placeholder/invalid reCAPTCHA key. Set RECAPTCHA_SITE_KEY in firebase.js');
+    if (RECAPTCHA_SITE_KEY.length < 20) {
+        console.warn('⚠️ App Check skipped — invalid reCAPTCHA key. Set RECAPTCHA_SITE_KEY in firebase.js');
         return;
     }
     try {
-        firebase.appCheck().activate(RECAPTCHA_SITE_KEY, true);
+        firebase.appCheck().activate(new firebase.appCheck.ReCaptchaV3Provider(RECAPTCHA_SITE_KEY), true);
         console.log('✅ App Check activated');
     } catch (e) {
         console.warn('⚠️ App Check activation failed:', e);

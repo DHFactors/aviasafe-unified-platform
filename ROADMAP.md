@@ -1,32 +1,36 @@
-# Safety-Health Development Roadmap 
- 
-## Phase 1: Foundation & Core Infrastructure 
-- [x] Project setup 
-- [x] README.md 
-- [ ] Backend FastAPI setup 
-- [ ] Frontend HTML/CSS/JS setup 
-- [ ] Database schema (Supabase) 
-- [ ] Authentication (JWT + Supabase) 
- 
-## Phase 2: Core Functionality 
-- [ ] SMS Maturity Survey (12 ICAO elements) 
-- [ ] Report submission (Voluntary + Mandatory) 
-- [ ] AI classification (Gemini) 
-- [ ] Dashboard with charts 
-- [ ] User roles and access control 
- 
-## Phase 3: Advanced Features 
-- [ ] Mandatory report submission to CAAN 
-- [ ] ICAO taxonomy implementation 
-- [ ] Trend analysis 
-- [ ] Data export (PDF/Excel) 
- 
-## Phase 4: Productization 
-- [ ] Subscription billing 
-- [ ] White-label support 
-- [ ] Mobile app (PWA) 
- 
-## Phase 5: Scaling 
-- [ ] Multi-region support 
-- [ ] Advanced analytics 
-- [ ] API gateway for third-party integration 
+# Roadmap
+
+Current-state roadmap for the AviaSAFE SMS Platform. Supersedes the earlier "Safety-Health" roadmap
+(Supabase/Netlify era). The authoritative status source is
+[PROJECT_STATUS_REPORT_02AUG2026.md](./PROJECT_STATUS_REPORT_02AUG2026.md).
+
+## Milestones Reached
+
+| Phase | Status | Notes |
+|---|---|---|
+| **Feature Development** | ✅ 100% | Survey, VSR/MOR, AI suggestions, dashboards, roles, CAN/CAP, verification, diversions, quarterly/annual reports + PDF |
+| **RC-1 — Security Hardening** | ✅ COMPLETE | Env-only secrets, admin auth, debug endpoints closed, fail-closed provisioning |
+| **RC-2 — Functional Corrections** | ✅ COMPLETE | Unified risk matrix (5/9/15), thresholds plumbed, 40 tests green |
+| **RC-3 — Documentation & Operational Readiness** | 🔄 In progress | This phase |
+
+## Remaining Release-Candidate Phases
+
+- **RC-4 — Charter Re-alignment:** Survey refactor to 4 components / 12 elements with backend API
+  (TD-6); resolve remaining functional inaccuracies.
+- **RC-5 — Platform Hygiene & Tooling:** remove `public/portal` mock code (TD-7), prune dead code
+  (TD-11/TD-13 leftovers), CI (lint + pytest + deploy), single `render.yaml` (TD-8), align
+  Firestore indexes (TD-10).
+- **RC-6 — Pre-Production / Pilot:** App Check server-side enforcement (TD-12), MFA, backups/PITR,
+  audit trail, staging environment, penetration/security review.
+
+## Product Roadmap (post-pilot, charter-gated)
+
+Per the [Product Charter](./PROJECT_CHARTER.md), feature expansion requires explicit approval.
+Candidate product work (not committed):
+
+- Monitoring / alerting for SMS health thresholds.
+- Notifications service (email/portal).
+- AI assistant enhancements (evaluation set, per-tenant prompt tuning).
+- State-of-the-System reports and SSP effectiveness reporting automation.
+
+*Nothing here is scheduled without approval.*

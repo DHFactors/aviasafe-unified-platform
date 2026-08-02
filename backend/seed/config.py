@@ -3,6 +3,12 @@ SEED_DOC_PATH = "seed_metadata/seed"
 
 SURVEY_COLLECTION = "surveys"
 
+from app.core.config import settings
+
+# Seed user password is env-driven (DEFAULT_SEED_PASSWORD). Empty when unset so
+# seeding fails closed rather than using a hardcoded default.
+DEMO_USER_PASSWORD = settings.DEFAULT_SEED_PASSWORD or ""
+
 ICAO_SMS_PILLARS = [
     "safety_policy",
     "safety_risk_management",
@@ -620,7 +626,7 @@ DEMO_USERS = [
     {
         "uid": "super-admin-001",
         "email": "safety.director@caan.gov.np",
-        "password": "Demo@123456",
+        "password": DEMO_USER_PASSWORD,
         "full_name": "Dr. Rajendra Prasad Acharya",
         "organization": "CAAN",
         "role": "SUPER_ADMIN",
@@ -629,7 +635,7 @@ DEMO_USERS = [
     {
         "uid": "caan-smd-001",
         "email": "sms.inspector@caan.gov.np",
-        "password": "Demo@123456",
+        "password": DEMO_USER_PASSWORD,
         "full_name": "Captain Bishwa Ratna Pun",
         "organization": "CAAN",
         "role": "CAAN_SMD",
@@ -638,7 +644,7 @@ DEMO_USERS = [
     {
         "uid": "caan-director-001",
         "email": "director.safety@caan.gov.np",
-        "password": "Demo@123456",
+        "password": DEMO_USER_PASSWORD,
         "full_name": "Mr. Dipak Bahadur Rawal",
         "organization": "CAAN",
         "role": "CAAN_SMD",
@@ -649,19 +655,19 @@ DEMO_USERS = [
 OPERATOR_USER_TEMPLATES = {
     "safety_manager": {
         "email": "safety.{op_id}@{email_domain}",
-        "password": "Demo@123456",
+        "password": DEMO_USER_PASSWORD,
         "full_name": "{name}",
         "role": "AIRLINE_ADMIN",
     },
     "accountable_executive": {
         "email": "ae.{op_id}@{email_domain}",
-        "password": "Demo@123456",
+        "password": DEMO_USER_PASSWORD,
         "full_name": "{name}",
         "role": "AIRLINE_ADMIN",
     },
     "department_manager": {
         "email": "manager.{op_id}@{email_domain}",
-        "password": "Demo@123456",
+        "password": DEMO_USER_PASSWORD,
         "full_name": "{name}",
         "role": "USER",
     },

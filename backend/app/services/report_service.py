@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.core.metrics import record_ai_result
 from app.firebase import get_tenant_collection, get_cross_tenant_collection, get_db
 from app.services.gemini import analyze_report, classify_mandatory
-from app.services.risk_matrix import compute_risk_index, get_risk_level
+from app.services.risk_matrix import compute_risk_index, get_risk_level, get_thresholds
 from app.services.repository import ReportRepository
 
 
@@ -26,7 +26,7 @@ class ReportService:
         risk_level = None
         if severity_level is not None and probability_level is not None:
             risk_index = compute_risk_index(severity_level, probability_level)
-            risk_level = get_risk_level(risk_index)
+            risk_level = get_risk_level(risk_index, get_thresholds(self.tenant_id))
 
         doc_data = {
             "tenant_id": self.tenant_id,
@@ -190,7 +190,7 @@ class ReportService:
             ai_suggested_assessment = None
             if suggested_severity is not None and suggested_probability is not None:
                 ai_risk_index = compute_risk_index(suggested_severity, suggested_probability)
-                ai_risk_level = get_risk_level(ai_risk_index)
+                ai_risk_level = get_risk_level(ai_risk_index, get_thresholds(self.tenant_id))
                 ai_suggested_assessment = {
                     "suggested_severity": suggested_severity,
                     "suggested_probability": suggested_probability,
@@ -238,13 +238,24 @@ class ReportService:
 
     def confirm_risk_assessment(self, report_id: str, severity: int, probability: int, user: dict, notes: str = None) -> dict:
         try:
-            ref = get_tenant_collection(self.tenant_id, self.COLLECTION).document(report_id)
+            if user.get("role") in settings.CROSS_TENANT_ROLES:
+                docs = get_cross_tenant_collection(self.COLLECTION).where(
+                    "__name__", "==", report_id
+                ).get()
+                if not docs:
+                    raise ValueError("Report not found")
+                ref = docs[0].reference
+                report_tenant = (docs[0].to_dict() or {}).get("tenant_id") or self.tenant_id
+            else:
+                ref = get_tenant_collection(self.tenant_id, self.COLLECTION).document(report_id)
+                report_tenant = self.tenant_id
+
             doc = ref.get()
             if not doc.exists:
                 raise ValueError("Report not found")
 
             risk_index = compute_risk_index(severity, probability)
-            risk_level = get_risk_level(risk_index)
+            risk_level = get_risk_level(risk_index, get_thresholds(report_tenant))
             now = datetime.now(timezone.utc)
 
             risk_assessment = {
