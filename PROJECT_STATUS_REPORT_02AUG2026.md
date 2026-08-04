@@ -1449,4 +1449,56 @@ confirmation of `FIREBASE_PROJECT_ID` should be made in the Render dashboard by 
 differs from `gap-analysis-ssp`, return to this report (the "different active project" branch) before
 restoring anything.
 
+---
+
+## RC-5.5 Deployment Status Update (post-custom-domain rollout)
+
+**Date:** 4 August 2026
+**Release tag:** `v1.0.0-rc5.5` (commit `e37518c`)
+
+### Frontend deployment & custom domain — COMPLETED / PASSED
+
+- Firebase Hosting deployed to `gap-analysis-ssp` (`firebase deploy --only hosting` → success, 62 files).
+- Both `https://gap-analysis-ssp.web.app` and `https://sms.aviasafesystems.com` return **HTTP 200** and
+  serve the landing page (`public/index.html`).
+- **Root-routing fix:** `sms` added to the reserved-subdomain list in `public/index.html` (client-side
+  subdomain redirect) so `/` on the custom domain renders the public landing page (with the Login
+  button linking to `login.html`) instead of auto-redirecting to `/login.html?tenant=sms`.
+- Backend CORS `ALLOWED_ORIGINS` updated to include `https://sms.aviasafesystems.com`
+  (`backend/app/core/config.py`, `backend/render.yaml`, `backend/.env.example`); deploy on Render is
+  required to activate (see operator actions).
+
+### UAT-005 backend / Render verification — COMPLETED (from RR-1 execution log)
+
+- Live backend (Render) re-deployed from the validated candidate: admin POST endpoints return **403
+  without a bearer token** (auth before body validation), legacy `/check-data`, `/migrate-seed-data`,
+  and `/auth/debug-verify` are **404**, OpenAPI admin POSTs show `security: HTTPBearer`. The
+  repository-side UAT-005 fix is live.
+
+### Firestore status — HOLD (OPERATOR ACTION REQUIRED)
+
+**HOLD (OPERATOR ACTION REQUIRED):** Firestore `(default)` instance is in a GCP post-restore
+transition state. Verified with a valid bearer token on 4 Aug 2026:
+
+| Probe | Result |
+|---|---|
+| `GET /databases/(default)` | **200** — metadata present, no `deleteTime`, `earliestVersionTime` advancing |
+| `POST /databases?databaseId=(default)` (create) | **409 ALREADY_EXISTS** — name still reserved |
+| `DELETE /databases/(default)` | **404 NOT_FOUND** — not deleteable from delete-side |
+| Write (`PATCH system_health/ping`) | **400 FAILED_PRECONDITION** — "Cannot serve requests because the database was deleted" |
+| `firebase deploy --only firestore:indexes` | **404** — "Requested entity was not found" |
+
+**Impact:** index deployment, seed repopulation (`npm run seed`), and any Firestore read/write are
+blocked until the database exits this transition. **Requires manual verification / re-provisioning in
+the Google Cloud Console** (Firestore page for `gap-analysis-ssp`): confirm the `(default)` database
+state, and either wait for purge/restore to finalize, or delete-and-recreate the database from the
+console. Once serving, rerun `firebase deploy --only firestore:indexes` and the seed pipeline.
+
+### Pending operator actions (RC-6 gate)
+
+1. Resolve the Firestore `(default)` transition in the GCP/Firebase console; confirm writes return 200.
+2. Deploy `firebase deploy --only firestore:indexes` and run the seed pipeline.
+3. Set/confirm `ALLOWED_ORIGINS` (incl. `https://sms.aviasafesystems.com`) on the live Render service.
+4. Re-run the RC-5.5 validation checklist and close UAT-005 formally.
+
 
