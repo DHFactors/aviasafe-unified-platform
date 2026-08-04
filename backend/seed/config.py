@@ -2,6 +2,7 @@ SEED_VERSION = "1.0.0"
 SEED_DOC_PATH = "seed_metadata/seed"
 
 SURVEY_COLLECTION = "surveys"
+STATE_RISK_REFERENCE_PATH = "state/icao_top_risks/categories"
 
 from app.core.config import settings
 

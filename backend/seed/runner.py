@@ -110,6 +110,7 @@ def run(
         "surveys": 0,
         "vsr_reports": 0,
         "mor_reports": 0,
+        "state_risk_categories": 0,
     }
 
     if dry_run:
@@ -121,7 +122,8 @@ def run(
         logger.info(f"DRY RUN: Would seed {counts['tenants']} tenants, "
                      f"{counts['surveys']} surveys, "
                      f"{counts['vsr_reports']} VSR, "
-                     f"{counts['mor_reports']} MOR")
+                     f"{counts['mor_reports']} MOR, "
+                     f"{counts['state_risk_categories']} state risk categories")
         return counts
 
     if all_doing_all or users_only:
@@ -152,6 +154,11 @@ def run(
         from seed.reports import create_all_mor_reports
         total_mor = create_all_mor_reports(db)
         counts["mor_reports"] = total_mor
+
+    if all_doing_all:
+        logger.info("=== Seeding state risk register reference ===")
+        from seed.state_risk import create_all_state_risk_reference
+        counts["state_risk_categories"] = create_all_state_risk_reference(db)
 
     if not dry_run:
         counts["seeded_at"] = datetime.now(timezone.utc).isoformat()

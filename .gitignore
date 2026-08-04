@@ -11,6 +11,9 @@ recaptch.txt
 service-account.json
 *.service-account.json
 
+# Beta-testing credential exports (real passwords)
+beta-testing-credentials.csv
+
 # Python Virtual Environments
 .venv/
 venv/

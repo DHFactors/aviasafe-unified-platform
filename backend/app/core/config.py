@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     API_PREFIX_VERIFICATION: str = "/api/v1/verification"
     API_PREFIX_REPORTING: str = "/api/v1/reporting"
     API_PREFIX_FLIGHT_DIVERSIONS: str = "/api/v1/flight-diversions"
+    API_PREFIX_STATE_RISK: str = "/api/v1/state-risk"
     API_PREFIX_AUTH_LEGACY: str = "/api/auth"
     API_PREFIX_REPORTS_LEGACY: str = "/api/reports"
     API_PREFIX_DASHBOARD_LEGACY: str = "/api/dashboard"
@@ -39,6 +40,7 @@ class Settings(BaseSettings):
     API_PREFIX_VERIFICATION_LEGACY: str = "/api/verification"
     API_PREFIX_REPORTING_LEGACY: str = "/api/reporting"
     API_PREFIX_FLIGHT_DIVERSIONS_LEGACY: str = "/api/flight-diversions"
+    API_PREFIX_STATE_RISK_LEGACY: str = "/api/state-risk"
     DEBUG: bool = False
 
     # ── CORS ──

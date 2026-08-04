@@ -134,13 +134,74 @@ class DashboardService:
         reports = self._caan_reports(**overrides)
         anon_count = sum(1 for r in reports if r.get("is_anonymous"))
         total = len(reports) or 1
+
+        benchmark = self._state_benchmark()
         return {
             "anonymous_reporting_rate": round(anon_count / total * 100, 1),
-            "industry_anon_rate": None,
+            "industry_anon_rate": benchmark.get("industry_anon_rate"),
             "anonymous_trend": None,
             "total_reporters": len(set(r.get("created_by") for r in reports if r.get("created_by"))),
-            "benchmark_data": None,
+            "benchmark_data": benchmark.get("benchmark_data"),
+            "state_risk": benchmark.get("state_risk"),
+            "ssp_target_avg": benchmark.get("ssp_target_avg"),
+            "ssp_actual_avg": benchmark.get("ssp_actual_avg"),
         }
+
+    def _state_benchmark(self) -> Dict[str, Any]:
+        """Read the persisted state-level risk register for industry benchmark
+        values. Falls back to None when the register is not yet seeded."""
+        try:
+            from app.services.state_risk_service import _risk_collection
+            rows = list(_risk_collection().stream())
+            if not rows:
+                return {
+                    "industry_anon_rate": None,
+                    "benchmark_data": None,
+                    "state_risk": None,
+                    "ssp_target_avg": None,
+                    "ssp_actual_avg": None,
+                }
+            entries = [r.to_dict() for r in rows]
+            top = sorted(
+                [e for e in entries if e.get("current_risk_index") is not None],
+                key=lambda e: e["current_risk_index"],
+                reverse=True,
+            )
+            targets = [e.get("ssp_target") for e in entries if e.get("ssp_target") is not None]
+            actuals = [e.get("actual_ssp_value") for e in entries if e.get("actual_ssp_value") is not None]
+            return {
+                "industry_anon_rate": None,
+                "benchmark_data": {
+                    "top_national_risks": [
+                        {
+                            "category": e.get("icoc_category"),
+                            "name": e.get("name"),
+                            "current_risk_index": e.get("current_risk_index"),
+                            "tolerability": e.get("tolerability"),
+                            "trend": e.get("trend"),
+                            "contributing_tenants": e.get("contributing_tenants", []),
+                        }
+                        for e in top[:5]
+                    ],
+                    "categories_tracked": len(entries),
+                    "period": {
+                        "year": entries[0].get("year"),
+                        "quarter": entries[0].get("quarter"),
+                    },
+                },
+                "state_risk": entries,
+                "ssp_target_avg": round(sum(targets) / len(targets), 1) if targets else None,
+                "ssp_actual_avg": round(sum(actuals) / len(actuals), 1) if actuals else None,
+            }
+        except Exception as e:
+            logger.warning(f"Failed to read state risk register for benchmark: {e}")
+            return {
+                "industry_anon_rate": None,
+                "benchmark_data": None,
+                "state_risk": None,
+                "ssp_target_avg": None,
+                "ssp_actual_avg": None,
+            }
 
     # ------------------------------------------------------------------
     # Public: Super Admin dashboard endpoints

@@ -278,12 +278,48 @@ class ReportGenerator:
         closed = len([h for h in hazards if h.get("status") == "Closed"])
         can_closed = len([c for c in cans if c.get("status") == "Closed"])
         can_total = len(cans)
+
+        # Pull the persisted state-level register so risk_reduction_rate and
+        # SSP target/actual comparison reflect the national (aggregated) view
+        # instead of a hardcoded placeholder.
+        state_metrics = {}
+        try:
+            from app.services.state_risk_service import StateRiskService
+            from app.services.state_risk_service import _risk_collection
+            rows = list(_risk_collection().stream())
+            if rows:
+                latest = max(rows, key=lambda r: (r.to_dict().get("year", 0), r.to_dict().get("quarter", 0)))
+                d = latest.to_dict()
+                reduction = d.get("risk_reduction_rate")
+                state_metrics = {
+                    "risk_reduction_rate": round(float(reduction), 1) if reduction is not None else 0.0,
+                    "ssp_target_avg": self._avg_ssp_target(rows),
+                    "ssp_actual_avg": self._avg_ssp_actual(rows),
+                    "national_categories_tracked": len(rows),
+                }
+        except Exception as e:
+            logger.warning(f"Failed to read state risk register for SSP indicators: {e}")
+            state_metrics = {}
+
         return {
             "hazard_identification_rate": round((vsr_count / total * 100) if total > 0 else 0, 1),
             "closure_rate": round((closed / total * 100) if total > 0 else 0, 1),
             "can_cap_compliance_rate": round((can_closed / can_total * 100) if can_total > 0 else 0, 1),
-            "risk_reduction_rate": 0.0,
+            "risk_reduction_rate": state_metrics.get("risk_reduction_rate", 0.0),
+            "ssp_target_avg": state_metrics.get("ssp_target_avg"),
+            "ssp_actual_avg": state_metrics.get("ssp_actual_avg"),
+            "national_categories_tracked": state_metrics.get("national_categories_tracked"),
         }
+
+    @staticmethod
+    def _avg_ssp_target(rows) -> Optional[float]:
+        vals = [r.to_dict().get("ssp_target") for r in rows if r.to_dict().get("ssp_target") is not None]
+        return round(sum(vals) / len(vals), 1) if vals else None
+
+    @staticmethod
+    def _avg_ssp_actual(rows) -> Optional[float]:
+        vals = [r.to_dict().get("actual_ssp_value") for r in rows if r.to_dict().get("actual_ssp_value") is not None]
+        return round(sum(vals) / len(vals), 1) if vals else None
 
     def _generate_insights(self, risk_dist: dict, can_cap_status: dict, top_risks: list) -> List[str]:
         insights = []
