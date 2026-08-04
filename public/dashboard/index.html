@@ -6,6 +6,7 @@
     <title>Survey Dashboard - AviaSAFE</title>
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/shell.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -45,20 +46,14 @@
         #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
         #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
         @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+        .section-title { font-size: 1.25rem; font-weight: 600; color: #002f6c; margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .section-title:first-of-type { margin-top: 0; }
+        .shell-content { max-width: 900px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-
-    <div class="header">
-        <h1><i class="fas fa-poll"></i> Survey Period Management</h1>
-        <div>
-            <span id="userDisplay" style="margin-right:12px;font-size:13px;color:#5f6368;"></span>
-            <button class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
-        </div>
-    </div>
-
+<div class="app-shell">
     <div id="authGuard" style="display:none;">
         <div class="card" style="text-align:center;padding:40px;">
             <i class="fas fa-lock" style="font-size:48px;color:#ea4335;margin-bottom:16px;"></i>
@@ -68,6 +63,10 @@
     </div>
 
     <div id="appContent" style="display:none;">
+
+        <div class="section-title shell-scroll-spy" id="overview">
+            <i class="fas fa-poll"></i> Survey Overview
+        </div>
 
         <!-- Tenant Selector -->
         <div class="card tenant-selector">
@@ -119,9 +118,22 @@
         </div>
 
     </div>
-
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/shell.js"></script>
+<script>
+window.SHELL_CONFIG = {
+    brand: 'AviaSAFE',
+    roleLabel: 'Survey Period Management',
+    nav: [
+        { id: 'overview', label: 'Survey Overview', icon: 'fa-poll' },
+    ],
+};
+</script>
 <script>
 var tenants = [];
 var selectedTenantId = '';
@@ -129,21 +141,22 @@ var currentUser = null;
 
 firebase.auth().onAuthStateChanged(function(user) {
     currentUser = user;
-    var userDisplay = document.getElementById('userDisplay');
 
     if (!user) {
-        userDisplay.textContent = 'Not logged in';
         document.getElementById('authGuard').style.display = 'block';
         document.getElementById('appContent').style.display = 'none';
         return;
     }
 
-    userDisplay.textContent = user.email;
     user.getIdTokenResult().then(function(tokenResult) {
         var claims = tokenResult.claims || {};
         if (claims.role === 'SUPER_ADMIN' || claims.role === 'AIRLINE_ADMIN') {
             document.getElementById('authGuard').style.display = 'none';
             document.getElementById('appContent').style.display = 'block';
+            var roleName = claims.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : (claims.tenant_id ? (claims.tenant_id + ' · AIRLINE_ADMIN') : 'AIRLINE_ADMIN');
+            if (typeof window.updateShellTenant === 'function') {
+                window.updateShellTenant('Survey Period Management', roleName);
+            }
             loadTenants();
         } else {
             document.getElementById('authGuard').querySelector('h3').textContent = 'Access Denied';

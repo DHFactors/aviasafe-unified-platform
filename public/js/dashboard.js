@@ -47,13 +47,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.getElementById('dashboardSection').style.display = 'block';
-    document.getElementById('logoutBtn').style.display = 'block';
 
-    const header = document.getElementById('tenantTitle');
-    if (tenantId) {
-        header.textContent = `${tenantId.toUpperCase()} — Safety Dashboard`;
-    } else {
-        header.textContent = 'Cross-Tenant Safety Overview';
+    const title = tenantId ? `${tenantId.toUpperCase()} — Safety Dashboard` : 'Cross-Tenant Safety Overview';
+    if (typeof window.updateShellTenant === 'function') {
+        window.updateShellTenant(title, tenantId ? 'ICAO operator' : 'State-level aggregated view');
     }
 
     if (role === 'AIRLINE_ADMIN' || role === 'CAAN_SMD') {
@@ -62,10 +59,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupRiskMatrixForm();
     }
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await firebase.auth().signOut();
-        window.location.href = '/login.html';
-    });
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            await firebase.auth().signOut();
+            window.location.href = '/login.html';
+        });
+    }
 
     const daysEl = document.getElementById('daysFilter');
     if (daysEl) {

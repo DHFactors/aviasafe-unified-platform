@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/shell.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
@@ -266,15 +267,7 @@
 </head>
 <body>
 
-<nav class="nav">
-    <h1><i class="fas fa-shield-alt"></i> AviaSAFE — Safety Dashboard</h1>
-    <div class="nav-actions">
-        <span id="tenantTitle">Initializing...</span>
-        <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
-    </div>
-</nav>
-
-<div class="container">
+<div class="app-shell">
     <div id="dashboardSection">
 
         <!-- Filters -->
@@ -290,11 +283,11 @@
         </div>
 
         <!-- Section 1: KPI Cards -->
-        <div class="section-title"><i class="fas fa-chart-simple"></i> Key Performance Indicators</div>
+        <div class="section-title shell-scroll-spy" id="kpi"><i class="fas fa-chart-simple"></i> Key Performance Indicators</div>
         <div id="kpiGrid" class="kpi-grid state-container"></div>
 
         <!-- Section 2: Charts -->
-        <div class="section-title"><i class="fas fa-chart-bar"></i> Risk & Trends</div>
+        <div class="section-title shell-scroll-spy" id="risk-trends"><i class="fas fa-chart-bar"></i> Risk & Trends</div>
         <div class="chart-grid">
             <div class="chart-card">
                 <h3>Risk Distribution</h3>
@@ -311,7 +304,7 @@
         </div>
 
         <!-- Section 2b: 5x5 Risk Heat Map -->
-        <div class="section-title"><i class="fas fa-th"></i> ICAO 5×5 Risk Heat Map</div>
+        <div class="section-title shell-scroll-spy" id="heatmap"><i class="fas fa-th"></i> ICAO 5×5 Risk Heat Map</div>
         <div class="chart-grid">
             <div class="chart-card chart-full">
                 <h3>Risk Index Heat Map (Severity × Probability)</h3>
@@ -322,7 +315,7 @@
         </div>
 
         <!-- Section 3: Hazard Frequency -->
-        <div class="section-title"><i class="fas fa-triangle-exclamation"></i> Top Hazards</div>
+        <div class="section-title shell-scroll-spy" id="hazards"><i class="fas fa-triangle-exclamation"></i> Top Hazards</div>
         <div class="chart-grid">
             <div class="chart-card chart-full">
                 <h3>Hazard Occurrence Frequency</h3>
@@ -333,7 +326,7 @@
         </div>
 
         <!-- Section 3b: Hazard Register Widget -->
-        <div class="section-title"><i class="fas fa-book"></i> Hazard Register</div>
+        <div class="section-title shell-scroll-spy" id="hazard-register"><i class="fas fa-book"></i> Hazard Register</div>
         <div class="chart-grid">
             <div class="chart-card chart-full">
                 <h3>Hazard Register Summary <a href="/hazards/index.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View Full Register</a></h3>
@@ -344,7 +337,7 @@
         </div>
 
         <!-- Section 3c: CAN/CAP Widget -->
-        <div class="section-title"><i class="fas fa-clipboard-check"></i> CAN/CAP Status</div>
+        <div class="section-title shell-scroll-spy" id="cancap"><i class="fas fa-clipboard-check"></i> CAN/CAP Status</div>
         <div class="chart-grid">
             <div class="chart-card chart-full">
                 <h3>Corrective Action Progress <a href="/can_cap/cans.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All CANs</a></h3>
@@ -355,7 +348,7 @@
         </div>
 
         <!-- Section 3d: Verification & Closure Widget -->
-        <div class="section-title"><i class="fas fa-check-double"></i> Verification & Closure</div>
+        <div class="section-title shell-scroll-spy" id="verification"><i class="fas fa-check-double"></i> Verification & Closure</div>
         <div class="chart-grid">
             <div class="chart-card chart-full">
                 <h3>Verification Status</h3>
@@ -366,7 +359,7 @@
         </div>
 
         <!-- Section 3e: Reports Widget -->
-        <div class="section-title"><i class="fas fa-chart-bar"></i> Latest Reports</div>
+        <div class="section-title shell-scroll-spy" id="reports"><i class="fas fa-chart-bar"></i> Latest Reports</div>
         <div class="chart-grid">
             <div class="chart-card chart-full">
                 <h3>Recent Reports <a href="/reports/index.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All Reports</a></h3>
@@ -377,7 +370,7 @@
         </div>
 
         <!-- Section 3f: Flight Diversions Widget -->
-        <div class="section-title"><i class="fas fa-plane-slash"></i> Flight Diversions</div>
+        <div class="section-title shell-scroll-spy" id="diversions"><i class="fas fa-plane-slash"></i> Flight Diversions</div>
         <div class="chart-grid">
             <div class="chart-card chart-full">
                 <h3>Diversion Summary <a href="/flight_diversions/index.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All</a></h3>
@@ -388,7 +381,7 @@
         </div>
 
         <!-- Section 4: Recent Reports -->
-        <div class="section-title"><i class="fas fa-table-list"></i> Recent Reports</div>
+        <div class="section-title shell-scroll-spy" id="recent-reports"><i class="fas fa-table-list"></i> Recent Reports</div>
         <div id="reportsTable" class="table-card state-container">
             <table>
                 <thead>
@@ -409,7 +402,7 @@
 
         <!-- Section 5: Risk Matrix Settings (Safety Manager only) -->
         <div id="riskMatrixSection" style="display:none;">
-            <div class="section-title"><i class="fas fa-sliders-h"></i> ICAO Risk Matrix Configuration</div>
+            <div class="section-title shell-scroll-spy" id="risk-matrix"><i class="fas fa-sliders-h"></i> ICAO Risk Matrix Configuration</div>
             <div class="chart-card" style="background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);padding:1.25rem;">
                 <p style="font-size:0.85rem;color:#64748b;margin-bottom:1rem;">
                     Configure the thresholds that define Low, Medium, High, and Very High risk levels.
@@ -445,6 +438,26 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
     <script src="/js/firebase.js"></script>
 <script src="/js/api/client.js"></script>
+<script src="/js/shell.js"></script>
+<script>
+window.SHELL_CONFIG = {
+    brand: 'AviaSAFE',
+    roleLabel: 'Operator Safety Dashboard',
+    nav: [
+        { id: 'kpi', label: 'Key Indicators', icon: 'fa-chart-simple' },
+        { id: 'risk-trends', label: 'Risk & Trends', icon: 'fa-chart-bar' },
+        { id: 'heatmap', label: 'Risk Heat Map', icon: 'fa-th' },
+        { id: 'hazards', label: 'Top Hazards', icon: 'fa-triangle-exclamation' },
+        { id: 'hazard-register', label: 'Hazard Register', icon: 'fa-book' },
+        { id: 'cancap', label: 'CAN/CAP Status', icon: 'fa-clipboard-check' },
+        { id: 'verification', label: 'Verification & Closure', icon: 'fa-check-double' },
+        { id: 'reports', label: 'Latest Reports', icon: 'fa-chart-bar' },
+        { id: 'diversions', label: 'Flight Diversions', icon: 'fa-plane-slash' },
+        { id: 'recent-reports', label: 'Recent Reports', icon: 'fa-table-list' },
+        { id: 'risk-matrix', label: 'Risk Matrix', icon: 'fa-sliders-h' },
+    ],
+};
+</script>
 <script src="/js/api/dashboard.js"></script>
 <script src="/js/dashboard-utils.js"></script>
 <script src="/js/report.js"></script>

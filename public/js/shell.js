@@ -21,7 +21,16 @@
     //     nav: [ { id: 'overview', label: 'Overview', icon: 'fa-gauge-high' }, ... ],
     //     links: [ { href, label }, ... ]          // optional footer links
     //   }
-    const cfg = global.SHELL_CONFIG || { nav: [] };
+    //
+    // Pages may set SHELL_CONFIG either before or after this script runs (in a
+    // script that executes before DOMContentLoaded). We re-read it at init time
+    // so the sidebar/header always reflect the latest config.
+    let cfg = global.SHELL_CONFIG || { nav: [] };
+
+    function refreshCfg() {
+        if (global.SHELL_CONFIG) cfg = global.SHELL_CONFIG;
+        return cfg;
+    }
 
     function buildSidebar() {
         const aside = document.createElement('aside');
@@ -167,6 +176,7 @@
             const pos = window.scrollY + 120;
             let current = null;
             targets.forEach(function (el) {
+                if (el.offsetParent === null) return;
                 if (el.offsetTop <= pos) current = el.id;
             });
             if (!current && targets.length) current = targets[0].id;
@@ -194,6 +204,9 @@
         if (document.getElementById('shellSidebar')) return;
         const shell = document.querySelector('.app-shell');
         if (!shell) return;
+
+        // Re-read SHELL_CONFIG in case it was assigned after this script loaded.
+        refreshCfg();
 
         const sidebar = buildSidebar();
         const main = document.createElement('div');
