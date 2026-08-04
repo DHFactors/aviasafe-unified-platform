@@ -1,6 +1,6 @@
 import requests, json, os
 
-API_KEY = 'AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc'
+API_KEY = 'AIzaSyCdCtUuyOcUIoCBEaiWGbhp6_XwZKHsicc'
 FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + API_KEY
 BASE_API = 'https://aviasafe-unified-platform.onrender.com'
 

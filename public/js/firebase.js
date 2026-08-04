@@ -14,12 +14,12 @@
 // ============================================================================
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
-    authDomain: "gap-analysis-ssp.firebaseapp.com",
-    projectId: "gap-analysis-ssp",
-    storageBucket: "gap-analysis-ssp.appspot.com",
-    messagingSenderId: "817614332543",
-    appId: "1:817614332543:web:01224a312e8478b24d554a",
+    apiKey: "AIzaSyCdCtUuyOcUIoCBEaiWGbhp6_XwZKHsicc",
+    authDomain: "aerosafety-sms-prod.firebaseapp.com",
+    projectId: "aerosafety-sms-prod",
+    storageBucket: "aerosafety-sms-prod.firebasestorage.app",
+    messagingSenderId: "527947363983",
+    appId: "1:527947363983:web:4b736b6d1d50dd9b7a22fa",
     databaseId: "sms-db"
 };
 

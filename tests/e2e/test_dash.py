@@ -1,6 +1,6 @@
 import requests, json, os
 
-API_KEY = 'AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc'
+API_KEY = 'AIzaSyCdCtUuyOcUIoCBEaiWGbhp6_XwZKHsicc'
 PASSWORD = os.environ.get('DEFAULT_SEED_PASSWORD')
 
 if not PASSWORD:

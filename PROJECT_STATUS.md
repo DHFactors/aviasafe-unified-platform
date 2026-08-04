@@ -45,8 +45,8 @@
 ## 2. Database Setup (Firestore)
 
 ### Project
-- **Firebase Project ID:** `gap-analysis-ssp`
-- **Firestore Location:** `nam5` (US multi-region)
+- **Firebase Project ID:** `aerosafety-sms-prod`
+- **Firestore Database:** `sms-db` (us-west1)
 - **Alias:** `smssurvey` (in `.firebaserc`)
 
 ### Collections & Data Model
@@ -156,7 +156,7 @@ The **backend** does not enforce App Check tokens. Firebase Admin SDK bypasses A
 │  │ Middleware│→ │ (9 mods) │→ │(12 mods) │→ │ (11 mods)│   │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
 │  ┌──────────────────────────────────────────────────┐      │
-│  │ Firebase Admin SDK → Firestore (gap-analysis-ssp) │      │
+│  │ Firebase Admin SDK → Firestore (aerosafety-sms-prod) │      │
 │  └──────────────────────────────────────────────────┘      │
 │  ┌──────────────────────────────────────────────────┐      │
 │  │ Gemini 2.5 Pro AI → risk assessment & taxonomy   │      │
@@ -341,9 +341,9 @@ The **backend** does not enforce App Check tokens. Firebase Admin SDK bypasses A
 ### Current Deployment (Prototype)
 | Component | Provider | URL |
 |-----------|----------|-----|
-| **Frontend** | Firebase Hosting (Spark) | `https://gap-analysis-ssp.web.app` |
+| **Frontend** | Firebase Hosting (Spark) | `https://sms.aviasafesystems.com` / `https://aerosafety-sms-prod.web.app` |
 | **Backend** | Render (Free) | `https://aviasafe-unified-platform.onrender.com` |
-| **Database** | Firestore (nam5) | — |
+| **Database** | Firestore (`sms-db`, us-west1) | — |
 | **Auth** | Firebase Authentication | — |
 | **AI** | Google Gemini 2.5 Pro | — |
 | **Rate Limiting** | Upstash Redis | — |
@@ -432,10 +432,10 @@ The template enforces a consistent structure across all future steps:
 ## 13. Configuration Summary
 
 ```
-Firebase Project:     gap-analysis-ssp (alias: smssurvey)
-Frontend Domain:      gap-analysis-ssp.web.app
+Firebase Project:     aerosafety-sms-prod (alias: smssurvey)
+Frontend Domain:      sms.aviasafesystems.com (custom) / aerosafety-sms-prod.web.app
 Backend API:          aviasafe-unified-platform.onrender.com
-Firestore Location:   nam5 (US multi-region)
+Firestore Database:   sms-db (us-west1)
 Firebase SDK:         v9.22.0 (compat)
 Astro:                Static (marketing pages)
 Tailwind:             3.x (Astro pages only)

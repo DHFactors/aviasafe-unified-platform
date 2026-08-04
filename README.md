@@ -42,7 +42,7 @@ approval.
 |---|---|---|
 | Frontend | HTML5 / CSS3 / Vanilla JS (Firebase Web SDK v9 compat) | No build step; served by Firebase Hosting |
 | Backend | Python 3.11, FastAPI, Uvicorn | `backend/` |
-| Database | Cloud Firestore (nam5, US multi-region) | Firebase project `gap-analysis-ssp` |
+| Database | Cloud Firestore (`sms-db`, us-west1) | Firebase project `aerosafety-sms-prod` |
 | Auth | Firebase Authentication (email/password) + ID-token JWT (RS256) | Custom claims for RBAC |
 | App Check | Firebase App Check with reCAPTCHA v3 | Client-side enforcement |
 | AI | Google Gemini (`gemini-2.0-pro-exp-02-05`) | Optional; mock fallback built in |
@@ -52,7 +52,7 @@ approval.
 
 Live endpoints:
 
-- Frontend: `https://gap-analysis-ssp.web.app`
+- Frontend: `https://sms.aviasafesystems.com` (custom domain) / `https://aerosafety-sms-prod.web.app`
 - Backend API: `https://aviasafe-unified-platform.onrender.com`
 - OpenAPI docs: `https://aviasafe-unified-platform.onrender.com/docs`
 

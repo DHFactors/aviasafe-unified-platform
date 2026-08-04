@@ -13,12 +13,12 @@ import { MASTER_QUESTIONS } from './default_q.js';
 // ── MULTI-TENANT CONFIGURATION MATRIX ──
 // Firebase configuration parameters (Safe for public clients as security is enforced via Firestore Rules)
 const firebaseConfig = {
-    apiKey: "AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc",
-    authDomain: "gap-analysis-ssp.firebaseapp.com",
-    projectId: "gap-analysis-ssp",
-    storageBucket: "gap-analysis-ssp.appspot.com",
-    messagingSenderId: "817614332543",
-    appId: "1:817614332543:web:01224a312e8478b24d554a"
+    apiKey: "AIzaSyCdCtUuyOcUIoCBEaiWGbhp6_XwZKHsicc",
+    authDomain: "aerosafety-sms-prod.firebaseapp.com",
+    projectId: "aerosafety-sms-prod",
+    storageBucket: "aerosafety-sms-prod.firebasestorage.app",
+    messagingSenderId: "527947363983",
+    appId: "1:527947363983:web:4b736b6d1d50dd9b7a22fa"
 };
 
 // ── STATE MANAGEMENT ──
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { getFirestore, collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        const db = getFirestore(app, "sms-db");
 
         initInterfaceHooks(db, collection, addDoc);
     } catch (e) {

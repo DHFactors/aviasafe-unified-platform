@@ -42,7 +42,7 @@ This document describes the current implementation of the AviaSAFE SMS Platform 
 |---|---|---|
 | Frontend | HTML5, CSS3, Vanilla JS | Firebase Web SDK v9.22.0 (compat) |
 | Backend | Python + FastAPI + Uvicorn | Python 3.11, FastAPI 0.109.0 |
-| Database | Cloud Firestore | Firebase project `gap-analysis-ssp`, location `nam5` |
+| Database | Cloud Firestore (`sms-db`) | Firebase project `aerosafety-sms-prod`, location `us-west1` |
 | Auth | Firebase Authentication | Email/password; ID-token JWT (RS256) |
 | Authorization | Firebase custom claims | `role`, `tenant_id`; 4 roles |
 | App Check | reCAPTCHA v3 | Client-side, auto-refresh |

@@ -6,13 +6,13 @@ How the AviaSAFE platform is deployed and how to deploy it to each environment.
 
 | Surface | Provider | Location |
 |---|---|---|
-| Frontend (static site) | Firebase Hosting | `https://gap-analysis-ssp.web.app` → `https://sms.aviasafesystems.com` (custom domain) |
+| Frontend (static site) | Firebase Hosting | `https://aerosafety-sms-prod.web.app` → `https://sms.aviasafesystems.com` (custom domain) |
 | Backend API | Render (Docker) | `https://aviasafe-unified-platform.onrender.com` |
-| Database | Cloud Firestore | Firebase project `gap-analysis-ssp`, region `nam5` (US multi-region) |
+| Database | Cloud Firestore (`sms-db`) | Firebase project `aerosafety-sms-prod`, region `us-west1` |
 | Auth / App Check | Firebase Auth + App Check (reCAPTCHA v3) | Same project |
 
 **Live production URL: `https://sms.aviasafesystems.com`** (custom domain attached to the Firebase
-Hosting site; `https://gap-analysis-ssp.web.app` remains the default fallback).
+Hosting site; `https://aerosafety-sms-prod.web.app` remains the default fallback).
 
 OpenAPI docs: `https://aviasafe-unified-platform.onrender.com/docs`
 
@@ -81,7 +81,7 @@ Set the same env vars as §2 via `gcloud run services update ... --set-env-vars`
 ## 5. Frontend — Firebase Hosting
 
 ```bash
-firebase use gap-analysis-ssp
+firebase use aerosafety-sms-prod
 firebase deploy --only hosting
 ```
 
@@ -118,8 +118,8 @@ Hosting console "Release history" and promote a previous version.
 | Environment | Backend | Frontend | Data |
 |---|---|---|---|
 | Local dev | `uvicorn` on `:8000` | `firebase serve` `:5000` | emulator or live project |
-| Staging | Render branch preview / Firebase channel | Firebase preview channel | shared `gap-analysis-ssp` |
-| Production | Render `main` | `sms.aviasafesystems.com` (custom domain) | shared `gap-analysis-ssp` |
+| Staging | Render branch preview / Firebase channel | Firebase preview channel | shared `aerosafety-sms-prod` |
+| Production | Render `main` | `sms.aviasafesystems.com` (custom domain) | shared `aerosafety-sms-prod` |
 
 **Known limitation:** no dedicated staging Firestore project exists; staging and production share
-`gap-analysis-ssp`. See [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).
+`aerosafety-sms-prod`. See [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).

@@ -10,7 +10,7 @@ Guide for setting up the AviaSAFE platform locally for development and testing.
 | Git | any | Clone repository |
 | Node.js / npm | 18+ (optional) | Firebase CLI, JS syntax checks |
 | Firebase CLI | latest (optional) | Emulator, local hosting, rules deploy |
-| Google Cloud / Firebase project | `gap-analysis-ssp` or your own | Auth, Firestore, App Check |
+| Google Cloud / Firebase project | `aerosafety-sms-prod` or your own | Auth, Firestore, App Check |
 | Service account JSON | — | Firebase Admin SDK for the backend |
 
 ## 2. Clone & structure
@@ -57,7 +57,7 @@ The backend loads `backend/.env` automatically (absolute path resolution in
 | `SETUP_SECRET` | For admin ops | — | Second factor for provisioning endpoints |
 | `DEFAULT_PROVISION_PASSWORD` | For `/provision-airlines` | — | No hardcoded fallback |
 | `DEFAULT_SEED_PASSWORD` | For seed pipeline | — | No hardcoded fallback |
-| `ALLOWED_ORIGINS` | No | `https://sms.aviasafesystems.com,https://gap-analysis-ssp.web.app,http://localhost:3000,http://localhost:8000` | Comma-separated CORS list |
+| `ALLOWED_ORIGINS` | No | `https://sms.aviasafesystems.com,https://aerosafety-sms-prod.web.app,http://localhost:3000,http://localhost:8000` | Comma-separated CORS list |
 | `DEBUG` | No | `false` | Enables verbose logging |
 | `REDIS_URL` | No | empty | Enables Redis rate limiting when set |
 | `RATE_LIMIT_PER_MINUTE` | No | `60` | Per-IP limit |

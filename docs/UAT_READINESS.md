@@ -136,7 +136,7 @@ Scenarios:
 ## Deployment Architecture
 
 ### Frontend
-- Hosting: Firebase Hosting (https://gap-analysis-ssp.web.app)
+- Hosting: Firebase Hosting (https://aerosafety-sms-prod.web.app)
 - Auth: Firebase Authentication
 - Build: Static HTML/CSS/JS
 
@@ -148,7 +148,7 @@ Scenarios:
 
 ### Access
 - API Docs: https://aviasafe-unified-platform.onrender.com/docs
-- Frontend: https://gap-analysis-ssp.web.app
+- Frontend: https://aerosafety-sms-prod.web.app
 
 ---
 

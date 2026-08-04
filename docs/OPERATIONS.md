@@ -71,7 +71,7 @@ Backend logs use **loguru** and are written to `backend/logs/`.
 - **No automated Firestore backups or PITR** are configured. Firestore by default retains a
   snapshot only via Google Cloud Backup/PITR settings, which must be enabled by an operator.
 - **Recommended action (outstanding):** enable Firestore Backups (or PITR at minimum) for
-  `gap-analysis-ssp`; see [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).
+  `aerosafety-sms-prod`; see [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).
 
 **Recovery steps if data is lost:**
 1. Restore the most recent Firestore backup to the same project (or re-seed from
