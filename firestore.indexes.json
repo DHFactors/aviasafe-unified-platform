@@ -1,20 +1,6 @@
 {
   "indexes": [
     {
-      "collectionGroup": "responses",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "submittedAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "reports",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "submittedAt", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "reports",
       "queryScope": "COLLECTION",
       "fields": [

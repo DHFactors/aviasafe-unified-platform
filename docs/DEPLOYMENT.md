@@ -6,10 +6,13 @@ How the AviaSAFE platform is deployed and how to deploy it to each environment.
 
 | Surface | Provider | Location |
 |---|---|---|
-| Frontend (static site) | Firebase Hosting | `https://gap-analysis-ssp.web.app` |
+| Frontend (static site) | Firebase Hosting | `https://gap-analysis-ssp.web.app` → `https://sms.aviasafesystems.com` (custom domain) |
 | Backend API | Render (Docker) | `https://aviasafe-unified-platform.onrender.com` |
 | Database | Cloud Firestore | Firebase project `gap-analysis-ssp`, region `nam5` (US multi-region) |
 | Auth / App Check | Firebase Auth + App Check (reCAPTCHA v3) | Same project |
+
+**Live production URL: `https://sms.aviasafesystems.com`** (custom domain attached to the Firebase
+Hosting site; `https://gap-analysis-ssp.web.app` remains the default fallback).
 
 OpenAPI docs: `https://aviasafe-unified-platform.onrender.com/docs`
 
@@ -116,7 +119,7 @@ Hosting console "Release history" and promote a previous version.
 |---|---|---|---|
 | Local dev | `uvicorn` on `:8000` | `firebase serve` `:5000` | emulator or live project |
 | Staging | Render branch preview / Firebase channel | Firebase preview channel | shared `gap-analysis-ssp` |
-| Production | Render `main` | `gap-analysis-ssp.web.app` | shared `gap-analysis-ssp` |
+| Production | Render `main` | `sms.aviasafesystems.com` (custom domain) | shared `gap-analysis-ssp` |
 
 **Known limitation:** no dedicated staging Firestore project exists; staging and production share
 `gap-analysis-ssp`. See [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).

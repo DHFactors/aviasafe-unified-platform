@@ -241,7 +241,7 @@ Current deployment target:
 Firebase Hosting
 web.app domain
 
-Custom domain later:
+Custom domain (live target):
 
 sms.aviasafesystems.com
 

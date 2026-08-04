@@ -14,7 +14,7 @@ We are pleased to inform you that your AviaSAFE SMS Platform account has been cr
 
 | Item | Value |
 |------|-------|
-| **Portal URL** | https://gap-analysis-ssp.web.app |
+| **Portal URL** | https://sms.aviasafesystems.com |
 | **Email** | `{email}` |
 | **Password** | *(provided securely by your administrator — do not share in writing)* |
 
@@ -64,7 +64,7 @@ We are pleased to inform you that your AviaSAFE SMS Platform account has been cr
 
 If you need assistance:
 - **Email:** support@aviasafesystems.com
-- **Documentation:** https://gap-analysis-ssp.web.app/docs/
+- **Documentation:** https://sms.aviasafesystems.com/docs/
 
 ---
 

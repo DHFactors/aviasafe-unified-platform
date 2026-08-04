@@ -9,7 +9,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.8
       - key: ALLOWED_ORIGINS
-        value: http://localhost:3000,http://localhost:8000,https://gap-analysis-ssp.web.app
+        value: http://localhost:3000,http://localhost:8000,https://gap-analysis-ssp.web.app,https://sms.aviasafesystems.com
       - key: FIREBASE_PROJECT_ID
         sync: false
       - key: FIREBASE_PRIVATE_KEY

@@ -37,18 +37,18 @@ For any tenant `T` (e.g. `buddha-air`), the portal pages are:
 
 | Page | URL |
 |---|---|
-| Safety Dashboard | `https://gap-analysis-ssp.web.app/safety.html?tenant=T` |
-| Survey | `https://gap-analysis-ssp.web.app/survey/?tenant=T` |
-| VSR Form | `https://gap-analysis-ssp.web.app/report/vsr.html?tenant=T` |
-| MOR Form | `https://gap-analysis-ssp.web.app/report/mor.html?tenant=T` |
+| Safety Dashboard | `https://sms.aviasafesystems.com/safety.html?tenant=T` |
+| Survey | `https://sms.aviasafesystems.com/survey/?tenant=T` |
+| VSR Form | `https://sms.aviasafesystems.com/report/vsr.html?tenant=T` |
+| MOR Form | `https://sms.aviasafesystems.com/report/mor.html?tenant=T` |
 
 ## Quick Reference
 
 | Link | URL |
 |---|---|
-| Platform Root | https://gap-analysis-ssp.web.app |
-| CAAN Dashboard | https://gap-analysis-ssp.web.app/caan.html |
-| Admin Portal | https://gap-analysis-ssp.web.app/admin/ |
+| Platform Root | https://sms.aviasafesystems.com |
+| CAAN Dashboard | https://sms.aviasafesystems.com/caan.html |
+| Admin Portal | https://sms.aviasafesystems.com/admin/ |
 
 ## Provisioning
 

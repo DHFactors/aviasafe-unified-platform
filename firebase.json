@@ -5,6 +5,7 @@
   },
   "hosting": {
     "public": "public",
+    "site": "gap-analysis-ssp",
     "ignore": [
       "firebase.json",
       "**/.*",

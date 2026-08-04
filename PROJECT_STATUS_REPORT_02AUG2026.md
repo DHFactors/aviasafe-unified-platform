@@ -1308,4 +1308,145 @@ Approve the single release commit + `v1.0.0-rc5` tag; commit and push; execute �
 **Phase declaration: READY FOR REPOSITORY COMMIT** — awaiting approval. No commit, deploy, RC-5.5,
 or RC-6 activity performed.
 
+---
+
+## RR-1 Execution Log (post-approval)
+
+**Date:** 2 August 2026
+**Scope:** Steps 1–6 of the approved release sequence (commit → tag → push → backend → frontend →
+RC-5.5 repeat).
+
+### Step 1 — Commit: COMPLETE
+
+- Commit `117f32f` `Release Candidate v1.0.0-rc5` created on `main` (67 files, +5159/−799).
+- Pre-commit secret scan: no `.env` staged; no hardcoded `SETUP_SECRET`/private keys in source;
+  `.env.example` is placeholder-only. Old `aviasafe-e2e-setup-2026` literal appears only as
+  historical evidence in validation reports.
+
+### Step 2 — Tag: COMPLETE
+
+- Annotated tag `v1.0.0-rc5` created on `117f32f`.
+
+### Step 3 — Push: COMPLETE
+
+- `main` `4e306ce..117f32f` and tag `v1.0.0-rc5` pushed to `origin` (DHFactors/aviasafe-unified-platform).
+- Remote verified at `117f32f`; local working tree clean.
+
+### Step 4 — Backend deploy: COMPLETE (Render auto-deploy)
+
+- Render auto-deployed from the pushed tag. Live backend now matches the validated candidate:
+  - `/health` healthy, firebase connected, v1.0.0; `/live`, `/ready` 200.
+  - Admin POST `/provision-airlines`, `/fix-tenant-ids` no-token → **403** (auth before body — UAT-005
+    criterion met; previously 422).
+  - Legacy `/check-data`, `/migrate-seed-data`, `/auth/debug-verify` → **404** (removed).
+  - `/seed-demo-data`, `/create-seed-users` → **403** without token (auth enforced before the
+    `DISABLE_DESTRUCTIVE_ENDPOINTS` gate — protection equivalent to 404).
+  - `/api/v1/admin/risk-matrix` GET/PUT only (POST → 405, expected); `/auth/verify` 422 on empty body
+    (schema-required), expected.
+  - OpenAPI admin POSTs show `security: HTTPBearer` (no `security: null`).
+
+### Step 5 — Frontend deploy: BLOCKED (Critical discovery)
+
+- `firebase deploy` fails: firebase-tools cannot resolve project `gap-analysis-ssp`.
+- **Cloud Resource Manager state: `gap-analysis-ssp | DELETE_REQUESTED`.** The documented production
+  project (frontend Hosting **and** Firestore database, per `docs/DEPLOYMENT.md`) is **pending
+  deletion**. It is absent from `projects:list`; Hosting API lookups return 404/409; the public URL
+  `gap-analysis-ssp.web.app` returns "Site Not Found". A site/version/release cannot be created or
+  served in a project pending deletion.
+- Backend `firebase: connected` reflects SDK credential initialization only
+  (`is_firebase_ready()` = `_db is not None`); it does not prove Firestore is writable in the
+  deleting project. **If the backend's Firestore is `gap-analysis-ssp`, production data integrity
+  is at risk from the ongoing deletion.**
+- Authenticated account (`ezondiza.dhf@gmail.com`) has IAM access to ACTIVE projects
+  `hrms-aviasafesystems`, `aviaguru-lms` (and CRM `aviasafe-platform`, `gen-lang-client-0974985616`),
+  but none of these is the validated production target.
+
+### Step 6 — RC-5.5 repeat: NOT DECLARED
+
+- Backend portion: PASS (all security checks above). Frontend portion: FAIL/BLOCKED (project pending
+  deletion). UAT-005 remains **OPEN** pending frontend availability. RC-5.5 not declared.
+
+### Blocker / Required Operator Decision
+
+1. **Restore `gap-analysis-ssp`** (GCP/Firebase console, within the deletion grace period) and confirm
+   the project is ACTIVE and that its Firestore contains the production data — OR
+2. **Confirm the actual production Firebase project** used by the backend (Render `FIREBASE_PROJECT_ID`),
+   and either migrate frontend hosting + web config + backend CORS to an ACTIVE project (reconfiguration
+   + re-validation required) or correct the documented target.
+
+No RC-5.5 PASSED declaration, no UAT-005 closure, and no RC-6 activity pending this decision.
+
+---
+
+## Environment Verification — Production Firebase Project (per operator instruction)
+
+**Date:** 2 August 2026
+**Purpose:** determine whether `gap-analysis-ssp` remains the intended production Firebase project.
+No deployment performed during this verification.
+
+### 1. Render environment (`FIREBASE_PROJECT_ID`)
+
+- **Not directly readable:** no Render credentials/API key exist on this machine (no `render` CLI,
+  no `RENDER_TOKEN`, no `~/.render`). The live Render service env vars could not be queried.
+- Config evidence pointing at `gap-analysis-ssp`:
+  - `backend/render.yaml` `ALLOWED_ORIGINS` includes `https://gap-analysis-ssp.web.app`.
+  - `docs/DEPLOYMENT.md` declares backend `FIREBASE_PROJECT_ID` → project `gap-analysis-ssp`.
+  - Local `backend/.env` template: `FIREBASE_PROJECT_ID=gap-analysis-ssp`,
+    `FIREBASE_DATABASE_URL=https://gap-analysis-ssp.firebaseio.com`.
+- **Caveat:** the template `FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@gap-analysis-ssp.iam.gserviceaccount.com`
+  appears fabricated (`fbsvc` ≈ "fb-svc", not a random suffix); the private key is a placeholder.
+  It is evidence of documented intent, not proof of the live credential.
+
+### 2. Service account project_id
+
+- No real service-account key exists on disk (searches found only `backend/.env` template).
+- Local template names `gap-analysis-ssp`; treated as indicative only.
+
+### 3. Firestore target of the live backend
+
+- No public endpoint touches Firestore (only `/`, `/health`, `/live`, `/ready` are public GETs),
+  so the backend's data path could not be probed externally.
+- `/health` `firebase: connected` = `_db is not None` (SDK init only) — does not prove Firestore
+  reachability/writability.
+
+### 4. Project state inventory (Cloud Resource Manager, this account)
+
+| Project ID | Number | State | Created | Note |
+|---|---|---|---|---|
+| `gap-analysis-ssp` | 817614332543 | **DELETE_REQUESTED** | 2026-07-17 | `deleteTime: null` → restore still possible (grace period) |
+| `avia-safesms` | (hidden) | 403 for this account | — | `GOOGLE_CLOUD_PROJECT` env on this machine; not accessible |
+| `aviasafe-platform` | 227098172271 | ACTIVE | 2026-07-27 | repo folder name |
+| `hrms-aviasafesystems` | 4718966695 | ACTIVE | 2026-07-22 | IAM-visible |
+| `aviaguru-lms` | 657931040456 | ACTIVE | 2026-05-29 | IAM-visible |
+
+### 5. Frontend comparison
+
+`public/js/firebase.js`: projectId `gap-analysis-ssp`, authDomain `gap-analysis-ssp.firebaseapp.com`,
+appId `1:817614332543:web:01224a312e8478b24d554a`, senderId `817614332543`. The web API key
+(`AIzaSyAhvyNyLyqRWidGIkk-by3J9bJ5xtSFTdc`) returns **INVALID** from Identity Toolkit — consistent
+with a deleting/disabled project. The frontend is unambiguously bound to project `817614332543` =
+`gap-analysis-ssp`.
+
+### 6. Conclusion
+
+**Option A — Backend and frontend are both intended to use `gap-analysis-ssp`.**
+
+Reasoning (chain, strongest available without Render access):
+1. The frontend is bound to project `817614332543` (`gap-analysis-ssp`) via appId/authDomain.
+2. A working login flow requires the backend's Firebase Auth audience to match the frontend's
+   project; therefore the backend must target `gap-analysis-ssp` for the platform to function.
+3. All deployment documentation (`docs/DEPLOYMENT.md`, `backend/render.yaml`, `.firebaserc`,
+   `backend/.env` template, `ALLOWED_ORIGINS`) consistently names `gap-analysis-ssp`.
+4. No evidence exists that any other project has ever served this platform's auth/data.
+
+**Recommendation (unchanged from Step-5 blocker):** restore `gap-analysis-ssp` in the GCP/Firebase
+console (deleteTime is null → still within the recovery window) and confirm ACTIVE + data intact;
+then redeploy Hosting and re-run RC-5.5. Do **not** migrate to another project — the config and
+app identity are bound to `gap-analysis-ssp`.
+
+**Residual uncertainty:** the live Render env vars could not be read (no credentials). Final
+confirmation of `FIREBASE_PROJECT_ID` should be made in the Render dashboard by the operator; if it
+differs from `gap-analysis-ssp`, return to this report (the "different active project" branch) before
+restoring anything.
+
 

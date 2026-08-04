@@ -6,7 +6,7 @@ This document describes the current implementation of the AviaSAFE SMS Platform 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Frontend — Firebase Hosting (gap-analysis-ssp.web.app)          │
+│  Frontend — Firebase Hosting (sms.aviasafesystems.com)            │
 │  public/ — static HTML/CSS/JS (Firebase Web SDK v9 compat)       │
 │    ┌───────────────────────────────────────────────────────┐     │
 │    │ firebase.js → App Check (reCAPTCHA v3) → Auth → ApiClient │  │
