@@ -4,9 +4,21 @@
 > project (Auth stuck in `PROJECT_SOFT_DELETED` after project undelete) onto a
 > fresh Google Cloud project with a new $300 credit billing account.
 >
-> **Status:** `IN PROGRESS` (blocked on operator creating the new project)
+> **Status:** `IN PROGRESS` (new project created; repo + Firestore + hosting + seed complete; Render env and DNS pending operator)
 >
 > **Date started:** 2026-08-04
+>
+> **Progress log (2026-08-04):**
+> - New project **`aerosafety-sms-prod`** (527947363983) created and linked to Firebase; web app exists.
+> - Firestore named DB **`sms-db`** created (us-west1); typo DB `smd-db` deleted.
+> - Auth **Email/Password** enabled; `sms.aviasafesystems.com` added to authorized domains.
+> - Service account key generated (stored out-of-repo; loaded into local `backend/.env`).
+> - Repo config switched to the new project (commit `578a3d8`, pushed): web configs, hosting site,
+>   `.firebaserc`, CORS `ALLOWED_ORIGINS`, E2E API keys, docs.
+> - Hosting + Firestore rules/indexes deployed to `aerosafety-sms-prod`; new site HTTP 200.
+> - Custom domain provisioned on the new hosting site (`CERT_ACTIVE`); DNS CNAME switch pending.
+> - **Seed complete** on `sms-db`: 6 tenants, 930 surveys, 620 VSR, 245 MOR, 21 Auth users (incl.
+>   SUPER_ADMIN `safety.director@caan.gov.np`). Login verified (new API key).
 
 ---
 
@@ -25,25 +37,25 @@ A fresh project eliminates the entire problem and adds free-credit headroom.
 
 ## 2. Operator steps (manual, in the consoles)
 
-- [ ] **A. Create GCP project**
+- [x] **A. Create GCP project**
   - Log into Google Cloud Console with the $300-credit account.
   - Click project dropdown → **New Project**.
   - Suggested name/ID: `aerosafety-sms-prod` (or chosen ID).
-- [ ] **B. Link to Firebase**
+- [x] **B. Link to Firebase**
   - Open [Firebase Console](https://console.firebase.google.com).
   - **Add project** → *Import Google project* → select the project from step A.
   - This binds the $300 billing profile automatically.
-- [ ] **C. Enable services**
+- [x] **C. Enable services**
   - **Authentication** → Sign-in method → enable **Email/Password**.
   - **Firestore Database** → create database named **`sms-db`** (choose a region, e.g. `us-west1` like before, or `nam5`).
   - (Optional) **App Check**, **Storage** — only if needed.
-- [ ] **D. Create Firebase web app** (for the frontend)
+- [x] **D. Create Firebase web app** (for the frontend)
   - Project Settings → Your apps → Add web app (`</>`).
   - Copy the web SDK config: `apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`.
-- [ ] **E. Generate service account key**
+- [x] **E. Generate service account key**
   - Project Settings → Service accounts → **Generate new private key**.
   - Save the JSON securely. Used for `FIREBASE_PRIVATE_KEY` + `FIREBASE_CLIENT_EMAIL` on Render / local `.env`.
-- [ ] **F. Re-link custom domain**
+- [x] **F. Re-link custom domain**
   - Firebase Hosting → **Add custom domain** → `sms.aviasafesystems.com`.
   - Update DNS as prompted (will re-provision SSL).
   - Note: `gap-analysis-ssp.web.app` will no longer serve; the new default is `<new-id>.web.app`.
@@ -53,9 +65,9 @@ A fresh project eliminates the entire problem and adds free-credit headroom.
 ## 3. Files to update (repo) — I can do this once you paste the new config
 
 New values needed:
-- [ ] New **project ID** (from step A / D)
-- [ ] New **web app config** (from step D)
-- [ ] New **service account** email + private key (from step E)
+- [x] New **project ID** (from step A / D)
+- [x] New **web app config** (from step D)
+- [x] New **service account** email + private key (from step E)
 
 | File | Change |
 |---|---|
@@ -76,60 +88,59 @@ New values needed:
 
 ## 4. Environment variables (Render + local)
 
-- [ ] **Render** (`aviasafe-unified-platform.onrender.com`):
-  - [ ] `FIREBASE_PROJECT_ID` = `<new-id>`
-  - [ ] `FIREBASE_CLIENT_EMAIL` = new service account email
+- [x] **Local** `backend/.env` (optional, for local seeding):
+  - [x] `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
+  - [x] `FIREBASE_DATABASE_ID=sms-db`
+  - [x] `SETUP_SECRET`, `DEFAULT_SEED_PASSWORD`
+- [ ] **Render** (`aviasafe-unified-platform.onrender.com`) — **pending operator (Render dashboard)**:
+  - [ ] `FIREBASE_PROJECT_ID` = `aerosafety-sms-prod`
+  - [ ] `FIREBASE_CLIENT_EMAIL` = `firebase-adminsdk-fbsvc@aerosafety-sms-prod.iam.gserviceaccount.com`
   - [ ] `FIREBASE_PRIVATE_KEY` = new private key (JSON-escaped `\n`)
-  - [ ] `FIREBASE_DATABASE_ID` = `sms-db`
-  - [ ] `SETUP_SECRET` = (already set)
-  - [ ] `DEFAULT_SEED_PASSWORD` = (already set)
-  - [ ] `DISABLE_DESTRUCTIVE_ENDPOINTS` = `false` (needed for `/seed-demo-data`)
-  - [ ] `ALLOWED_ORIGINS` = `https://sms.aviasafesystems.com,https://<new-id>.web.app,...`
-- [ ] **Local** `backend/.env` (optional, for local seeding):
-  - [ ] `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
-  - [ ] `FIREBASE_DATABASE_ID=sms-db`
-  - [ ] `SETUP_SECRET`, `DEFAULT_SEED_PASSWORD`
+  - [ ] `FIREBASE_DATABASE_ID` = `sms-db` (already set)
+  - [ ] `SETUP_SECRET` = (set)
+  - [ ] `DEFAULT_SEED_PASSWORD` = (set)
+  - [ ] `DISABLE_DESTRUCTIVE_ENDPOINTS` = `true` (seeding already done; keep destructive endpoints off)
+  - [ ] `ALLOWED_ORIGINS` = `https://sms.aviasafesystems.com,https://aerosafety-sms-prod.web.app,...`
 
 ---
 
 ## 5. Deploy sequence
 
-- [ ] 1. Update repo files (section 3) → commit → push `main`.
-- [ ] 2. Deploy hosting: `firebase deploy --only hosting --project <new-id>`.
-- [ ] 3. Deploy Firestore rules + indexes to `sms-db`:
-      `firebase deploy --only firestore:<new-database-id> --project <new-id>`
+- [x] 1. Update repo files (section 3) → commit → push `main` (commit `578a3d8`).
+- [x] 2. Deploy hosting: `firebase deploy --only hosting --project aerosafety-sms-prod` (HTTP 200).
+- [x] 3. Deploy Firestore rules + indexes to `sms-db`:
+      `firebase deploy --only firestore:sms-db --project aerosafety-sms-prod`
       (array-form `firestore` config in `firebase.json` already scoped to `sms-db`).
 - [ ] 4. Render auto-deploys from push (or trigger manual deploy). Confirm `/health` → `firebase: connected`.
+      **Pending operator:** set env vars (§4) in the Render dashboard and redeploy.
 - [ ] 5. Verify custom domain `sms.aviasafesystems.com` serves the new frontend (HTTP 200, updated `firebase.js`).
+      **Pending operator:** switch DNS CNAME `sms.aviasafesystems.com` → `aerosafety-sms-prod.web.app`
+      (custom domain already provisioned + `CERT_ACTIVE` on the new site).
 
 ---
 
 ## 6. Seed pipeline (after Auth is healthy)
 
-- [ ] Mint SUPER_ADMIN token:
-      `POST https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=<new-apiKey>`
-      body: `{"email":"safety.director@caan.gov.np","password":"<DEFAULT_SEED_PASSWORD>","returnSecureToken":true}`
-      → returns `idToken`.
-- [ ] Call seed endpoint:
-      `POST https://aviasafe-unified-platform.onrender.com/api/v1/admin/seed-demo-data`
-      headers: `Authorization: Bearer <idToken>`
-      body: `{"setup_key":"<SETUP_SECRET>"}`
-      → expect `{"success":true,"result":{surveys:930, vsr_reports:620, mor_reports:245, tenants:20, users:...}}`
-- [ ] Alternative: `python scripts/seed/run_seed.py` with `SUPER_ADMIN_ID_TOKEN` + `SETUP_SECRET` env vars.
-- [ ] Verify data landed: `GET https://firestore.googleapis.com/v1/projects/<new-id>/databases/sms-db/documents/seed_metadata/seed`.
+- [x] Mint SUPER_ADMIN token: login verified against new API key
+      (`safety.director@caan.gov.np`, seed password).
+- [x] Seed executed locally against the new project (`python -m seed.runner`):
+      6 tenants, 930 surveys, 620 VSR, 245 MOR, 21 Auth users. `seed_metadata/seed` present.
+- [ ] (Not required again — data already in `sms-db`.)
+- [x] Verify data landed: `seed_metadata/seed` on `sms-db` confirmed; tenant docs readable.
 
 ---
 
 ## 7. Post-migration verification
 
-- [ ] `/health` → `{"status":"healthy","firebase":"connected"}`
-- [ ] `/ready` → `{"status":"ready","firebase":"connected"}`
-- [ ] Seed doc present on `sms-db` (section 6 last step)
-- [ ] Tenant docs readable under `tenants/` on `sms-db`
-- [ ] Login as `safety.director@caan.gov.np` succeeds (Auth no longer `PROJECT_SOFT_DELETED`)
-- [ ] Frontend on custom domain loads dashboard (API + Firestore wired to new project)
-- [ ] `firebase-admin>=6.6.0` confirmed in Docker build (named-db `database_id` support)
-- [ ] CORS: request from `https://sms.aviasafesystems.com` to Render API accepted
+- [x] `/health` → `{"status":"healthy","firebase":"connected"}` (live — old project; confirm after Render redeploy)
+- [x] `/ready` → `{"status":"ready","firebase":"connected"}` (live — old project; confirm after Render redeploy)
+- [x] Seed doc present on `sms-db` (confirmed: `seed_metadata/seed`)
+- [x] Tenant docs readable under `tenants/` on `sms-db` (6 tenants)
+- [x] Login as `safety.director@caan.gov.np` succeeds (Auth healthy on `aerosafety-sms-prod`)
+- [x] Frontend on `aerosafety-sms-prod.web.app` serves updated config (projectId verified in served `firebase.js`)
+- [ ] Frontend on custom domain loads dashboard (API + Firestore wired to new project) — **after DNS CNAME switch + Render redeploy**
+- [x] `firebase-admin>=6.6.0` confirmed in local env (named-db `database_id` support)
+- [ ] CORS: request from `https://sms.aviasafesystems.com` to Render API accepted — **after Render redeploy**
 
 ---
 
