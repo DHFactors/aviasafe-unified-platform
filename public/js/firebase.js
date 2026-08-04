@@ -19,7 +19,8 @@ const firebaseConfig = {
     projectId: "gap-analysis-ssp",
     storageBucket: "gap-analysis-ssp.appspot.com",
     messagingSenderId: "817614332543",
-    appId: "1:817614332543:web:01224a312e8478b24d554a"
+    appId: "1:817614332543:web:01224a312e8478b24d554a",
+    databaseId: "sms-db"
 };
 
 // Centralized application configuration (single source of truth)
@@ -148,7 +149,7 @@ function initServices() {
     if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
         try {
             auth = firebase.auth();
-            db = firebase.firestore();
+            db = firebase.firestore(firebase.app(), firebaseConfig.databaseId);
             
             console.log('✅ Firebase services initialized');
         } catch (error) {

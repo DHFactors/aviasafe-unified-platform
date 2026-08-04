@@ -12,6 +12,8 @@ services:
         value: http://localhost:3000,http://localhost:8000,https://gap-analysis-ssp.web.app,https://sms.aviasafesystems.com
       - key: FIREBASE_PROJECT_ID
         sync: false
+      - key: FIREBASE_DATABASE_ID
+        value: sms-db
       - key: FIREBASE_PRIVATE_KEY
         sync: false
       - key: FIREBASE_CLIENT_EMAIL

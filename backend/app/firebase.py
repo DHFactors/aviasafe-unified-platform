@@ -31,14 +31,20 @@ def initialize_firebase():
 
             cred = credentials.Certificate(cred_dict)
             _firebase_app = firebase_admin.initialize_app(cred)
-            _db = firestore.client()
-            logger.info("Firebase Admin SDK initialized successfully")
+            if settings.FIREBASE_DATABASE_ID:
+                _db = firestore.client(app=_firebase_app, database_id=settings.FIREBASE_DATABASE_ID)
+            else:
+                _db = firestore.client(app=_firebase_app)
+            logger.info(f"Firebase Admin SDK initialized successfully (database={settings.FIREBASE_DATABASE_ID or '(default)'})")
 
         except Exception as e:
             logger.error(f"Failed to initialize Firebase: {e}")
             raise
     else:
-        _db = firestore.client()
+        if settings.FIREBASE_DATABASE_ID:
+            _db = firestore.client(app=_firebase_app, database_id=settings.FIREBASE_DATABASE_ID)
+        else:
+            _db = firestore.client(app=_firebase_app)
 
     return _firebase_app
 

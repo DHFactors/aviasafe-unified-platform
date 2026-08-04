@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     FIREBASE_PROJECT_ID: Optional[str] = None
     FIREBASE_PRIVATE_KEY: Optional[str] = None
     FIREBASE_CLIENT_EMAIL: Optional[str] = None
+    FIREBASE_DATABASE_ID: Optional[str] = None
     FIREBASE_COLLECTION_TENANTS: str = "tenants"
     FIREBASE_COLLECTION_REPORTS: str = "reports"
     FIREBASE_COLLECTION_METADATA: str = "metadata"

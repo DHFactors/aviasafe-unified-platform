@@ -1,8 +1,11 @@
 {
-  "firestore": {
-    "rules": "firestore/firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
+  "firestore": [
+    {
+      "database": "sms-db",
+      "rules": "firestore/firestore.rules",
+      "indexes": "firestore.indexes.json"
+    }
+  ],
   "hosting": {
     "public": "public",
     "site": "gap-analysis-ssp",
