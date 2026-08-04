@@ -1,0 +1,268 @@
+/* ============================================================================
+   FILE: shell.css
+   PATH: public/css/shell.css
+   VERSION: 1.0.0
+   PURPOSE: Shared dashboard shell — fixed left sidebar navigation, top header
+            reflecting the current tenant/regulator, and a landing-page style
+            footer. Used by all tenant dashboards and the CAAN dashboard.
+   AUTHOR: AviaSAFE Systems
+   ============================================================================ */
+
+:root {
+    --shell-navy: #002f6c;
+    --shell-navy-dark: #00245a;
+    --shell-navy-light: #0a3f82;
+    --shell-gold: #d4af37;
+    --shell-text: #1e293b;
+    --shell-muted: #64748b;
+    --shell-border: #e2e8f0;
+    --shell-light: #f8fafc;
+    --shell-sidebar-width: 250px;
+}
+
+/* ========== APP SHELL LAYOUT ========== */
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.app-shell .shell-main {
+    flex: 1;
+    margin-left: var(--shell-sidebar-width);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========== TOP HEADER ========== */
+.shell-header {
+    background: var(--shell-navy);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 3px solid var(--shell-gold);
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.shell-header .shell-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.shell-header .shell-brand i {
+    font-size: 1.3rem;
+}
+
+.shell-header .shell-tenant {
+    text-align: right;
+}
+
+.shell-header .shell-tenant .tenant-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.shell-header .shell-tenant .tenant-meta {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.shell-header .shell-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.shell-header .shell-user {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shell-header .btn-logout {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #fff;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.shell-header .btn-logout:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.6);
+}
+
+/* ========== FIXED LEFT SIDEBAR ========== */
+.shell-sidebar {
+    width: var(--shell-sidebar-width);
+    flex-shrink: 0;
+    background: var(--shell-navy-dark);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 200;
+    overflow-y: auto;
+}
+
+.shell-sidebar .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1.1rem 1.2rem;
+    font-weight: 700;
+    font-size: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+.shell-sidebar .sidebar-brand i {
+    font-size: 1.2rem;
+    color: var(--shell-gold);
+}
+
+.shell-sidebar .sidebar-role {
+    padding: 0.75rem 1.2rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--shell-gold);
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.shell-sidebar .sidebar-nav {
+    flex: 1;
+    padding: 0.75rem 0;
+}
+
+.shell-sidebar .sidebar-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.shell-sidebar .sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1.2rem;
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+    border-left: 3px solid transparent;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.shell-sidebar .sidebar-nav li a i {
+    width: 20px;
+    text-align: center;
+}
+
+.shell-sidebar .sidebar-nav li a:hover {
+    background: rgba(255,255,255,0.1);
+    text-decoration: none;
+}
+
+.shell-sidebar .sidebar-nav li a.active {
+    background: var(--shell-navy-light);
+    border-left-color: var(--shell-gold);
+    color: #fff;
+}
+
+.shell-sidebar .sidebar-footer {
+    padding: 0.75rem 1.2rem;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.6);
+}
+
+/* ========== CONTENT & FOOTER ========== */
+.shell-content {
+    flex: 1;
+    padding: 1.5rem;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.shell-footer {
+    background: var(--shell-navy);
+    color: #fff;
+    padding: 1.5rem 0;
+    text-align: center;
+    border-top: 3px solid var(--shell-gold);
+}
+
+.shell-footer .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.shell-footer .footer-links a {
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.shell-footer .footer-links a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.shell-footer p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.7);
+}
+
+.shell-footer p strong {
+    color: #fff;
+}
+
+/* ========== SCROLL-SPY ACTIVE MARKER ========== */
+.shell-scroll-spy { scroll-margin-top: 80px; }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .app-shell { flex-direction: column; }
+    .shell-sidebar {
+        width: 100%;
+        position: static;
+        flex-direction: row;
+        align-items: center;
+        overflow-x: auto;
+    }
+    .shell-sidebar .sidebar-brand { border-bottom: none; padding: 0.75rem 1rem; }
+    .shell-sidebar .sidebar-role { display: none; }
+    .shell-sidebar .sidebar-nav { padding: 0; }
+    .shell-sidebar .sidebar-nav ul { display: flex; }
+    .shell-sidebar .sidebar-nav li a { border-left: none; border-bottom: 3px solid transparent; padding: 0.75rem 0.9rem; }
+    .shell-sidebar .sidebar-nav li a.active { border-left: none; border-bottom-color: var(--shell-gold); }
+    .shell-sidebar .sidebar-footer { display: none; }
+    .app-shell .shell-main { margin-left: 0; }
+    .shell-header .shell-tenant { text-align: left; }
+}

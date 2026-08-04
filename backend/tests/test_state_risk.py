@@ -470,3 +470,64 @@ def test_update_ssp_target_requires_admin():
         r = s.client.put("/api/v1/state-risk/register/BIRD-2026Q1/ssp-target",
                          json={"ssp_target": 6.0})
     assert r.status_code in (403, 401)
+
+
+# ============================================================================
+# CAAN survey health (SMS pillars across tenants)
+# ============================================================================
+
+def _survey_svc(monkeypatch, surveys):
+    from app.services.dashboard_service import DashboardService
+
+    def fake_cg(self, name):
+        assert name == "surveys"
+        return _FakeCollection([_FakeDoc(s) for s in surveys])
+
+    class _DB:
+        def collection_group(self, name):
+            return fake_cg(self, name)
+
+    monkeypatch.setattr("app.firebase.get_db", lambda: _DB())
+    return DashboardService({"uid": "caan-user", "role": "CAAN_SMD"})
+
+
+def test_get_caan_survey_health_aggregates_pillars(monkeypatch):
+    svc = _survey_svc(monkeypatch, surveys=[
+        {
+            "tenant_id": "air1",
+            "safety_policy": 4.0, "safety_risk_management": 3.0,
+            "safety_assurance": 5.0, "safety_promotion": 4.0,
+            "overall_sms_health": 4.0,
+        },
+        {
+            "tenant_id": "air1",
+            "safety_policy": 2.0, "safety_risk_management": 3.0,
+            "safety_assurance": 3.0, "safety_promotion": 4.0,
+            "overall_sms_health": 3.0,
+        },
+        {
+            "tenant_id": "air2",
+            "safety_policy": 5.0, "safety_risk_management": 5.0,
+            "safety_assurance": 5.0, "safety_promotion": 5.0,
+            "overall_sms_health": 5.0,
+        },
+    ])
+    result = svc.get_caan_survey_health()
+    assert result["national"]["response_count"] == 3
+    by_id = {op["tenant_id"]: op for op in result["operators"]}
+    assert by_id["air1"]["response_count"] == 2
+    assert by_id["air1"]["pillars"]["safety_policy"] == 3.0
+    assert by_id["air1"]["overall_sms_health"] == 3.5
+    assert by_id["air2"]["overall_sms_health"] == 5.0
+    # National pillar average across all responses
+    assert result["national"]["pillars"]["safety_policy"] == round((4.0 + 2.0 + 5.0) / 3, 2)
+    # Best SMS health ranks first
+    assert result["operators"][0]["tenant_id"] == "air2"
+
+
+def test_get_caan_survey_health_empty(monkeypatch):
+    svc = _survey_svc(monkeypatch, surveys=[])
+    result = svc.get_caan_survey_health()
+    assert result["operators"] == []
+    assert result["national"]["overall_sms_health"] is None
+    assert result["national"]["response_count"] == 0

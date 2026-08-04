@@ -1,0 +1,574 @@
+<!-- ============================================================================
+FILE: caan-state-risk.html
+PATH: public/caan-state-risk.html
+VERSION: 1.0.0
+DATE CREATED: 2026-08-04
+PURPOSE: CAAN SMD State Safety Programme (SSP) dashboard. Provides the
+         national view of SMS health (survey pillars), the state risk register
+         (ICAO top-risk categories vs SSP targets, with staleness detection),
+         and the live cross-tenant aggregation. SSP-target editing is
+         restricted to SUPER_ADMIN. Uses the shared dashboard shell
+         (css/shell.css + js/shell.js) shared with tenant dashboards.
+AUTHOR: AviaSAFE Systems
+============================================================================ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAAN State Risk Register — AviaSAFE SSP</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/shell.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+        .section-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem; }
+        .section-head h2 { margin:0; color:var(--color-primary-dark, #0d47a1); }
+        .section-sub { color:#64748b; font-size:0.875rem; }
+
+        .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+        .stat-card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.06); padding:1.25rem; border-top:4px solid #1a73e8; }
+        .stat-card.gold { border-top-color:#d4af37; }
+        .stat-card.green { border-top-color:#34a853; }
+        .stat-card.red { border-top-color:#ea4335; }
+        .stat-card .num { font-size:1.9rem; font-weight:700; color:#1e293b; }
+        .stat-card .lbl { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.4px; color:#64748b; margin-top:0.25rem; }
+
+        .card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.06); padding:1.25rem; margin-bottom:1.5rem; }
+        .card h3 { margin:0 0 1rem; font-size:1rem; color:#002f6c; }
+
+        table { width:100%; border-collapse:collapse; }
+        th { background:#f8fafc; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.4px; color:#64748b; padding:0.7rem 0.8rem; text-align:left; border-bottom:2px solid #e2e8f0; }
+        td { padding:0.7rem 0.8rem; border-bottom:1px solid #f1f5f9; font-size:0.875rem; vertical-align:middle; }
+        tr:hover td { background:#f8fafc; }
+
+        .badge { display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.72rem; font-weight:600; }
+        .b-acceptable { background:#e6f4ea; color:#1e7e34; }
+        .b-tolerable { background:#fff3cd; color:#9a6700; }
+        .b-intolerable { background:#fce8e6; color:#c5221f; }
+        .b-improving { background:#e6f4ea; color:#1e7e34; }
+        .b-stable { background:#e8f0fe; color:#1a73e8; }
+        .b-deteriorating { background:#fce8e6; color:#c5221f; }
+
+        .tolerability-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:0.35rem; }
+        .tol-acceptable { background:#34a853; }
+        .tol-tolerable { background:#f9ab00; }
+        .tol-intolerable { background:#ea4335; }
+
+        .staleness-banner { border-radius:8px; padding:0.75rem 1rem; font-size:0.85rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; }
+        .st-fresh { background:#e6f4ea; color:#1e7e34; border-left:4px solid #34a853; }
+        .st-stale { background:#fff3cd; color:#9a6700; border-left:4px solid #f9ab00; }
+        .st-unknown { background:#e8f0fe; color:#1a73e8; border-left:4px solid #1a73e8; }
+
+        .btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 1rem; border:none; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.15s; text-decoration:none; }
+        .btn-primary { background:#1a73e8; color:#fff; }
+        .btn-primary:hover { background:#0d47a1; }
+        .btn-outline { background:transparent; color:#1a73e8; border:1px solid #1a73e8; }
+        .btn-outline:hover { background:#e8f0fe; }
+        .btn-sm { padding:0.3rem 0.7rem; font-size:0.8rem; }
+        .btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+        .input-group { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+        .input-sm { padding:0.35rem 0.6rem; border:1px solid #d1d5db; border-radius:6px; font-size:0.85rem; width:80px; }
+
+        .loading, .empty { text-align:center; padding:2.5rem; color:#64748b; }
+        .error { text-align:center; padding:2rem; color:#c5221f; }
+
+        .meta-line { font-size:0.8rem; color:#64748b; margin-top:0.5rem; }
+        .meta-line i { margin-right:0.3rem; }
+        .tenant-tags { display:flex; flex-wrap:wrap; gap:0.35rem; }
+        .tenant-tag { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:999px; padding:0.15rem 0.55rem; font-size:0.72rem; color:#475569; }
+
+        .period-select { display:flex; align-items:center; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+        .period-select select { padding:0.45rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; font-size:0.875rem; background:#fff; }
+        .period-select label { font-size:0.85rem; font-weight:600; color:#002f6c; }
+
+        .ssp-progress { background:#e2e8f0; border-radius:6px; height:10px; width:100px; overflow:hidden; }
+        .ssp-progress .fill { height:100%; border-radius:6px; }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <div id="authGate" style="padding:3rem;text-align:center;color:#64748b;">
+        <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
+        <p>Checking state safety access...</p>
+    </div>
+
+    <!-- ==================== SMS HEALTH ==================== -->
+    <section id="sms-health" class="shell-scroll-spy" style="display:none;">
+        <div class="section-head">
+            <div>
+                <h2><i class="fas fa-heart-pulse" style="color:#1a73e8;"></i> National SMS Health</h2>
+                <div class="section-sub">Aggregated ICAO Annex 19 survey culture across all operators</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="loadSmsHealth()"><i class="fas fa-rotate"></i> Refresh</button>
+        </div>
+        <div id="smsHealthStats" class="stat-grid"></div>
+        <div class="card">
+            <h3>Operator SMS Health vs National Average</h3>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr>
+                    <th>Operator</th>
+                    <th>Safety Policy</th>
+                    <th>Risk Mgmt</th>
+                    <th>Safety Assurance</th>
+                    <th>Safety Promotion</th>
+                    <th>Overall SMS Health</th>
+                    <th>Responses</th>
+                </tr></thead>
+                <tbody id="smsHealthBody"></tbody>
+            </table></div>
+        </div>
+    </section>
+
+    <!-- ==================== NATIONAL RISK REGISTER ==================== -->
+    <section id="risk-register" class="shell-scroll-spy" style="display:none;">
+        <div class="section-head">
+            <div>
+                <h2><i class="fas fa-book" style="color:#1a73e8;"></i> National Risk Register — Hazard Risk vs SSP Top Risk</h2>
+                <div class="section-sub">ICAO top-risk categories measured against state SSP targets</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="loadRegister()"><i class="fas fa-rotate"></i> Refresh</button>
+        </div>
+
+        <div id="stalenessBanner" class="staleness-banner st-unknown" style="display:none;"></div>
+
+        <div class="period-select">
+            <label for="regYear"><i class="fas fa-calendar-alt"></i> Period:</label>
+            <select id="regYear"></select>
+            <select id="regQuarter">
+                <option value="1">Q1</option>
+                <option value="2">Q2</option>
+                <option value="3" selected>Q3</option>
+                <option value="4">Q4</option>
+            </select>
+        </div>
+
+        <div id="registerStats" class="stat-grid"></div>
+
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;">
+                <h3 style="margin:0;">Risk Register vs SSP Targets</h3>
+                <button class="btn btn-primary btn-sm" onclick="syncRegister()" id="syncBtn">
+                    <i class="fas fa-sync-alt"></i> Sync from Live Data
+                </button>
+            </div>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr>
+                    <th>Category</th>
+                    <th>Risk</th>
+                    <th>SSP Target</th>
+                    <th>Actual</th>
+                    <th>Gap</th>
+                    <th>Tolerability</th>
+                    <th>Trend</th>
+                    <th>Reports</th>
+                    <th>High Risk</th>
+                    <th>Contributing Tenants</th>
+                    <th style="min-width:200px;">SSP Target (admin)</th>
+                </tr></thead>
+                <tbody id="registerBody"></tbody>
+            </table></div>
+            <div class="meta-line" id="registerMeta"></div>
+        </div>
+    </section>
+
+    <!-- ==================== CROSS-TENANT AGGREGATION ==================== -->
+    <section id="aggregation" class="shell-scroll-spy" style="display:none;">
+        <div class="section-head">
+            <div>
+                <h2><i class="fas fa-chart-bar" style="color:#1a73e8;"></i> Cross-Tenant Aggregation (Live)</h2>
+                <div class="section-sub">Live recomputation of national risk from tenant hazards and reports — not yet persisted</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="loadAggregation()"><i class="fas fa-rotate"></i> Recompute</button>
+        </div>
+        <div class="period-select">
+            <label for="aggYear"><i class="fas fa-calendar-alt"></i> Period:</label>
+            <select id="aggYear"></select>
+            <select id="aggQuarter">
+                <option value="1">Q1</option>
+                <option value="2">Q2</option>
+                <option value="3" selected>Q3</option>
+                <option value="4">Q4</option>
+            </select>
+        </div>
+        <div id="aggCompare" class="card" style="display:none;">
+            <h3>Live Aggregation vs Persisted Register</h3>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr>
+                    <th>Category</th>
+                    <th>Live Risk Index</th>
+                    <th>Persisted Risk Index</th>
+                    <th>Difference</th>
+                    <th>Status</th>
+                </tr></thead>
+                <tbody id="aggCompareBody"></tbody>
+            </table></div>
+        </div>
+        <div class="card">
+            <h3>National Current Risk by ICAO Category (Live)</h3>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr>
+                    <th>#</th>
+                    <th>Category</th>
+                    <th>Risk Index</th>
+                    <th>Avg Severity</th>
+                    <th>Avg Probability</th>
+                    <th>Count</th>
+                    <th>High Risk</th>
+                    <th>Contributing Tenants</th>
+                </tr></thead>
+                <tbody id="aggregationBody"></tbody>
+            </table></div>
+            <div class="meta-line" id="aggregationMeta"></div>
+        </div>
+    </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
+<script src="/js/firebase.js"></script>
+<script src="/js/api/client.js"></script>
+<script src="/js/shell.js"></script>
+<script>
+// ============================================================================
+// CAAN STATE RISK DASHBOARD
+// ============================================================================
+
+const CAAN_API = window.API_BASE_URL || 'https://aviasafe-unified-platform.onrender.com';
+let currentUser = null;
+let isSuperAdmin = false;
+let registerRows = [];
+
+window.SHELL_CONFIG = {
+    brand: 'AviaSAFE',
+    roleLabel: 'CAAN Safety Management Division',
+    nav: [
+        { id: 'sms-health', label: 'SMS Health', icon: 'fa-heart-pulse' },
+        { id: 'risk-register', label: 'Risk Register vs SSP', icon: 'fa-book' },
+        { id: 'aggregation', label: 'Cross-Tenant Aggregation', icon: 'fa-chart-bar' },
+    ],
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await waitForFirebase();
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
+        window.location.href = '/login.html?tenant=caan';
+        return;
+    }
+    if (currentUser.role !== 'CAAN_SMD' && currentUser.role !== 'SUPER_ADMIN') {
+        alert('Access denied. CAAN_SMD or SUPER_ADMIN role required.');
+        window.location.href = '/';
+        return;
+    }
+    isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+    document.getElementById('authGate').style.display = 'none';
+    ['sms-health', 'risk-register', 'aggregation'].forEach(id => {
+        document.getElementById(id).style.display = 'block';
+    });
+    window.updateShellTenant(
+        'CAAN — State Safety Programme',
+        'Safety Management Division · ' + (isSuperAdmin ? 'SUPER_ADMIN' : 'CAAN_SMD')
+    );
+    populateYearSelects();
+    await Promise.all([loadSmsHealth(), loadRegister(), loadAggregation()]);
+});
+
+function populateYearSelects() {
+    const now = new Date();
+    const years = [now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2];
+    ['regYear', 'aggYear'].forEach(id => {
+        const sel = document.getElementById(id);
+        sel.innerHTML = '';
+        years.forEach(y => {
+            const o = document.createElement('option');
+            o.value = y;
+            o.textContent = y;
+            if (y === now.getFullYear()) o.selected = true;
+            sel.appendChild(o);
+        });
+        sel.addEventListener('change', () => {
+            if (id === 'regYear') loadRegister();
+            else loadAggregation();
+        });
+    });
+    document.getElementById('regQuarter').addEventListener('change', loadRegister);
+    document.getElementById('aggQuarter').addEventListener('change', loadAggregation);
+}
+
+function currentPeriod(prefix) {
+    return {
+        year: parseInt(document.getElementById(prefix + 'Year').value, 10),
+        quarter: parseInt(document.getElementById(prefix + 'Quarter').value, 10),
+    };
+}
+
+// ============================================================================
+// SMS HEALTH
+// ============================================================================
+async function loadSmsHealth() {
+    const statsEl = document.getElementById('smsHealthStats');
+    const body = document.getElementById('smsHealthBody');
+    statsEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+    try {
+        const data = await ApiClient.get('/api/v1/dashboard/caan/survey-health');
+        const nat = data.national || {};
+        const ops = data.operators || [];
+
+        statsEl.innerHTML = `
+            <div class="stat-card gold"><div class="num">${nat.overall_sms_health ?? '—'}</div><div class="lbl">National SMS Health (1-5)</div></div>
+            <div class="stat-card"><div class="num">${nat.pillars?.safety_policy ?? '—'}</div><div class="lbl">Safety Policy</div></div>
+            <div class="stat-card"><div class="num">${nat.pillars?.safety_risk_management ?? '—'}</div><div class="lbl">Risk Management</div></div>
+            <div class="stat-card"><div class="num">${nat.pillars?.safety_assurance ?? '—'}</div><div class="lbl">Safety Assurance</div></div>
+            <div class="stat-card"><div class="num">${nat.pillars?.safety_promotion ?? '—'}</div><div class="lbl">Safety Promotion</div></div>
+            <div class="stat-card green"><div class="num">${nat.response_count ?? 0}</div><div class="lbl">Survey Responses</div></div>
+        `;
+
+        if (!ops.length) {
+            body.innerHTML = '<tr><td colspan="7" class="empty">No survey data available.</td></tr>';
+            return;
+        }
+        body.innerHTML = ops.map(o => {
+            const overall = o.overall_sms_health;
+            const cls = overall >= 4 ? 'b-acceptable' : overall >= 3 ? 'b-tolerable' : 'b-intolerable';
+            return `<tr>
+                <td><strong>${o.tenant_id}</strong></td>
+                <td>${o.pillars?.safety_policy ?? '—'}</td>
+                <td>${o.pillars?.safety_risk_management ?? '—'}</td>
+                <td>${o.pillars?.safety_assurance ?? '—'}</td>
+                <td>${o.pillars?.safety_promotion ?? '—'}</td>
+                <td><span class="badge ${cls}">${overall ?? '—'}</span></td>
+                <td>${o.response_count}</td>
+            </tr>`;
+        }).join('');
+    } catch (err) {
+        statsEl.innerHTML = '<div class="error">Failed to load SMS health: ' + err.message + '</div>';
+        body.innerHTML = '';
+    }
+}
+
+// ============================================================================
+// NATIONAL RISK REGISTER
+// ============================================================================
+function tolerabilityClass(t) {
+    const v = (t || '').toLowerCase();
+    if (v === 'intolerable') return 'b-intolerable';
+    if (v === 'tolerable') return 'b-tolerable';
+    return 'b-acceptable';
+}
+function trendClass(t) {
+    const v = (t || '').toLowerCase();
+    if (v === 'deteriorating') return 'b-deteriorating';
+    if (v === 'improving') return 'b-improving';
+    return 'b-stable';
+}
+function gapLabel(actual, target) {
+    if (actual == null || target == null) return '—';
+    const gap = actual - target;
+    const cls = gap > 0 ? 'b-deteriorating' : gap < 0 ? 'b-improving' : 'b-stable';
+    const sign = gap > 0 ? '+' : '';
+    return `<span class="badge ${cls}">${sign}${gap}</span>`;
+}
+
+async function loadRegister() {
+    const { year, quarter } = currentPeriod('reg');
+    const body = document.getElementById('registerBody');
+    const stats = document.getElementById('registerStats');
+    body.innerHTML = '<tr><td colspan="11" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading register...</td></tr>';
+
+    try {
+        const data = await ApiClient.get(`/api/v1/state-risk/register?year=${year}&quarter=${quarter}`);
+        const rows = data.risks || [];
+        registerRows = rows;
+
+        // Stats
+        const tracked = rows.filter(r => r.current_risk_index != null);
+        const intolerable = tracked.filter(r => r.tolerability === 'Intolerable').length;
+        const targets = rows.map(r => r.ssp_target).filter(v => v != null);
+        const actuals = rows.map(r => r.actual_ssp_value).filter(v => v != null);
+        stats.innerHTML = `
+            <div class="stat-card gold"><div class="num">${rows.length}</div><div class="lbl">Categories Tracked</div></div>
+            <div class="stat-card red"><div class="num">${intolerable}</div><div class="lbl">Intolerable Risks</div></div>
+            <div class="stat-card green"><div class="num">${targets.length ? (targets.reduce((a,b)=>a+b,0)/targets.length).toFixed(1) : '—'}</div><div class="lbl">Avg SSP Target</div></div>
+            <div class="stat-card"><div class="num">${actuals.length ? (actuals.reduce((a,b)=>a+b,0)/actuals.length).toFixed(1) : '—'}</div><div class="lbl">Avg Actual Index</div></div>
+        `;
+
+        // Staleness indicator
+        const agg = await ApiClient.get(`/api/v1/state-risk/aggregate?year=${year}&quarter=${quarter}`).catch(() => null);
+        renderStaleness(rows, agg ? agg.risks : null);
+
+        if (!rows.length) {
+            body.innerHTML = '<tr><td colspan="11" class="empty">No register entries for ' + year + 'Q' + quarter + '. Use "Sync from Live Data".</td></tr>';
+            document.getElementById('registerMeta').textContent = '';
+            return;
+        }
+
+        body.innerHTML = rows.map(r => {
+            const adminEdit = isSuperAdmin
+                ? `<div class="input-group" data-id="${r.id}">
+                     <input type="number" class="input-sm target-input" min="1" max="25" value="${r.ssp_target ?? ''}" placeholder="target">
+                     <input type="number" class="input-sm rate-input" min="0" max="100" step="0.1" value="${r.risk_reduction_rate ?? ''}" placeholder="red%">
+                     <button class="btn btn-primary btn-sm" onclick="saveSspTarget('${r.id}')"><i class="fas fa-save"></i></button>
+                   </div>`
+                : '<span style="color:#94a3b8;font-size:0.8rem;">Admin only</span>';
+            const tolClass = tolerabilityClass(r.tolerability);
+            const dotClass = { Intolerable: 'tol-intolerable', Tolerable: 'tol-tolerable', Acceptable: 'tol-acceptable' }[r.tolerability] || 'tol-acceptable';
+            return `<tr>
+                <td><strong>${r.icoc_category}</strong><br><span style="font-size:0.72rem;color:#64748b;">${r.name || ''}</span></td>
+                <td>${r.current_risk_index ?? '—'}</td>
+                <td>${r.ssp_target ?? '—'}</td>
+                <td>${r.actual_ssp_value ?? '—'}</td>
+                <td>${gapLabel(r.actual_ssp_value, r.ssp_target)}</td>
+                <td><span class="tolerability-dot ${dotClass}"></span><span class="badge ${tolClass}">${r.tolerability ?? '—'}</span></td>
+                <td><span class="badge ${trendClass(r.trend)}">${r.trend ?? 'stable'}</span></td>
+                <td>${r.count ?? 0}</td>
+                <td>${r.high_risk_count ?? 0}</td>
+                <td><div class="tenant-tags">${(r.contributing_tenants || []).slice(0, 4).map(t => `<span class="tenant-tag">${t}</span>`).join('')}${(r.contributing_tenants || []).length > 4 ? `<span class="tenant-tag">+${r.contributing_tenants.length - 4}</span>` : ''}</div></td>
+                <td>${adminEdit}</td>
+            </tr>`;
+        }).join('');
+
+        const aggAt = rows.map(r => r.aggregated_at).filter(Boolean);
+        document.getElementById('registerMeta').innerHTML =
+            `<i class="fas fa-clock"></i> Last aggregated: ${aggAt.length ? new Date(aggAt[0]).toLocaleString() : 'unknown'} · Year ${year} · Quarter ${quarter}`;
+    } catch (err) {
+        body.innerHTML = `<tr><td colspan="11" class="error">Failed to load register: ${err.message}</td></tr>`;
+    }
+}
+
+function renderStaleness(registerRows, liveRows) {
+    const banner = document.getElementById('stalenessBanner');
+    if (!registerRows.length && !liveRows) {
+        banner.style.display = 'flex';
+        banner.className = 'staleness-banner st-unknown';
+        banner.innerHTML = '<i class="fas fa-info-circle"></i> Register is empty. Sync from live tenant data to build it.';
+        return;
+    }
+    const liveMap = {};
+    (liveRows || []).forEach(r => { liveMap[r.icoc_category] = r.current_risk_index; });
+    const regMap = {};
+    registerRows.forEach(r => { regMap[r.icoc_category] = r.actual_ssp_value; });
+
+    let diffs = 0;
+    for (const cat of Object.keys(liveMap)) {
+        if (regMap[cat] != null && liveMap[cat] != null && regMap[cat] !== liveMap[cat]) diffs++;
+    }
+    const aggAt = registerRows.map(r => r.aggregated_at).filter(Boolean);
+    const latest = aggAt.length ? new Date(aggAt[0]) : null;
+
+    if (diffs > 0) {
+        banner.style.display = 'flex';
+        banner.className = 'staleness-banner st-stale';
+        banner.innerHTML = '<i class="fas fa-triangle-exclamation"></i> The register (' + (latest ? latest.toLocaleString() : 'unknown') + ') differs from live tenant data in ' + diffs + ' categor' + (diffs === 1 ? 'y' : 'ies') + '. Run "Sync from Live Data" to refresh.';
+    } else {
+        banner.style.display = 'flex';
+        banner.className = 'staleness-banner st-fresh';
+        banner.innerHTML = '<i class="fas fa-check-circle"></i> Register is fresh as of ' + (latest ? latest.toLocaleString() : 'unknown') + ' — matches live aggregation.';
+    }
+}
+
+async function syncRegister() {
+    const btn = document.getElementById('syncBtn');
+    const { year, quarter } = currentPeriod('reg');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+    try {
+        const result = await ApiClient.post(`/api/v1/state-risk/sync?year=${year}&quarter=${quarter}`);
+        alert(`Register synced: ${result.synced} categories aggregated at ${new Date(result.aggregated_at).toLocaleString()}`);
+        await Promise.all([loadRegister(), loadAggregation()]);
+    } catch (err) {
+        alert('Sync failed: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Sync from Live Data';
+    }
+}
+
+async function saveSspTarget(riskId) {
+    const group = document.querySelector(`.input-group[data-id="${riskId}"]`);
+    if (!group) return;
+    const target = parseFloat(group.querySelector('.target-input').value);
+    const rateRaw = group.querySelector('.rate-input').value;
+    if (!target || target < 1 || target > 25) {
+        alert('SSP target must be between 1 and 25.');
+        return;
+    }
+    const body = { ssp_target: target };
+    if (rateRaw !== '') body.risk_reduction_rate = parseFloat(rateRaw);
+    try {
+        await ApiClient.put(`/api/v1/state-risk/register/${riskId}/ssp-target`, body);
+        alert('SSP target updated.');
+        loadRegister();
+    } catch (err) {
+        alert('Failed to update: ' + err.message);
+    }
+}
+
+// ============================================================================
+// CROSS-TENANT AGGREGATION
+// ============================================================================
+async function loadAggregation() {
+    const { year, quarter } = currentPeriod('agg');
+    const body = document.getElementById('aggregationBody');
+    const compareBody = document.getElementById('aggCompareBody');
+    const compareCard = document.getElementById('aggCompare');
+    body.innerHTML = '<tr><td colspan="8" class="loading"><i class="fas fa-spinner fa-spin"></i> Computing aggregation...</td></tr>';
+    compareCard.style.display = 'none';
+
+    try {
+        const data = await ApiClient.get(`/api/v1/state-risk/aggregate?year=${year}&quarter=${quarter}`);
+        const rows = data.risks || [];
+        if (!rows.length) {
+            body.innerHTML = '<tr><td colspan="8" class="empty">No tenant hazard/report data for ' + year + 'Q' + quarter + '.</td></tr>';
+            document.getElementById('aggregationMeta').textContent = '';
+            return;
+        }
+        body.innerHTML = rows.map((r, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td><strong>${r.icoc_category}</strong><br><span style="font-size:0.72rem;color:#64748b;">${r.name || ''}</span></td>
+                <td>${r.current_risk_index ?? '—'}</td>
+                <td>${r.avg_severity ?? '—'}</td>
+                <td>${r.avg_probability ?? '—'}</td>
+                <td>${r.count ?? 0}</td>
+                <td>${r.high_risk_count ?? 0}</td>
+                <td><div class="tenant-tags">${(r.contributing_tenants || []).join(' ').length ? (r.contributing_tenants || []).map(t => `<span class="tenant-tag">${t}</span>`).join('') : '—'}</div></td>
+            </tr>`).join('');
+
+        // Compare against persisted register
+        const reg = await ApiClient.get(`/api/v1/state-risk/register?year=${year}&quarter=${quarter}`).catch(() => null);
+        if (reg && reg.risks && reg.risks.length) {
+            const regMap = {};
+            reg.risks.forEach(r => { regMap[r.icoc_category] = r.actual_ssp_value; });
+            const compareRows = rows.filter(r => regMap[r.icoc_category] != null)
+                .map(r => {
+                    const diff = (r.current_risk_index ?? 0) - (regMap[r.icoc_category] ?? 0);
+                    const cls = diff === 0 ? 'b-stable' : 'b-deteriorating';
+                    return `<tr>
+                        <td><strong>${r.icoc_category}</strong></td>
+                        <td>${r.current_risk_index ?? '—'}</td>
+                        <td>${regMap[r.icoc_category]}</td>
+                        <td><span class="badge ${diff === 0 ? 'b-stable' : diff > 0 ? 'b-deteriorating' : 'b-improving'}">${diff > 0 ? '+' : ''}${diff}</span></td>
+                        <td><span class="badge ${diff === 0 ? 'b-stable' : 'b-deteriorating'}">${diff === 0 ? 'In sync' : 'Differs'}</span></td>
+                    </tr>`;
+                });
+            if (compareRows.length) {
+                compareBody.innerHTML = compareRows.join('');
+                compareCard.style.display = 'block';
+            }
+        }
+
+        document.getElementById('aggregationMeta').innerHTML =
+            `<i class="fas fa-chart-line"></i> Live aggregation for ${year}Q${quarter} · ${rows.length} categories · computed at ${new Date().toLocaleTimeString()}`;
+    } catch (err) {
+        body.innerHTML = `<tr><td colspan="8" class="error">Failed to aggregate: ${err.message}</td></tr>`;
+    }
+}
+</script>
+</body>
+</html>

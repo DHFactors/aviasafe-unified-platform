@@ -255,9 +255,7 @@ select.form-control { appearance: auto; }
     text-align: center;
     margin-top: 0;
     border-top: 2px solid rgba(255,255,255,0.1);
-}
-
-.app-footer .footer-links {
+}.app-footer .footer-links {
     display: flex;
     justify-content: center;
     gap: var(--spacing-md);
@@ -300,7 +298,9 @@ select.form-control { appearance: auto; }
     font-size: var(--font-size-xs);
 }
 
-/* ========== UTILITIES ========== */
+/* ========== SIDEBAR APP SHELL ==========
+   Shared dashboard shell (fixed left sidebar + header + footer) now lives in
+   css/shell.css so both tenant and CAAN dashboards can consume it. */
 .text-success { color: var(--color-success); }
 .text-danger { color: var(--color-danger); }
 .text-warning { color: var(--color-warning); }

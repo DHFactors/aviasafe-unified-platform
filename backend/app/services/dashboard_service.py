@@ -130,6 +130,70 @@ class DashboardService:
         reports = self._caan_reports(**overrides)
         return MetricsService.calculate_hazard_frequency(reports)
 
+    def get_caan_survey_health(self, **overrides) -> Dict[str, Any]:
+        """Aggregate SMS survey health across all tenants.
+
+        Pulls every survey response in the tenants/{id}/surveys collection
+        group and computes, per operator, the average ICAO pillar scores and
+        overall SMS health (1-5). Returns both the per-operator breakdown and
+        the national averages.
+        """
+        pillars = ["safety_policy", "safety_risk_management", "safety_assurance", "safety_promotion"]
+        try:
+            from app.firebase import get_db
+            docs = list(get_db().collection_group("surveys").get())
+        except Exception as e:
+            logger.warning(f"CAAN survey health query failed: {e}")
+            docs = []
+
+        by_tenant: Dict[str, Dict[str, Any]] = {}
+        national = {p: {"sum": 0.0, "n": 0} for p in pillars}
+        national_overall = {"sum": 0.0, "n": 0}
+
+        for d in docs:
+            data = d.to_dict()
+            tid = data.get("tenant_id") or "unknown"
+            entry = by_tenant.setdefault(tid, {
+                "tenant_id": tid,
+                "response_count": 0,
+                "pillars": {},
+                "overall_sms_health": None,
+            })
+            entry["response_count"] += 1
+            for p in pillars:
+                v = data.get(p)
+                if isinstance(v, (int, float)):
+                    entry["pillars"][p] = entry["pillars"].get(p, 0.0) + float(v)
+                    national[p]["sum"] += float(v)
+                    national[p]["n"] += 1
+            ov = data.get("overall_sms_health")
+            if isinstance(ov, (int, float)):
+                national_overall["sum"] += float(ov)
+                national_overall["n"] += 1
+
+        for tid, entry in by_tenant.items():
+            n = entry["response_count"]
+            entry["pillars"] = {
+                p: round(entry["pillars"][p] / n, 2) if entry["pillars"].get(p) else None
+                for p in pillars
+            }
+            vals = [v for v in entry["pillars"].values() if v is not None]
+            entry["overall_sms_health"] = round(sum(vals) / len(vals), 2) if vals else None
+
+        rows = sorted(by_tenant.values(), key=lambda t: t["overall_sms_health"] or 0, reverse=True)
+        return {
+            "operators": rows,
+            "national": {
+                "pillars": {
+                    p: round(national[p]["sum"] / national[p]["n"], 2) if national[p]["n"] else None
+                    for p in pillars
+                },
+                "overall_sms_health": round(national_overall["sum"] / national_overall["n"], 2)
+                if national_overall["n"] else None,
+                "response_count": sum(e["response_count"] for e in rows),
+            },
+        }
+
     def get_caan_benchmark(self, **overrides) -> Dict[str, Any]:
         reports = self._caan_reports(**overrides)
         anon_count = sum(1 for r in reports if r.get("is_anonymous"))

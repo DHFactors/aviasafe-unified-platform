@@ -194,6 +194,15 @@ async def get_caan_hazards(
     return _envelope(data)
 
 
+@router.get("/caan/survey-health")
+async def get_caan_survey_health(
+    user: Dict[str, Any] = Depends(get_caan_user),
+):
+    svc = DashboardService(user)
+    data = svc.get_caan_survey_health()
+    return _envelope(data)
+
+
 @router.get("/caan/benchmark")
 async def get_caan_benchmark(
     days: int = Query(180, ge=1, le=730),
