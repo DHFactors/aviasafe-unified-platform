@@ -182,10 +182,18 @@ class StateRiskService:
 
     def sync_register_from_aggregation(self, year: int, quarter: int) -> Dict[str, Any]:
         """Persist the aggregated national risk into the state risk register,
-        measuring actual values against seeded SSP targets where present."""
+        measuring actual values against seeded SSP targets where present.
+
+        All register writes are committed in a single Firestore batch so the
+        register is never observed partially updated (atomic consistency).
+        Every entry records `aggregated_at` (UTC ISO) so consumers can detect
+        how stale the register is relative to live tenant data.
+        """
         agg = self.aggregate_national_risk(year, quarter)
         now = datetime.now(timezone.utc).isoformat()
         updated_by = self.user.get("uid", "system")
+        collection = _risk_collection()
+        batch = get_db().batch()
 
         for row in agg["risks"]:
             existing = self._find_entry(row["icoc_category"], year, quarter)
@@ -204,20 +212,22 @@ class StateRiskService:
                 "trend": self._trend(existing, row["current_risk_index"]),
                 "year": year,
                 "quarter": quarter,
+                "aggregated_at": now,
                 "updated_at": now,
                 "updated_by": updated_by,
             }
             if existing:
                 data["ssp_target"] = existing.get("ssp_target") or row.get("ssp_target")
                 data["risk_reduction_rate"] = existing.get("risk_reduction_rate")
-                _risk_collection().document(existing["id"]).update(data)
+                batch.update(collection.document(existing["id"]), data)
             else:
                 data["ssp_target"] = row.get("ssp_target")
                 data["risk_reduction_rate"] = None
                 data["created_at"] = now
-                _risk_collection().document(f"{row['icoc_category']}-{year}Q{quarter}").set(data)
+                batch.set(collection.document(f"{row['icoc_category']}-{year}Q{quarter}"), data)
 
-        return {"year": year, "quarter": quarter, "synced": len(agg["risks"])}
+        batch.commit()
+        return {"year": year, "quarter": quarter, "synced": len(agg["risks"]), "aggregated_at": now}
 
     def update_ssp_target(self, risk_id: str, ssp_target: float, risk_reduction_rate: Optional[float] = None) -> Optional[Dict[str, Any]]:
         try:

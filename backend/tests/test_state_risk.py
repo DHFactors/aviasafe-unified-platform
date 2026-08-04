@@ -219,6 +219,28 @@ class _FakeRiskCollection:
         return [_FakeRiskDoc(did, data) for did, data in self._store.items()]
 
 
+class _FakeBatch:
+    def __init__(self, coll):
+        self._ops = []
+        self._coll = coll
+
+    def set(self, ref, data):
+        self._ops.append(("set", ref.id, data))
+        return self
+
+    def update(self, ref, data):
+        self._ops.append(("update", ref.id, data))
+        return self
+
+    def commit(self):
+        for kind, doc_id, data in self._ops:
+            ref = self._coll.document(doc_id)
+            if kind == "set":
+                ref.set(data)
+            else:
+                ref.update(data)
+
+
 def _svc_with_risk_collection(monkeypatch, hazards, reference=None):
     coll = _FakeRiskCollection()
 
@@ -226,6 +248,9 @@ def _svc_with_risk_collection(monkeypatch, hazards, reference=None):
         return _FakeCollection([_FakeDoc(h) for h in hazards]) if name == "hazards" else _FakeCollection([])
 
     class _DB:
+        def batch(self):
+            return _FakeBatch(coll)
+
         def collection(self, name):
             assert name == "state"
             return _FakeStateDoc()
@@ -259,6 +284,57 @@ def test_sync_register_persists_entries(monkeypatch):
     assert bird["ssp_target"] is not None
     assert bird["actual_ssp_value"] == 9
     assert bird["tolerability"] == "Tolerable"
+
+
+def test_sync_uses_atomic_batch(monkeypatch):
+    """All register writes must go through the batch (single commit) rather
+    than per-document writes."""
+    coll, svc = _svc_with_risk_collection(
+        monkeypatch,
+        hazards=[
+            {"tenant_id": "air1", "occurrence_category": "BIRD", "severity_level": 3, "probability_level": 3, "risk_level": "High"},
+            {"tenant_id": "air1", "occurrence_category": "LOCI", "severity_level": 5, "probability_level": 5, "risk_level": "Very High"},
+        ],
+    )
+    result = svc.sync_register_from_aggregation(2026, 3)
+    assert result["synced"] == 2
+    assert "BIRD-2026Q3" in coll._store
+    assert "LOCI-2026Q3" in coll._store
+
+
+def test_sync_records_aggregated_at_staleness(monkeypatch):
+    """Every synced entry must carry aggregated_at and the result must expose
+    the aggregation timestamp for staleness detection."""
+    coll, svc = _svc_with_risk_collection(
+        monkeypatch,
+        hazards=[
+            {"tenant_id": "air1", "occurrence_category": "BIRD", "severity_level": 3, "probability_level": 3, "risk_level": "High"},
+        ],
+    )
+    result = svc.sync_register_from_aggregation(2026, 3)
+    assert "aggregated_at" in result
+    assert result["aggregated_at"] is not None
+    bird = coll._store["BIRD-2026Q3"]
+    assert "aggregated_at" in bird
+    assert bird["aggregated_at"] == result["aggregated_at"]
+
+
+def test_sync_retains_ssp_target_on_resync(monkeypatch):
+    """A second sync must carry over the existing SSP target and reduction
+    rate, not overwrite them with the defaults."""
+    coll, svc = _svc_with_risk_collection(
+        monkeypatch,
+        hazards=[
+            {"tenant_id": "air1", "occurrence_category": "BIRD", "severity_level": 3, "probability_level": 3, "risk_level": "High"},
+        ],
+    )
+    svc.sync_register_from_aggregation(2026, 3)
+    svc.update_ssp_target("BIRD-2026Q3", ssp_target=6.0, risk_reduction_rate=15.0)
+    result = svc.sync_register_from_aggregation(2026, 3)
+    assert result["synced"] == 1
+    bird = coll._store["BIRD-2026Q3"]
+    assert bird["ssp_target"] == 6.0
+    assert bird["risk_reduction_rate"] == 15.0
 
 
 def test_sync_trend_detects_deterioration(monkeypatch):
