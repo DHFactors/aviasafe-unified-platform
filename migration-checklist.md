@@ -4,7 +4,7 @@
 > project (Auth stuck in `PROJECT_SOFT_DELETED` after project undelete) onto a
 > fresh Google Cloud project with a new $300 credit billing account.
 >
-> **Status:** `IN PROGRESS` (new project created; repo + Firestore + hosting + seed complete; Render env and DNS pending operator)
+> **Status:** `COMPLETE` — live platform fully verified on new project `aerosafety-sms-prod`
 >
 > **Date started:** 2026-08-04
 >
@@ -16,9 +16,15 @@
 > - Repo config switched to the new project (commit `578a3d8`, pushed): web configs, hosting site,
 >   `.firebaserc`, CORS `ALLOWED_ORIGINS`, E2E API keys, docs.
 > - Hosting + Firestore rules/indexes deployed to `aerosafety-sms-prod`; new site HTTP 200.
-> - Custom domain provisioned on the new hosting site (`CERT_ACTIVE`); DNS CNAME switch pending.
+> - Custom domain provisioned on the new hosting site (`CERT_ACTIVE`); DNS CNAME switch **done**.
 > - **Seed complete** on `sms-db`: 6 tenants, 930 surveys, 620 VSR, 245 MOR, 21 Auth users (incl.
 >   SUPER_ADMIN `safety.director@caan.gov.np`). Login verified (new API key).
+> - **Render env updated + redeployed** by operator (`FIREBASE_*`, `DEFAULT_SEED_PASSWORD`,
+>   `ALLOWED_ORIGINS` incl. custom domain). `/health` healthy/connected.
+> - **Full end-to-end verification passed** (2026-08-04): login (SUPER_ADMIN/CAAN_SMD/AIRLINE_ADMIN),
+>   protected `/api/v1/admin/risk-matrix` 200, `/api/v1/reports/` 280 tenant reports,
+>   CORS preflight + `Access-Control-Allow-Origin` from `sms.aviasafesystems.com`, custom domain serves
+>   new site HTTP 200. Migration **COMPLETE**.
 
 ---
 
@@ -92,15 +98,15 @@ New values needed:
   - [x] `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
   - [x] `FIREBASE_DATABASE_ID=sms-db`
   - [x] `SETUP_SECRET`, `DEFAULT_SEED_PASSWORD`
-- [ ] **Render** (`aviasafe-unified-platform.onrender.com`) — **pending operator (Render dashboard)**:
-  - [ ] `FIREBASE_PROJECT_ID` = `aerosafety-sms-prod`
-  - [ ] `FIREBASE_CLIENT_EMAIL` = `firebase-adminsdk-fbsvc@aerosafety-sms-prod.iam.gserviceaccount.com`
-  - [ ] `FIREBASE_PRIVATE_KEY` = new private key (JSON-escaped `\n`)
-  - [ ] `FIREBASE_DATABASE_ID` = `sms-db` (already set)
-  - [ ] `SETUP_SECRET` = (set)
-  - [ ] `DEFAULT_SEED_PASSWORD` = (set)
-  - [ ] `DISABLE_DESTRUCTIVE_ENDPOINTS` = `true` (seeding already done; keep destructive endpoints off)
-  - [ ] `ALLOWED_ORIGINS` = `https://sms.aviasafesystems.com,https://aerosafety-sms-prod.web.app,...`
+- [x] **Render** (`aviasafe-unified-platform.onrender.com`):
+  - [x] `FIREBASE_PROJECT_ID` = `aerosafety-sms-prod`
+  - [x] `FIREBASE_CLIENT_EMAIL` = `firebase-adminsdk-fbsvc@aerosafety-sms-prod.iam.gserviceaccount.com`
+  - [x] `FIREBASE_PRIVATE_KEY` = new private key (JSON-escaped `\n`)
+  - [x] `FIREBASE_DATABASE_ID` = `sms-db` (already set)
+  - [x] `SETUP_SECRET` = (set)
+  - [x] `DEFAULT_SEED_PASSWORD` = (set)
+  - [x] `DISABLE_DESTRUCTIVE_ENDPOINTS` = `true` (seeding already done; keep destructive endpoints off)
+  - [x] `ALLOWED_ORIGINS` = `https://sms.aviasafesystems.com,https://aerosafety-sms-prod.web.app,http://localhost:3000,http://localhost:8000`
 
 ---
 
@@ -111,11 +117,10 @@ New values needed:
 - [x] 3. Deploy Firestore rules + indexes to `sms-db`:
       `firebase deploy --only firestore:sms-db --project aerosafety-sms-prod`
       (array-form `firestore` config in `firebase.json` already scoped to `sms-db`).
-- [ ] 4. Render auto-deploys from push (or trigger manual deploy). Confirm `/health` → `firebase: connected`.
-      **Pending operator:** set env vars (§4) in the Render dashboard and redeploy.
-- [ ] 5. Verify custom domain `sms.aviasafesystems.com` serves the new frontend (HTTP 200, updated `firebase.js`).
-      **Pending operator:** switch DNS CNAME `sms.aviasafesystems.com` → `aerosafety-sms-prod.web.app`
-      (custom domain already provisioned + `CERT_ACTIVE` on the new site).
+- [x] 4. Render auto-deploys from push (or trigger manual deploy). Confirm `/health` → `firebase: connected`.
+      **Done:** env vars set in Render dashboard + redeployed; `/health` healthy/connected.
+- [x] 5. Verify custom domain `sms.aviasafesystems.com` serves the new frontend (HTTP 200, updated `firebase.js`).
+      **Done:** DNS CNAME switched; custom domain HTTP 200 + serves `aerosafety-sms-prod` config.
 
 ---
 
@@ -132,15 +137,17 @@ New values needed:
 
 ## 7. Post-migration verification
 
-- [x] `/health` → `{"status":"healthy","firebase":"connected"}` (live — old project; confirm after Render redeploy)
-- [x] `/ready` → `{"status":"ready","firebase":"connected"}` (live — old project; confirm after Render redeploy)
+- [x] `/health` → `{"status":"healthy","firebase":"connected"}` (live — verified against new project)
+- [x] `/ready` → `{"status":"ready","firebase":"connected"}` (live — verified against new project)
 - [x] Seed doc present on `sms-db` (confirmed: `seed_metadata/seed`)
 - [x] Tenant docs readable under `tenants/` on `sms-db` (6 tenants)
 - [x] Login as `safety.director@caan.gov.np` succeeds (Auth healthy on `aerosafety-sms-prod`)
 - [x] Frontend on `aerosafety-sms-prod.web.app` serves updated config (projectId verified in served `firebase.js`)
-- [ ] Frontend on custom domain loads dashboard (API + Firestore wired to new project) — **after DNS CNAME switch + Render redeploy**
+- [x] Frontend on custom domain loads dashboard (API + Firestore wired to new project; HTTP 200 + new config verified)
 - [x] `firebase-admin>=6.6.0` confirmed in local env (named-db `database_id` support)
-- [ ] CORS: request from `https://sms.aviasafesystems.com` to Render API accepted — **after Render redeploy**
+- [x] CORS: preflight + request from `https://sms.aviasafesystems.com` to Render API accepted (ACAO echo verified)
+- [x] Protected API: `/api/v1/admin/risk-matrix` 200 (SUPER_ADMIN); `/api/v1/reports/` 280 tenant reports (AIRLINE_ADMIN)
+- [x] CAAN_SMD login + tenant-scoped access verified
 
 ---
 
