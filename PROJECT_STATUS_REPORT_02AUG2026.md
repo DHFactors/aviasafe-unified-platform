@@ -1475,29 +1475,30 @@ restoring anything.
   and `/auth/debug-verify` are **404**, OpenAPI admin POSTs show `security: HTTPBearer`. The
   repository-side UAT-005 fix is live.
 
-### Firestore status — HOLD (OPERATOR ACTION REQUIRED)
+### Firestore status — RECOVERED VIA NAMED DATABASE `sms-db` (seed pending)
 
-**HOLD (OPERATOR ACTION REQUIRED):** Firestore `(default)` instance is in a GCP post-restore
-transition state. Verified with a valid bearer token on 4 Aug 2026:
+**RESOLVED 4 Aug 2026:** Firestore `(default)` was left in a GCP post-restore tombstone state
+(create→409, delete→404, write→400 "database was deleted"). Recovery proceeded by creating a new
+**named database `sms-db`** (FIRESTORE_NATIVE, location **us-west1**) and pointing the platform at it:
 
-| Probe | Result |
+| Item | Result |
 |---|---|
-| `GET /databases/(default)` | **200** — metadata present, no `deleteTime`, `earliestVersionTime` advancing |
-| `POST /databases?databaseId=(default)` (create) | **409 ALREADY_EXISTS** — name still reserved |
-| `DELETE /databases/(default)` | **404 NOT_FOUND** — not deleteable from delete-side |
-| Write (`PATCH system_health/ping`) | **400 FAILED_PRECONDITION** — "Cannot serve requests because the database was deleted" |
-| `firebase deploy --only firestore:indexes` | **404** — "Requested entity was not found" |
+| Database `sms-db` | Created 4 Aug 2026; **data plane write+read verified** (PATCH/GET `system_health/ping` → 200) |
+| Indexes (4 composite) | Deployed to `sms-db` via Firestore Admin REST API (`reports`×2, `classifications`, `metrics`) |
+| Security rules | Released to `sms-db` (`firebase deploy --only firestore:sms-db`, rules compiled + uploaded) |
+| Backend wiring | `FIREBASE_DATABASE_ID=sms-db` config; `firestore.client(database_id=...)` in `app/firebase.py` |
+| Frontend wiring | `firebase.firestore(app, 'sms-db')` in `public/js/firebase.js`; **hosting redeployed** (both domains serve `databaseId:"sms-db"`) |
+| Config sources | `backend/render.yaml`, `backend/.env.example`, `backend/.env` updated; commit `4d0ad2c` pushed |
 
-**Impact:** index deployment, seed repopulation (`npm run seed`), and any Firestore read/write are
-blocked until the database exits this transition. **Requires manual verification / re-provisioning in
-the Google Cloud Console** (Firestore page for `gap-analysis-ssp`): confirm the `(default)` database
-state, and either wait for purge/restore to finalize, or delete-and-recreate the database from the
-console. Once serving, rerun `firebase deploy --only firestore:indexes` and the seed pipeline.
+**Remaining (operator action):** (1) set `FIREBASE_DATABASE_ID=sms-db` (and, for seeding,
+`DISABLE_DESTRUCTIVE_ENDPOINTS=False`) on the **live Render service** and redeploy; (2) run the seed
+pipeline via `POST /api/v1/admin/seed-demo-data` (needs `SETUP_SECRET` + a SUPER_ADMIN ID token) or
+`scripts/seed/run_seed.py`; (3) confirm Auth seed users still exist.
 
 ### Pending operator actions (RC-6 gate)
 
-1. Resolve the Firestore `(default)` transition in the GCP/Firebase console; confirm writes return 200.
-2. Deploy `firebase deploy --only firestore:indexes` and run the seed pipeline.
+1. Set `FIREBASE_DATABASE_ID=sms-db` on the live Render service and redeploy (backend now reads it).
+2. Run the seed pipeline against `sms-db` (`/seed-demo-data` with `SETUP_SECRET` + SUPER_ADMIN token, or `scripts/seed/run_seed.py`).
 3. Set/confirm `ALLOWED_ORIGINS` (incl. `https://sms.aviasafesystems.com`) on the live Render service.
 4. Re-run the RC-5.5 validation checklist and close UAT-005 formally.
 
