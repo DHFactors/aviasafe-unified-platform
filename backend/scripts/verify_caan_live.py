@@ -57,6 +57,7 @@ def main():
 
     for method, path in [
         ("GET", "/api/v1/dashboard/caan/survey-health"),
+        ("GET", "/api/v1/dashboard/caan/benchmark"),
         ("GET", "/api/v1/state-risk/register?year=2026&quarter=3"),
         ("GET", "/api/v1/state-risk/aggregate?year=2026&quarter=3"),
     ]:
@@ -66,6 +67,17 @@ def main():
             if method == "GET" and path == "/api/v1/dashboard/caan/survey-health":
                 print(f"{method} {path} -> {resp.status_code}")
                 print("  survey-health raw:", json.dumps(body, default=str)[:1500])
+                continue
+            if method == "GET" and path == "/api/v1/dashboard/caan/benchmark":
+                print(f"{method} {path} -> {resp.status_code}")
+                keys = list(body.keys()) if isinstance(body, dict) else []
+                bd = body.get("data", {}) if isinstance(body, dict) else {}
+                print("  benchmark keys:", keys)
+                print("  anon_rate:", bd.get("anonymous_reporting_rate"),
+                      "| total_reporters:", bd.get("total_reporters"),
+                      "| industry_anon_rate:", bd.get("industry_anon_rate"),
+                      "| ssp_target_avg:", bd.get("ssp_target_avg"),
+                      "| ssp_actual_avg:", bd.get("ssp_actual_avg"))
                 continue
             summary = body
             if isinstance(body, dict):
