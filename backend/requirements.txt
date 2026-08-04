@@ -14,7 +14,13 @@ uvicorn[standard]==0.27.0
 python-dotenv==1.0.0
 
 # Firebase Admin SDK
-firebase-admin==6.4.0
+# NOTE: firebase-admin>=6.6.0 required for named Firestore databases
+# (firestore.client(database_id=...) support added in 6.6.0). Pinning the
+# 6.4.0 build breaks `sms-db` init with TypeError on startup.
+firebase-admin>=6.6.0
+# google-cloud-firestore (transitive via firebase-admin); >=2.11.0 supports
+# named databases (Client(database=...)). Explicit pin guards the Docker build.
+google-cloud-firestore>=2.11.0
 
 # Authentication
 python-multipart==0.0.6
