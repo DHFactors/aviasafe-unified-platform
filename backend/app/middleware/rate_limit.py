@@ -27,8 +27,7 @@ async def get_redis():
             if not redis_url.startswith("rediss://"):
                 from redis.asyncio.connection import SSLConnection
                 kwargs["connection_class"] = SSLConnection
-            import ssl
-            kwargs["ssl_cert_reqs"] = ssl.CERT_NONE
+            kwargs["ssl_cert_reqs"] = "none"
             _redis_client = aioredis.from_url(redis_url, **kwargs)
             await _redis_client.ping()
             logger.info("Connected to Upstash Redis")
