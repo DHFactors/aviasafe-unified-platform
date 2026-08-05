@@ -54,6 +54,7 @@ def _req_id(request: Request) -> str:
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
         status_code=exc.status_code,
+        headers=exc.headers,
         content={
             "success": False,
             "error": exc.detail if isinstance(exc.detail, str) else str(exc.detail),
