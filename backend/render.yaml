@@ -9,7 +9,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.8
       - key: ALLOWED_ORIGINS
-        value: http://localhost:3000,http://localhost:8000,https://aerosafety-sms-prod.web.app,https://sms.aviasafesystems.com
+        value: http://localhost:3000,http://localhost:8000,https://aerosafety-sms-prod.web.app,https://sms.aviasafesystems.com,https://sms-beta.web.app
       - key: FIREBASE_PROJECT_ID
         sync: false
       - key: FIREBASE_DATABASE_ID

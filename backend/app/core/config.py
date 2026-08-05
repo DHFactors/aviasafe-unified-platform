@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ── CORS ──
-    ALLOWED_ORIGINS: str = "https://sms.aviasafesystems.com,https://aerosafety-sms-prod.web.app,http://localhost:3000,http://localhost:8000"
+    ALLOWED_ORIGINS: str = "https://sms.aviasafesystems.com,https://aerosafety-sms-prod.web.app,https://sms-beta.web.app,http://localhost:3000,http://localhost:8000"
 
     # ── Firebase ──
     FIREBASE_PROJECT_ID: Optional[str] = None
