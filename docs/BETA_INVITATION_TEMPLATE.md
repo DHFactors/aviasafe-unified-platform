@@ -38,7 +38,7 @@ Focus areas:
 
 Report any issue using the feedback form:
 
-- **Feedback form:** {Google Form link — to be added once created}
+- **Feedback form:** https://docs.google.com/forms/d/e/16uQxAYybkUoRYjxJ7P15topYd8aXvv1O64YlMa0hWaM/viewform
 
 When reporting, please classify the issue by priority:
 

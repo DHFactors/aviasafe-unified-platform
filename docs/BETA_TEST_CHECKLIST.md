@@ -88,7 +88,7 @@ Connected to Upstash Redis
 | **P2** | Medium | UI glitches, slow responses, confusing copy |
 | **P3** | Low | Typos, cosmetic issues, minor styling |
 
-**Feedback form:** *[Link to feedback form — to be added once created]*
+**Feedback form:** https://docs.google.com/forms/d/e/16uQxAYybkUoRYjxJ7P15topYd8aXvv1O64YlMa0hWaM/viewform
 
 When reporting, please include:
 1. **Priority** (P0–P3)

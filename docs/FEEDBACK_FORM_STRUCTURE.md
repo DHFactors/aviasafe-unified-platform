@@ -1,6 +1,6 @@
 # AviaSAFE SMS — Beta Feedback Form Structure
 
-**Google Form link:** *[Google Form link — to be added once created]*
+**Google Form link:** https://docs.google.com/forms/d/e/16uQxAYybkUoRYjxJ7P15topYd8aXvv1O64YlMa0hWaM/viewform
 
 This document defines the fields for the beta feedback form. Create the form in Google Forms using the question types and options below so reports map cleanly onto the P0–P3 triage in `docs/BETA_TEST_CHECKLIST.md`.
 
