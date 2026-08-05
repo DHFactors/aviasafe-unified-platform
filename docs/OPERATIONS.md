@@ -58,6 +58,41 @@ See [API.md](./API.md) — `admin` router. Data-destructive endpoints
 Request logging middleware emits per-request records (UUID, method, path, status, duration, user).
 Backend logs use **loguru** and are written to `backend/logs/`.
 
+### `/metrics` details
+
+`GET /metrics` is **admin-only** — it requires a Firebase ID token for an admin/SUPER_ADMIN user
+(via `get_admin_user`). Without it the endpoint returns `401 {"success":false,"error":"Not authenticated"}`.
+Verified against the beta service (`sms-aviasafesystems-beta`).
+
+```bash
+curl -H "Authorization: Bearer <ADMIN_ID_TOKEN>" \
+  https://sms-aviasafesystems-beta.onrender.com/metrics
+```
+
+Exposed metrics (source: `backend/app/core/metrics.py`):
+
+| Metric | Type | Notes |
+|---|---|---|
+| `requests_total{method,path,status}` | counter | Per-route request counts by status |
+| `request_duration_ms{route,le}` | histogram | Buckets: 5,10,25,50,100,250,500,1000,2500,5000 ms |
+| `ai_requests_total` / `ai_failures_total` | counter | Gemini AI call outcomes |
+| `ai_success_rate_percent` | gauge | Derived success rate |
+| `firestore_latency_avg_ms` / `firestore_latency_p99_ms` | gauge | Rolling window of last 1000 samples |
+
+All metrics are **in-memory, per-instance**, and reset on restart (fine for the single-instance beta).
+
+**Gaps / suggested additions:**
+
+| Suggested metric | Why |
+|---|---|
+| `auth_failures_total` / `auth_success_total` | Monitor failed logins (brute-force / lockout risk) |
+| `rate_limited_total{limit_type}` | Track 429s per Redis limit (auth, VSR, survey, MOR, dashboard) |
+| `error_rate_percent` (4xx/5xx) | Overall health trend (currently derivable only by summing `requests_total`) |
+| `redis_connected` / `rate_limit_disabled` gauge | Detect silent Redis failure / rate limiting off |
+| `firestore_ops_total{op,status}` | Firestore success/error counts, not just latency |
+| `requests_in_flight` gauge, `uptime_seconds` | Basic liveness/load signals |
+| `process_rss_bytes` / CPU | Resource monitoring (requires `psutil`) |
+
 ## 4. Rate Limiting
 
 - Default: **60 requests/minute per IP** (in-memory).
