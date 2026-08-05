@@ -24,9 +24,7 @@ We are pleased to invite you to participate in the **closed beta** of the AviaSA
 
 Please follow the versioned test checklist while exploring the platform:
 
-- **Checklist:** `docs/BETA_TEST_CHECKLIST.md` (in the repo, or view online: https://github.com/DHFactors/sms-aviasafesystems/blob/main/docs/BETA_TEST_CHECKLIST.md)
-
-> If the GitHub repository is private, attach a copy of `docs/BETA_TEST_CHECKLIST.md` to the email instead of the link.
+- **Checklist:** attached to this email (`docs/BETA_TEST_CHECKLIST.md`)
 
 Focus areas:
 1. **Login and role-based access** (Airline Admin vs CAAN_SMD)
@@ -84,4 +82,4 @@ Thank you for helping us make AviaSAFE safer for everyone.
 - Credentials issuer: "the AviaSAFE administrator"
 - Support contact: `info@aviasafesystems.com`
 - Dates: **7–21 Aug 2026** (2 weeks) — adjust to your launch date
-- Checklist link: GitHub blob URL — replace with an attached copy if the repo is private
+- Checklist: attach `docs/BETA_TEST_CHECKLIST.md` to the email (repo is private — no public link)
