@@ -13,6 +13,15 @@
 // FIREBASE CONFIGURATION
 // ============================================================================
 
+// Environment resolution: a hostname containing "beta" routes to the isolated
+// beta backend and the sms-db-beta Firestore database; every other host (the
+// production domain, *.web.app production site, and localhost) uses production.
+// This keeps both deployment paths correct so beta traffic can never touch
+// production data.
+const IS_BETA_ENV =
+    typeof window !== 'undefined' &&
+    window.location.hostname.indexOf('beta') !== -1;
+
 const firebaseConfig = {
     apiKey: "AIzaSyCdCtUuyOcUIoCBEaiWGbhp6_XwZKHsicc",
     authDomain: "aerosafety-sms-prod.firebaseapp.com",
@@ -20,13 +29,15 @@ const firebaseConfig = {
     storageBucket: "aerosafety-sms-prod.firebasestorage.app",
     messagingSenderId: "527947363983",
     appId: "1:527947363983:web:4b736b6d1d50dd9b7a22fa",
-    databaseId: "sms-db"
+    databaseId: IS_BETA_ENV ? "sms-db-beta" : "sms-db"
 };
 
 // Centralized application configuration (single source of truth)
 const APP_CONFIG = {
-    apiBaseUrl: 'https://aviasafe-unified-platform.onrender.com',
-    environment: 'production',
+    apiBaseUrl: IS_BETA_ENV
+        ? 'https://sms-aviasafesystems-beta.onrender.com'
+        : 'https://aviasafe-unified-platform.onrender.com',
+    environment: IS_BETA_ENV ? 'beta' : 'production',
     pagination: { defaultPageSize: 20, maxPageSize: 100 },
 };
 

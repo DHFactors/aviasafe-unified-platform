@@ -29,6 +29,9 @@ __pycache__/
 # Node.js
 node_modules/
 
+# Firebase CLI cache
+.firebase/
+
 # Runtime logs
 backend/logs/
 
