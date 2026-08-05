@@ -109,10 +109,10 @@ Live endpoints:
 | Testing | [tests/README.md](./tests/README.md) |
 | Known limitations / tech debt | [docs/KNOWN_LIMITATIONS.md](./docs/KNOWN_LIMITATIONS.md) |
 | Product charter | [PROJECT_CHARTER.md](./PROJECT_CHARTER.md) |
-| Status & roadmap | [PROJECT_STATUS_REPORT_02AUG2026.md](./PROJECT_STATUS_REPORT_02AUG2026.md), [ROADMAP.md](./ROADMAP.md) |
+| Status & roadmap | [PROJECT_STATUS_REPORT_05AUG2026.md](./PROJECT_STATUS_REPORT_05AUG2026.md), [ROADMAP.md](./ROADMAP.md) |
 | Demo walkthrough | [DEMO_GUIDE.md](./DEMO_GUIDE.md) |
 | Tenant onboarding | [public/docs/tenant-guide/](./public/docs/tenant-guide/) |
-| UAT readiness | [docs/UAT_READINESS.md](./docs/UAT_READINESS.md) |
+| UAT evidence | [UAT_DEFECT_REGISTER.md](./UAT_DEFECT_REGISTER.md) |
 
 ---
 

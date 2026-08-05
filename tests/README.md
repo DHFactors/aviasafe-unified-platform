@@ -70,8 +70,8 @@ python tests/e2e/e2e_diag.py
 
 ## 5. Manual QA / UAT
 
-See [docs/UAT_READINESS.md](../docs/UAT_READINESS.md) for the UAT scenario set (airline and CAAN
-walkthroughs) and the current readiness note.
+See [UAT_DEFECT_REGISTER.md](../UAT_DEFECT_REGISTER.md) for the UAT defect record and closure
+evidence, and [tests/e2e/live_validation.py](./e2e/live_validation.py) for the live validation suite.
 
 ## 6. Known test gaps
 

@@ -28,7 +28,7 @@ Evidence sources: static code analysis (repo `main` working tree), local regress
 - **Severity:** High
 - **Status:** Fixed / Verified
 - **Classification:** Verified Defect
-- **Description:** Documented CAAN UAT step: "Verify CAN/CAP data accessible across tenants" (docs/UAT_READINESS.md:119). `list_cans`/`get_can`/stats have cross-tenant branches, but:
+- **Description:** Documented CAAN UAT step: "Verify CAN/CAP data accessible across tenants" (UAT scenario set, formerly docs/UAT_READINESS.md). `list_cans`/`get_can`/stats have cross-tenant branches, but:
   - `latest_cap` attachment re-scopes to the **caller's** tenant: `CanCapService.get_can` (can_cap_service.py:115) calls `self._caps_collection(doc.id)` which rebuilds the path from `self.tenant_id` (`None` for CAAN) instead of the CAN document's own reference → latest_cap silently missing.
   - `list_caps` (can_cap_service.py:299) has **no** cross-tenant branch → `[]` for CAAN.
   - `get_cap`/`get_cap_stats` iterate cross-tenant CANs but read CAP subcollections via `self._caps_collection(...)` (can_cap_service.py:332, 448) → wrong path → empty.
@@ -76,7 +76,7 @@ Evidence sources: static code analysis (repo `main` working tree), local regress
 - `POST /api/v1/admin/seed-demo-data`/`create-seed-users` → **422, not 404** — `DISABLE_DESTRUCTIVE_ENDPOINTS` gate absent; destructive endpoints are alive and functional with the public hardcoded `SETUP_SECRET`.
 - `git show HEAD:backend/app/routes/admin.py` → `SETUP_SECRET = "aviasafe-e2e-setup-2026"` hardcoded; `if req.setup_key != SETUP_SECRET:` (no bearer auth); `/check-data` + `/migrate-seed-data` defined. `git show HEAD:backend/app/routes/auth.py` → `/debug-verify` defined.
 - Frontend Hosting: `https://gap-analysis-ssp.web.app` returns "Site Not Found" (no hosting release; `hosting:channel:list` reports no channels for site). Custom domains `sms.`/`app.aviasafesystems.com` have no DNS. Live backend CORS allows only `https://gap-analysis-ssp.web.app` (unreachable).
-- **Conclusion:** UAT-005 NOT closed. Correction requires (1) committing the RC-1→RC-5 working-tree changes, (2) re-deploying the backend from the committed candidate, (3) redeploying the frontend to Firebase Hosting. See `LIVE_DEPLOYMENT_VALIDATION_REPORT.md`.
+- **Conclusion:** UAT-005 NOT closed. Correction requires (1) committing the RC-1→RC-5 working-tree changes, (2) re-deploying the backend from the committed candidate, (3) redeploying the frontend to Firebase Hosting. (RC-5.5 live-deployment evidence; UAT-005 since CLOSED/PASSED.)
 - **Description:** Non-destructive probe: `POST /api/v1/admin/seed-demo-data` and `/provision-airlines` with **no Authorization header** and a wrong setup key return `403 Invalid setup key` — i.e., the endpoint body executes without any Firebase token. Live OpenAPI shows `"security": null` for these operations, while the same repo code generates `"security": [{"HTTPBearer": []}]`. The repo's **uncommitted working tree** adds `Depends(get_admin_user)` to all provisioning endpoints (backend/app/routes/admin.py:115,178,271,302,320); the deployed image predates that hardening (git HEAD admin.py has only `req.setup_key != SETUP_SECRET`).
 - **Expected behaviour:** Admin endpoints require a SUPER_ADMIN Firebase ID token (as in the repo working tree).
 - **Actual behaviour:** Production admin endpoints are protected only by the shared `SETUP_SECRET`.
@@ -88,7 +88,7 @@ Evidence sources: static code analysis (repo `main` working tree), local regress
 
 - **Severity:** Medium (blocks the Reporting → Export UAT scenario; documented as known limitation)
 - **Status:** Fixed / Verified
-- **Classification:** Documented Limitation (docs/UAT_READINESS.md:132, docs/KNOWN_LIMITATIONS.md) + environment defect
+- **Classification:** Documented Limitation (UAT scenario set, formerly docs/UAT_READINESS.md; docs/KNOWN_LIMITATIONS.md) + environment defect
 - **Description:** `pdf_generator.py` falls back to `_placeholder_pdf` (plain UTF-8 text) when `reportlab` is unavailable (pdf_generator.py:24-26, 227-245). `reportlab` is **not** in backend/requirements.txt and is not installed → every export endpoint (reporting.py:150-184, 306-340) returns text bytes labelled `application/pdf`; PDF readers cannot open the file.
 - **Expected behaviour:** Exported quarterly/annual reports are valid PDFs.
 - **Actual behaviour:** Downloading a report yields a file that fails to open as PDF.
