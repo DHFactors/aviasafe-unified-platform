@@ -66,7 +66,7 @@ Evidence sources: static code analysis (repo `main` working tree), local regress
 ## UAT-005 — Live deployment runs an un-hardened build: admin provisioning endpoints lack bearer authentication
 
 - **Severity:** Critical (production deployment)
-- **Status:** **OPEN** — RC-5.5 (02 Aug 2026) independently verified the live build STILL runs the pre-hardening code. The RC-1→RC-5 hardening was never committed (git status: `backend/app/routes/admin.py`, `config.py`, `auth.py` all `M` on top of HEAD `4e306ce`), so any Render deploy from the repository reproduces the vulnerable build. Root cause of the failed deployment: **release candidate was not committed**.
+- **Status:** **CLOSED / PASSED** (2026-08-05). Step 3 live validation (Part 1–4, `tests/e2e/live_validation.py`) verified against the production backend: CORS/origin security 10/10, auth & auth-gating 13/13 (admin POSTs 403 without token, legacy `/check-data`, `/migrate-seed-data`, `/auth/debug-verify` all 404), risk-matrix engine 10/10 (canonical 5/9/15 mapping), data audit & persistence 9/9 with writes confirmed directly in named database **`sms-db`** (us-west1); automated regression 67/67. History: RC-5.5 (02 Aug 2026) independently verified the live build STILL ran the pre-hardening code (the RC-1→RC-5 hardening was never committed, so any Render deploy from committed history reproduced the vulnerable build). The repository-side hardening, custom-domain frontend deployment, backend re-deploy (admin `security: HTTPBearer`, legacy paths 404), migration to `aerosafety-sms-prod`, and `sms-db` database wiring are now **COMPLETE and live-verified**. UAT-005 is formally closed.
 - **Classification:** Verified Defect (build/deployment drift) + Documentation Gap (repo is fine, HEAD was not)
 
 ### RC-5.5 re-verification evidence (02 Aug 2026)
@@ -169,7 +169,7 @@ Evidence sources: static code analysis (repo `main` working tree), local regress
 | UAT-002 | High | Fixed / Verified | Verified Defect | backend/app/services/can_cap_service.py, backend/app/routes/can_cap.py |
 | UAT-003 | High | Fixed / Verified | Verified Defect | backend/app/routes/reporting.py |
 | UAT-004 | High | Fixed / Verified | Verified Defect | public/portal/survey/app.js, firestore/firestore.rules |
-| UAT-005 | Critical (deployment) | **OPEN** (RC-5.5 re-verified) | Build/deployment drift — RC-1→RC-5 fixes never committed; live = HEAD `4e306ce` | Commit candidate + re-deploy backend + redeploy frontend |
+| UAT-005 | Critical (deployment) | **CLOSED / PASSED** (2026-08-05) | Build/deployment drift — RC-1→RC-5 fixes never committed; live = HEAD `4e306ce` (now re-deployed from committed candidate) | Repository fix + backend re-deploy + frontend deploy + `sms-db` wiring COMPLETE; Step 3 live validation 42/42 + regression 67/67 |
 | UAT-006 | Medium | Fixed / Verified | Documented limitation + env defect | backend/requirements.txt |
 | UAT-007 | High | Fixed / Verified | Verified Defect | routes/can_cap.py, routes/verification.py, routes/flight_diversions.py |
 | UAT-008 | Medium | Fixed / Verified | Verified Defect (test integrity) | backend/tests/test_risk_assessment_lifecycle.py |
