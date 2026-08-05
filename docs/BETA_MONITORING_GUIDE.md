@@ -44,15 +44,16 @@ grep -c "auth/verify', 'status': 401"   # total failed logins
 
 ## 2. Weekly — Firestore Usage Count (`sms-db-beta`)
 
-Count documents per collection to track beta usage and growth.
+Count documents per collection to track beta usage and growth. There is **no `gcloud firestore documents` command** — use the Firestore REST API (via a gcloud access token) or the Firebase console:
 
 ```bash
-gcloud firestore databases describe --database=sms-db-beta   # sanity check (PITR 7d)
+# REST API — count/list documents in a collection (replace <collection>)
+TOKEN=$(gcloud auth print-access-token)
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://firestore.googleapis.com/v1/projects/aerosafety-sms-prod/databases/sms-db-beta/documents/<collection>?pageSize=1000"
 
-gcloud firestore documents list --database=sms-db-beta --collection=reports --limit=1000
-gcloud firestore documents list --database=sms-db-beta --collection=hazards --limit=1000
-gcloud firestore documents list --database=sms-db-beta --collection=can_cap --limit=1000
-gcloud firestore documents list --database=sms-db-beta --collection=tenants --limit=1000
+# Firestore console
+#   https://console.firebase.google.com/project/aerosafety-sms-prod/firestore/data/sms-db-beta
 ```
 
 **Top-level collections** (verified in `backend/`):
@@ -74,7 +75,7 @@ gcloud firestore documents list --database=sms-db-beta --collection=tenants --li
 
 > **Note on the checklist:** `docs/BETA_TEST_CHECKLIST.md` references an `audit_logs` collection, but **no `audit_logs` collection exists** in the codebase. The "audit trail" check should be read as CAP/hazard status history stored inside the `can_cap` / `hazards` documents — flagging for a checklist correction.
 
-**Counting caveat:** `--limit=1000` returns at most 1000 documents per call. For large collections, paginate or use the Firestore console (query count) for an exact figure.
+**Counting caveat:** `pageSize` returns at most 1000 documents per call. For large collections, follow the response `nextPageToken` to paginate, or use the Firebase console (query count) for an exact figure.
 
 ---
 
