@@ -15,8 +15,8 @@ We are pleased to invite you to participate in the **closed beta** of the AviaSA
 | Item | Value |
 |------|-------|
 | **Beta URL** | https://sms-beta.web.app |
-| **Login credentials** | Issued to you individually by {Admin Name / Administrator} — do not share them |
-| **Credentials reset** | Contact {Admin Email / support contact} if you cannot log in |
+| **Login credentials** | Issued to you individually by the AviaSAFE administrator — do not share them |
+| **Credentials reset** | Contact support@aviasafesystems.com if you cannot log in |
 
 > **Important:** This is an isolated beta environment. All data you enter is stored in a dedicated beta database (`sms-db-beta`) and **cannot affect production data**.
 
@@ -24,7 +24,9 @@ We are pleased to invite you to participate in the **closed beta** of the AviaSA
 
 Please follow the versioned test checklist while exploring the platform:
 
-- **Checklist:** `docs/BETA_TEST_CHECKLIST.md` (in the repo, or view online: {GitHub repo URL} `blob/main/docs/BETA_TEST_CHECKLIST.md`)
+- **Checklist:** `docs/BETA_TEST_CHECKLIST.md` (in the repo, or view online: https://github.com/DHFactors/sms-aviasafesystems/blob/main/docs/BETA_TEST_CHECKLIST.md)
+
+> If the GitHub repository is private, attach a copy of `docs/BETA_TEST_CHECKLIST.md` to the email instead of the link.
 
 Focus areas:
 1. **Login and role-based access** (Airline Admin vs CAAN_SMD)
@@ -53,8 +55,8 @@ Include with each report: priority, steps to reproduce, expected vs actual behav
 
 ## Timeline
 
-- **Beta period:** 2 weeks, starting {Start Date}
-- **Feedback deadline:** {End Date}
+- **Beta period:** 2 weeks, starting **Friday 7 August 2026**
+- **Feedback deadline:** **Friday 21 August 2026**
 - Issues reported during the beta will be triaged and prioritized for the production release.
 
 ## Security & Just Culture
@@ -69,3 +71,17 @@ Thank you for helping us make AviaSAFE safer for everyone.
 
 **AviaSAFE Systems**
 *A project by Ghanshyam Acharya*
+
+---
+
+<!-- SENDER NOTES — remove this block before sending -->
+
+**Per-recipient fields to fill before sending:**
+- `{Tester Name}` (subject line, To: line, and salutation)
+- `{Airline / Organization}` (To: line)
+
+**Defaults already set (edit if needed):**
+- Credentials issuer: "the AviaSAFE administrator"
+- Support contact: `support@aviasafesystems.com`
+- Dates: **7–21 Aug 2026** (2 weeks) — adjust to your launch date
+- Checklist link: GitHub blob URL — replace with an attached copy if the repo is private
