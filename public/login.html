@@ -108,6 +108,52 @@ AUTHOR: AviaSAFE Systems
             cursor: not-allowed;
             transform: none;
         }
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: var(--spacing-lg) 0;
+            color: var(--color-gray-600);
+            font-size: var(--font-size-sm);
+        }
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            border-top: var(--border-width) solid var(--color-gray-300);
+        }
+        .divider span {
+            margin: 0 var(--spacing-md);
+        }
+        .btn-google {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--color-white);
+            color: var(--color-gray-900);
+            border: var(--border-width) solid var(--color-gray-300);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-base);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            transition: all var(--transition-normal);
+        }
+        .btn-google:hover {
+            background: var(--color-gray-50);
+            border-color: var(--color-gray-400);
+            transform: translateY(-2px);
+        }
+        .btn-google:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-google img,
+        .btn-google i {
+            font-size: 1.1rem;
+        }
         .error-message {
             color: var(--color-danger);
             font-size: var(--font-size-sm);
@@ -185,6 +231,13 @@ AUTHOR: AviaSAFE Systems
                 <i class="fas fa-sign-in-alt"></i> Sign In
             </button>
         </form>
+
+        <div class="divider"><span>or continue with</span></div>
+
+        <button type="button" class="btn-google" id="googleBtn" onclick="googleSignIn()">
+            <i class="fab fa-google" aria-hidden="true"></i> Sign in with Google
+        </button>
+        <div id="googleError" class="error-message"></div>
 
         <div class="role-hint">
             <p><strong><i class="fas fa-shield-alt"></i> Authorized Personnel Only</strong></p>
@@ -395,6 +448,69 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
     }
 });
+
+// ============================================================================
+// GOOGLE SIGN-IN
+// ============================================================================
+
+async function googleSignIn() {
+    // Block the auth-state listener from redirecting on raw claims before we
+    // resolve the real role/tenant from the backend (fresh Google accounts
+    // carry no custom claims).
+    authRedirectInProgress = true;
+
+    var googleBtn = document.getElementById('googleBtn');
+    var errorDiv = document.getElementById('googleError');
+    errorDiv.style.display = 'none';
+    googleBtn.disabled = true;
+    googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+    try {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        var credential = await firebase.auth().signInWithPopup(provider);
+        var user = credential.user;
+        var token = await user.getIdToken(true);
+
+        // Resolve role/tenant via the backend, which applies the email→tenant
+        // fallback for accounts without custom claims.
+        var role = 'USER';
+        var tenantId = null;
+        try {
+            var resp = await fetch(window.API_BASE_URL + '/api/v1/auth/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_token: token })
+            });
+            if (resp.ok) {
+                var data = await resp.json();
+                role = data.role || 'USER';
+                tenantId = data.tenant_id || null;
+            }
+        } catch (e) {
+            console.warn('Google login: backend role resolution failed, using raw claims', e);
+        }
+
+        console.log('✅ Google login as:', user.email, 'role:', role, 'tenant:', tenantId || 'None');
+        redirectBasedOnRole({ uid: user.uid, email: user.email, role: role, tenantId: tenantId, claims: {} });
+
+    } catch (error) {
+        authRedirectInProgress = false;
+        var msg = error.message || 'Google sign-in failed. Please try again.';
+        if (error.code === 'auth/popup-blocked') {
+            msg = 'Popup was blocked. Please allow popups for this site and try again.';
+        } else if (error.code === 'auth/operation-not-allowed') {
+            msg = 'Google sign-in is not enabled. Contact your administrator.';
+        } else if (error.code === 'auth/account-exists-with-different-credential') {
+            msg = 'An account already exists with this email. Please sign in with email and password instead.';
+        }
+        errorDiv.textContent = msg;
+        errorDiv.style.display = 'block';
+        console.error('Google sign-in error:', error);
+    } finally {
+        googleBtn.disabled = false;
+        googleBtn.innerHTML = '<i class="fab fa-google" aria-hidden="true"></i> Sign in with Google';
+    }
+}
 </script>
 
 </body>

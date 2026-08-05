@@ -16,6 +16,7 @@ from typing import Optional
 from app.core.config import settings
 from app.firebase import get_auth, verify_firebase_token, create_custom_claims
 from app.middleware.rate_limit import rate_limit
+from app.middleware.auth import resolve_user_context
 
 router = APIRouter()
 
@@ -49,11 +50,12 @@ async def verify_token(request: Request, body: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid token")
     role = decoded_token.get('role', settings.ROLE_DEFAULT)
     tenant_id = decoded_token.get('tenant_id')
+    resolved = resolve_user_context(decoded_token.get('email', ''), role, tenant_id)
     return {
         "uid": decoded_token['uid'],
         "email": decoded_token.get('email', ''),
-        "role": role,
-        "tenant_id": tenant_id,
+        "role": resolved["role"],
+        "tenant_id": resolved["tenant_id"],
     }
 
 @router.post("/register")

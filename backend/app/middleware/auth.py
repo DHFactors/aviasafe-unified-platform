@@ -44,6 +44,25 @@ def _lookup_tenant_by_email(email: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+def resolve_user_context(email: str, role: str, tenant_id: Optional[str]) -> Dict[str, Any]:
+    """Normalize tenant_id and fall back to a Firestore email lookup when the
+    ID token carries no custom claims (e.g. freshly-linked Google sign-ins)."""
+    if tenant_id:
+        normalized = tenant_id.replace('_', '-')
+        if normalized != tenant_id:
+            logger.info(f"Normalized tenant_id for {email}: '{tenant_id}' -> '{normalized}'")
+            tenant_id = normalized
+
+    if role == settings.ROLE_DEFAULT and not tenant_id and email:
+        tenant_info = _lookup_tenant_by_email(email)
+        if tenant_info:
+            role = tenant_info["role"]
+            tenant_id = tenant_info["tenant_id"]
+            logger.info(f"Claims resolved via Firestore fallback for {email}: role={role}, tenant={tenant_id}")
+
+    return {"role": role, "tenant_id": tenant_id}
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Security(security)
 ) -> Dict[str, Any]:
@@ -61,19 +80,9 @@ async def get_current_user(
     role = decoded_token.get('role', settings.ROLE_DEFAULT)
     tenant_id = decoded_token.get('tenant_id')
 
-    if tenant_id:
-        normalized = tenant_id.replace('_', '-')
-        if normalized != tenant_id:
-            logger.info(f"Normalized tenant_id for {email}: '{tenant_id}' -> '{normalized}'")
-            tenant_id = normalized
-
-    # Fallback: if no claims in token, look up user by email in Firestore tenants
-    if role == settings.ROLE_DEFAULT and not tenant_id and email:
-        tenant_info = _lookup_tenant_by_email(email)
-        if tenant_info:
-            role = tenant_info["role"]
-            tenant_id = tenant_info["tenant_id"]
-            logger.info(f"Claims resolved via Firestore fallback for {email}: role={role}, tenant={tenant_id}")
+    resolved = resolve_user_context(email, role, tenant_id)
+    role = resolved["role"]
+    tenant_id = resolved["tenant_id"]
 
     logger.info(f"Authenticated user {email}: role={role}, tenant_id={tenant_id}")
 
