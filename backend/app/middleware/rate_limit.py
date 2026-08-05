@@ -42,7 +42,7 @@ RATE_LIMITS = {
     "survey_submit": (100, 86400),   # 100/day (beta)
     "mor_submit":    (20,  86400),   # 20/day  (beta)
     "dashboard":     (500, 3600),    # 500/hour (beta)
-    "auth_attempts": (50,  3600),    # 50/hour
+    "auth_attempts": (200, 3600),    # 200/hour (beta; safety net for shared login attempts)
 }
 
 
@@ -54,10 +54,11 @@ def rate_limit(limit_type: str):
             if not request or not redis_enabled:
                 return await func(*args, **kwargs)
 
-            tenant_id = _get_tenant_id(kwargs) or "anonymous"
+            tenant_id = _get_tenant_id(kwargs)
+            bucket_key = f"tenant:{tenant_id}" if tenant_id else f"ip:{_get_client_ip(request)}"
             max_count, window_sec = RATE_LIMITS.get(limit_type, (100, 3600))
             period_key = _period_key(window_sec)
-            redis_key = f"rl:{limit_type}:{tenant_id}:{period_key}"
+            redis_key = f"rl:{limit_type}:{bucket_key}:{period_key}"
 
             try:
                 r = await get_redis()
@@ -122,6 +123,15 @@ def _get_tenant_id(kwargs: dict) -> str:
     if user and isinstance(user, dict):
         return user.get("tenant_id")
     return None
+
+
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "unknown"
 
 
 def _period_key(window_sec: int) -> str:
