@@ -16,7 +16,7 @@ We are pleased to invite you to participate in the **closed beta** of the AviaSA
 |------|-------|
 | **Beta URL** | https://sms-beta.web.app |
 | **Login credentials** | Issued to you individually by the AviaSAFE administrator — do not share them |
-| **Credentials reset** | Contact support@aviasafesystems.com if you cannot log in |
+| **Credentials reset** | Contact info@aviasafesystems.com if you cannot log in |
 
 > **Important:** This is an isolated beta environment. All data you enter is stored in a dedicated beta database (`sms-db-beta`) and **cannot affect production data**.
 
@@ -82,6 +82,6 @@ Thank you for helping us make AviaSAFE safer for everyone.
 
 **Defaults already set (edit if needed):**
 - Credentials issuer: "the AviaSAFE administrator"
-- Support contact: `support@aviasafesystems.com`
+- Support contact: `info@aviasafesystems.com`
 - Dates: **7–21 Aug 2026** (2 weeks) — adjust to your launch date
 - Checklist link: GitHub blob URL — replace with an attached copy if the repo is private

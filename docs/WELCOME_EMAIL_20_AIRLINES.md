@@ -63,7 +63,7 @@ We are pleased to inform you that your AviaSAFE SMS Platform account has been cr
 ## Support
 
 If you need assistance:
-- **Email:** support@aviasafesystems.com
+- **Email:** info@aviasafesystems.com
 - **Documentation:** https://sms.aviasafesystems.com/docs/
 
 ---
