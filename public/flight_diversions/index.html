@@ -8,20 +8,20 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0b2a42; margin: 0; }
         .page { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
-        .page-header h1 { font-size: 1.25rem; color: #002f6c; margin: 0; }
+        .page-header h1 { font-size: 1.25rem; color: #0b2a42; margin: 0; }
         .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
-        .stat-card { background: #f8fafc; padding: 1rem; border-radius: 8px; text-align: center; border-left: 4px solid #1a73e8; }
-        .stat-card .value { font-size: 1.6rem; font-weight: 700; color: #002f6c; }
+        .stat-card { background: #f8fafc; padding: 1rem; border-radius: 8px; text-align: center; border-left: 4px solid #1a6b8a; }
+        .stat-card .value { font-size: 1.6rem; font-weight: 700; color: #0b2a42; }
         .stat-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.3px; color: #64748b; }
         .filter-bar { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
         .filter-bar select, .filter-bar input { padding: 0.4rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem; background: #fff; }
         .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; border: none; transition: all 0.15s; }
-        .btn-primary { background: #1a73e8; color: #fff; }
-        .btn-primary:hover { background: #1557b0; }
+        .btn-primary { background: #1a6b8a; color: #fff; }
+        .btn-primary:hover { background: #0b2a42; }
         .btn-outline { background: transparent; color: #475569; border: 1px solid #e2e8f0; }
         .btn-outline:hover { background: #f1f5f9; }
         .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
@@ -49,12 +49,16 @@
         #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
         @media (max-width: 600px) { .page-header { flex-direction: column; } }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
 <div class="page">
     <div class="page-header">
-        <h1><i class="fas fa-plane-slash" style="color:#1a73e8;"></i> Flight Diversions</h1>
+        <h1><i class="fas fa-plane-slash" style="color:#1a6b8a;"></i> Flight Diversions</h1>
         <div>
             <a href="/flight_diversions/create.html" class="btn btn-primary"><i class="fas fa-plus"></i> Report Diversion</a>
             <a href="/safety.html" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Dashboard</a>
@@ -89,8 +93,14 @@
                 <option value="Closed">Closed</option>
                 <option value="Linked to Hazard">Linked to Hazard</option>
             </select>
+            <input type="text" id="aircraftFilter" placeholder="Aircraft reg..." onkeyup="if(event.key==='Enter')loadDiversions()">
+            <label style="font-size:0.8rem;color:#475569;">From:</label>
+            <input type="date" id="dateFrom" onchange="loadDiversions()">
+            <label style="font-size:0.8rem;color:#475569;">To:</label>
+            <input type="date" id="dateTo" onchange="loadDiversions()">
             <input type="text" id="searchInput" placeholder="Search flight or ID..." onkeyup="if(event.key==='Enter')loadDiversions()">
             <button class="btn btn-outline btn-sm" onclick="loadDiversions()"><i class="fas fa-search"></i> Search</button>
+            <button class="btn btn-outline btn-sm" onclick="clearDiversionFilters()"><i class="fas fa-times"></i> Clear</button>
         </div>
 
         <div style="overflow-x:auto;">
@@ -99,9 +109,16 @@
                 <tbody id="diversionsBody"></tbody>
             </table>
             <div id="emptyState" class="empty-state" style="display:none;">
-                <i class="fas fa-inbox"></i><p>No flight diversions recorded.</p>
+                <i class="fas fa-inbox"></i><p>No flight diversions match the current filters.</p>
                 <a href="/flight_diversions/create.html" class="btn btn-primary btn-sm" style="margin-top:0.5rem;">Report Diversion</a>
             </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin:0 0 1rem;font-size:1rem;color:#0b2a42;"><i class="fas fa-chart-line" style="color:#1a6b8a;"></i> Diversion Trends — Historical Timeline</h3>
+        <div style="position:relative;height:280px;">
+            <canvas id="trendChart"></canvas>
         </div>
     </div>
 </div>
@@ -112,11 +129,45 @@
 <script src="/js/api/client.js"></script>
 <script src="/js/flight_diversions.js"></script>
 <script>
+let diversionTrendChart = null;
+
 firebase.auth().onAuthStateChanged(function(user) {
     if (!user) { window.location.href = '/login.html'; return; }
     loadDiversions();
     loadStats();
 });
+
+function clearDiversionFilters() {
+    document.getElementById('reasonFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('aircraftFilter').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('searchInput').value = '';
+    loadDiversions();
+}
+
+function parseDiversionDate(d) {
+    const t = new Date(d);
+    return isNaN(t.getTime()) ? null : t;
+}
+
+function applyClientFilters(list) {
+    const aircraft = (document.getElementById('aircraftFilter').value || '').trim().toLowerCase();
+    const fromVal = document.getElementById('dateFrom').value;
+    const toVal = document.getElementById('dateTo').value;
+    const from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
+    const to = toVal ? new Date(toVal + 'T23:59:59') : null;
+    return (list || []).filter(d => {
+        if (aircraft && !(d.aircraft_registration || '').toLowerCase().includes(aircraft)) return false;
+        if (!from && !to) return true;
+        const t = parseDiversionDate(d.date);
+        if (!t) return true;
+        if (from && t < from) return false;
+        if (to && t > to) return false;
+        return true;
+    });
+}
 
 async function loadDiversions() {
     const body = document.getElementById('diversionsBody');
@@ -127,7 +178,9 @@ async function loadDiversions() {
         search: document.getElementById('searchInput').value || undefined,
     };
     try {
-        const list = await DiversionsAPI.list(filters);
+        const raw = await DiversionsAPI.list(filters);
+        const list = applyClientFilters(raw);
+        renderTrendChart(list);
         if (!list || list.length === 0) {
             body.innerHTML = '';
             empty.style.display = 'block';
@@ -154,12 +207,61 @@ async function loadDiversions() {
     }
 }
 
+function renderTrendChart(list) {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+    if (diversionTrendChart) { diversionTrendChart.destroy(); diversionTrendChart = null; }
+
+    const monthly = {};
+    (list || []).forEach(d => {
+        const t = parseDiversionDate(d.date);
+        if (!t) return;
+        const key = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`;
+        monthly[key] = (monthly[key] || 0) + 1;
+    });
+    const labels = Object.keys(monthly).sort();
+    const data = labels.map(k => monthly[k]);
+
+    if (labels.length === 0) {
+        ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+        ctx.parentElement.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:3rem;">No diversion data to chart for the current filters.</p>';
+        return;
+    }
+    ctx.parentElement.innerHTML = '<canvas id="trendChart"></canvas>';
+    const canvas = document.getElementById('trendChart');
+
+    diversionTrendChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Diversions per month',
+                data,
+                borderColor: '#1a6b8a',
+                backgroundColor: 'rgba(26,107,138,0.12)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: '#1a6b8a',
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } },
+            },
+            plugins: { legend: { display: false } },
+        },
+    });
+}
+
 async function loadStats() {
     const grid = document.getElementById('statsGrid');
     try {
         const stats = await DiversionsAPI.getStats();
         grid.innerHTML = `
-            <div class="stat-card" style="border-left-color:#1a73e8;"><div class="value">${stats.total_diversions || 0}</div><div class="label">Total</div></div>
+            <div class="stat-card" style="border-left-color:#1a6b8a;"><div class="value">${stats.total_diversions || 0}</div><div class="label">Total</div></div>
             <div class="stat-card" style="border-left-color:#34a853;"><div class="value">${stats.weather_diversion_rate || 0}%</div><div class="label">Weather</div></div>
             <div class="stat-card" style="border-left-color:#e65100;"><div class="value">${stats.technical_diversion_rate || 0}%</div><div class="label">Technical</div></div>
             <div class="stat-card" style="border-left-color:#d97706;"><div class="value">${stats.avg_delay_minutes || 0}m</div><div class="label">Avg Delay</div></div>

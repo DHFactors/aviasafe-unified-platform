@@ -56,8 +56,12 @@
         (cfg.nav || []).forEach(function (item) {
             const li = document.createElement('li');
             const a = document.createElement('a');
-            a.href = '#' + item.id;
-            a.dataset.target = item.id;
+            if (item.href) {
+                a.href = item.href;
+            } else {
+                a.href = '#' + item.id;
+                a.dataset.target = item.id;
+            }
             a.innerHTML = '<i class="fas ' + (item.icon || 'fa-circle') + '"></i>' +
                 '<span>' + item.label + '</span>';
             li.appendChild(a);
@@ -68,7 +72,7 @@
 
         const foot = document.createElement('div');
         foot.className = 'sidebar-footer';
-        foot.textContent = 'ICAO Annex 19 · CAR-19 · Just Culture';
+        foot.textContent = 'ICAO Annex 19 · Doc 9859 · Doc 10951';
         aside.appendChild(foot);
 
         return aside;
@@ -168,6 +172,7 @@
 
     function attachScrollSpy() {
         const links = document.querySelectorAll('.sidebar-nav li a');
+        const navWrap = document.querySelector('.sidebar-nav');
         const targets = (cfg.nav || [])
             .map(function (n) { return document.getElementById(n.id); })
             .filter(Boolean);
@@ -180,6 +185,11 @@
                 if (el.offsetTop <= pos) current = el.id;
             });
             if (!current && targets.length) current = targets[0].id;
+            if (navWrap) {
+                // Dim every section except the one currently in view.
+                if (current) navWrap.classList.add('has-active');
+                else navWrap.classList.remove('has-active');
+            }
             links.forEach(function (a) {
                 if (a.dataset.target === current) a.classList.add('active');
                 else a.classList.remove('active');
@@ -200,8 +210,17 @@
         onScroll();
     }
 
+    function loadInterFont() {
+        if (document.querySelector('link[href*="Inter"]')) return;
+        const link = document.createElement('link');
+        link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+    }
+
     function initShell() {
         if (document.getElementById('shellSidebar')) return;
+        loadInterFont();
         const shell = document.querySelector('.app-shell');
         if (!shell) return;
 

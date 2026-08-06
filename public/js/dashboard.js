@@ -1,6 +1,7 @@
 let chartInstances = {};
 let currentPage = 1;
 let currentDays = 90;
+let recentDays = 30;
 const PAGE_SIZE = 10;
 
 function safeArray(data) {
@@ -77,6 +78,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const recentRangeEl = document.getElementById('recentRange');
+    if (recentRangeEl) {
+        recentDays = parseInt(recentRangeEl.value, 10) || 30;
+        recentRangeEl.addEventListener('change', () => {
+            recentDays = parseInt(recentRangeEl.value, 10) || 30;
+            currentPage = 1;
+            loadRecentReports();
+        });
+    }
+
     document.getElementById('refreshBtn').addEventListener('click', () => {
         currentPage = 1;
         loadAll();
@@ -92,7 +103,6 @@ async function loadAll() {
         loadMonthlyTrends(),
         loadHazardFrequency(),
         loadRecentReports(),
-        loadHeatMap(),
     ]);
 }
 
@@ -175,7 +185,7 @@ async function loadRecentReports() {
     setLoading(el);
 
     try {
-        const data = await DashboardAPI.getRecentReports(currentDays, currentPage, PAGE_SIZE);
+        const data = await DashboardAPI.getRecentReports(recentDays, currentPage, PAGE_SIZE);
         if (!data || !data.items || data.items.length === 0) {
             setEmpty(el, 'No reports found');
             pagEl.innerHTML = '';
@@ -186,20 +196,6 @@ async function loadRecentReports() {
         renderPagination(data, pagEl);
     } catch (err) {
         setError(el, err.message);
-    }
-}
-
-async function loadHeatMap() {
-    const container = document.getElementById('heatMapCanvas');
-    try {
-        const data = await DashboardAPI.getRecentReports(currentDays, 1, 200);
-        if (data && data.items && data.items.length > 0) {
-            renderHeatMapFromReports(data.items, container);
-        } else {
-            container.innerHTML = '<p style="text-align:center;color:#64748b;padding:2rem;">No report data for heat map</p>';
-        }
-    } catch {
-        container.innerHTML = '<p style="text-align:center;color:#64748b;padding:2rem;">Heat map unavailable — load more reports</p>';
     }
 }
 
@@ -256,7 +252,7 @@ function renderTrendChart(data) {
         data: {
             labels: data.map(d => `${d.month}/${d.year}`),
             datasets: [
-                { label: 'Total', data: data.map(d => d.total), borderColor: '#1a73e8', fill: false, tension: 0.3 },
+                { label: 'Total', data: data.map(d => d.total), borderColor: '#1a6b8a', fill: false, tension: 0.3 },
                 { label: 'Voluntary', data: data.map(d => d.voluntary), borderColor: '#28a745', fill: false, tension: 0.3 },
                 { label: 'Mandatory', data: data.map(d => d.mandatory), borderColor: '#dc3545', fill: false, tension: 0.3 },
                 { label: 'High Risk', data: data.map(d => d.high_risk), borderColor: '#fd7e14', fill: false, tension: 0.3, borderDash: [5, 5] },
@@ -285,7 +281,7 @@ function renderHazardChart(data) {
             datasets: [{
                 label: 'Occurrences',
                 data: top.map(d => d.count),
-                backgroundColor: '#1a73e8',
+                backgroundColor: '#1a6b8a',
                 borderRadius: 4,
             }],
         },
@@ -299,76 +295,6 @@ function renderHazardChart(data) {
             plugins: { legend: { display: false } },
         },
     });
-}
-
-function renderHeatMapFromReports(reports, container) {
-    const counts = {};
-    for (const r of reports) {
-        const s = r.severity_level;
-        const p = r.probability_level;
-        if (s >= 1 && s <= 5 && p >= 1 && p <= 5) {
-            const key = `${s}x${p}`;
-            counts[key] = (counts[key] || 0) + 1;
-        }
-    }
-
-    const hasData = Object.keys(counts).length > 0;
-    if (!hasData) {
-        container.innerHTML = '<p style="text-align:center;color:#64748b;padding:2rem;">No ICAO risk data available. Reports submitted with Severity × Probability will appear here.</p>';
-        return;
-    }
-
-    const heatData = [];
-    let maxCount = 0;
-    for (let s = 1; s <= 5; s++) {
-        for (let p = 1; p <= 5; p++) {
-            const c = counts[`${s}x${p}`] || 0;
-            heatData.push({ severity: s, probability: p, count: c });
-            if (c > maxCount) maxCount = c;
-        }
-    }
-    if (maxCount === 0) maxCount = 1;
-
-    const getColor = (count) => {
-        if (count === 0) return '#f1f5f9';
-        const ratio = count / maxCount;
-        if (ratio < 0.25) return '#e8f5e9';
-        if (ratio < 0.5) return '#fff8e1';
-        if (ratio < 0.75) return '#fff3e0';
-        return '#fde8e8';
-    };
-
-    const getTextColor = (count) => (count === 0 ? '#94a3b8' : '#1e293b');
-
-    const getRiskClass = (index) => getRiskBadgeClass(classifyRisk(index));
-    const getRiskText = (index) => classifyRisk(index);
-
-    let html = '<table style="border-collapse:collapse;margin:0 auto;font-size:0.85rem;">';
-    html += '<tr><td style="padding:0.5rem;font-weight:700;color:#475569;text-align:right;">P\\S</td>';
-    for (let s = 1; s <= 5; s++) {
-        html += `<td style="padding:0.5rem 0.75rem;font-weight:700;color:#1a73e8;text-align:center;">S=${s}</td>`;
-    }
-    html += '</tr>';
-
-    for (let p = 5; p >= 1; p--) {
-        html += `<tr><td style="padding:0.5rem;font-weight:700;color:#475569;text-align:right;">P=${p}</td>`;
-        for (let s = 1; s <= 5; s++) {
-            const item = heatData.find(d => d.severity === s && d.probability === p);
-            const count = item ? item.count : 0;
-            const index = s * p;
-            const color = getColor(count);
-            html += `<td style="padding:0.5rem;text-align:center;background:${color};border:1px solid #e2e8f0;border-radius:4px;min-width:70px;">
-                <div style="font-weight:700;color:${getTextColor(count)};font-size:1.1rem;">${index}</div>
-                <div style="font-size:0.65rem;margin-top:0.1rem;"><span class="badge ${getRiskClass(index)}">${getRiskText(index)}</span></div>
-                <div style="font-size:0.75rem;color:${getTextColor(count)};margin-top:0.15rem;">${count}</div>
-            </td>`;
-        }
-        html += '</tr>';
-    }
-    html += '</table>';
-    html += '<p style="text-align:center;font-size:0.75rem;color:#94a3b8;margin-top:0.75rem;">Severity (columns) × Probability (rows) — Cell color intensity = report count</p>';
-
-    container.innerHTML = html;
 }
 
 function renderReportsTable(items) {
@@ -469,9 +395,84 @@ async function loadRiskMatrixConfig() {
     } catch {
         // Use defaults
     }
+    syncRiskMatrixThresholds();
+    renderRiskMatrixPreview();
+}
+
+function riskMatrixThresholdsFromInputs() {
+    return {
+        lowMax: parseInt(document.getElementById('rmLowMax').value, 10) || 5,
+        mediumMax: parseInt(document.getElementById('rmMediumMax').value, 10) || 9,
+        highMax: parseInt(document.getElementById('rmHighMax').value, 10) || 15,
+    };
+}
+
+function syncRiskMatrixThresholds() {
+    const t = riskMatrixThresholdsFromInputs();
+    if (t.lowMax >= t.mediumMax || t.mediumMax >= t.highMax) return;
+    if (typeof ICAO_THRESHOLDS !== 'undefined') {
+        ICAO_THRESHOLDS.lowMax = t.lowMax;
+        ICAO_THRESHOLDS.mediumMax = t.mediumMax;
+        ICAO_THRESHOLDS.highMax = t.highMax;
+    }
+}
+
+function renderRiskMatrixPreview() {
+    const container = document.getElementById('riskMatrixPreview');
+    if (!container) return;
+    const t = riskMatrixThresholdsFromInputs();
+    const valid = t.lowMax >= 1 && t.lowMax < t.mediumMax && t.mediumMax < t.highMax && t.highMax <= 25;
+
+    const levelFor = (index) => {
+        if (!valid) return 'Very High';
+        if (index <= t.lowMax) return 'Low';
+        if (index <= t.mediumMax) return 'Medium';
+        if (index <= t.highMax) return 'High';
+        return 'Very High';
+    };
+
+    const colorFor = (index) => {
+        if (!valid) return '#e2e8f0';
+        return ICAO_COLORS[levelFor(index)] || '#e2e8f0';
+    };
+
+    let html = '<table style="border-collapse:collapse;margin:0 auto;font-size:0.78rem;">';
+    html += '<tr><td style="padding:0.4rem;font-weight:700;color:#475569;text-align:right;">P\\S</td>';
+    for (let s = 1; s <= 5; s++) {
+        html += `<td style="padding:0.4rem 0.55rem;font-weight:700;color:#1a6b8a;text-align:center;">${s}</td>`;
+    }
+    html += '</tr>';
+    for (let p = 5; p >= 1; p--) {
+        html += `<tr><td style="padding:0.4rem;font-weight:700;color:#475569;text-align:right;">${p}</td>`;
+        for (let s = 1; s <= 5; s++) {
+            const index = s * p;
+            const color = colorFor(index);
+            const textColor = (index > 15 && valid) ? '#fff' : '#0b2a42';
+            html += `<td style="padding:0.4rem;text-align:center;background:${color};border:1px solid #fff;border-radius:4px;min-width:42px;color:${textColor};font-weight:700;">${index}</td>`;
+        }
+        html += '</tr>';
+    }
+    html += '</table>';
+
+    let note;
+    if (!valid) {
+        note = '<p style="text-align:center;font-size:0.72rem;color:#d97706;margin-top:0.5rem;">Thresholds must be strictly increasing: 1 ≤ Low &lt; Medium &lt; High ≤ 25.</p>';
+    } else {
+        note = `<p style="text-align:center;font-size:0.72rem;color:#94a3b8;margin-top:0.5rem;">Low ≤ ${t.lowMax} · Medium ≤ ${t.mediumMax} · High ≤ ${t.highMax} · Very High &gt; ${t.highMax}</p>`;
+    }
+    container.innerHTML = html + note;
 }
 
 function setupRiskMatrixForm() {
+    ['rmLowMax', 'rmMediumMax', 'rmHighMax'].forEach(function (id) {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('input', () => {
+                syncRiskMatrixThresholds();
+                renderRiskMatrixPreview();
+            });
+        }
+    });
     document.getElementById('riskMatrixForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('rmSaveBtn');
@@ -493,6 +494,9 @@ function setupRiskMatrixForm() {
             }
 
             await updateRiskMatrix({ lowMax, mediumMax, highMax });
+
+            syncRiskMatrixThresholds();
+            renderRiskMatrixPreview();
 
             status.style.color = '#2e7d32';
             status.innerHTML = '<i class="fas fa-check-circle"></i> Saved successfully';
@@ -551,7 +555,7 @@ function showError(msg) {
         <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;font-family:sans-serif;">
             <h2 style="color:#dc3545;">Access Denied</h2>
             <p>${msg}</p>
-            <a href="/login.html" style="margin-top:1rem;color:#1a73e8;">Return to Login</a>
+            <a href="/login.html" style="margin-top:1rem;color:#1a6b8a;">Return to Login</a>
         </div>
     `;
 }

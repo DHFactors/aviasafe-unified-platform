@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/shell.css">
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/styles/global.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
@@ -17,12 +19,12 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: #f1f5f9;
-            color: #1e293b;
+            color: #0b2a42;
             min-height: 100vh;
         }
 
         .nav {
-            background: #002f6c;
+            background: #0b2a42;
             color: #fff;
             padding: 0.75rem 1.5rem;
             display: flex;
@@ -57,7 +59,7 @@
         .section-title {
             font-size: 1.25rem;
             font-weight: 600;
-            color: #002f6c;
+            color: #0b2a42;
             margin: 1.5rem 0 1rem;
             display: flex;
             align-items: center;
@@ -76,7 +78,7 @@
             padding: 1.25rem;
             border-radius: 10px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-            border-left: 4px solid #1a73e8;
+            border-left: 4px solid #1a6b8a;
             transition: transform 0.15s;
         }
         .kpi-card:hover { transform: translateY(-2px); }
@@ -91,7 +93,7 @@
         .kpi-value {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #1e293b;
+            color: #0b2a42;
         }
 
         /* ── Chart Grid ── */
@@ -112,7 +114,7 @@
         .chart-card h3 {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #002f6c;
+            color: #0b2a42;
             margin-bottom: 1rem;
         }
         .chart-wrapper { position: relative; height: 260px; }
@@ -185,7 +187,7 @@
             font-size: 0.85rem;
             transition: all 0.15s;
         }
-        .page-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #1a73e8; color: #1a73e8; }
+        .page-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #1a6b8a; color: #1a6b8a; }
         .page-btn:disabled { opacity: 0.4; cursor: default; }
         .page-info { font-size: 0.85rem; color: #64748b; }
 
@@ -235,7 +237,7 @@
             border-radius: 10px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
         }
-        .filter-bar label { font-size: 0.85rem; font-weight: 500; color: #002f6c; }
+        .filter-bar label { font-size: 0.85rem; font-weight: 500; color: #0b2a42; }
         .filter-bar select {
             padding: 0.4rem 0.75rem;
             border: 1px solid #e2e8f0;
@@ -246,7 +248,7 @@
         }
         .btn-refresh {
             margin-left: auto;
-            background: #1a73e8;
+            background: #1a6b8a;
             color: #fff;
             border: none;
             padding: 0.4rem 1rem;
@@ -256,7 +258,7 @@
             font-weight: 500;
             transition: background 0.15s;
         }
-        .btn-refresh:hover { background: #1557b0; }
+        .btn-refresh:hover { background: #0b2a42; }
 
         .kpi-grid.state-loading,
         .chart-card .state-loading,
@@ -303,17 +305,6 @@
             </div>
         </div>
 
-        <!-- Section 2b: 5x5 Risk Heat Map -->
-        <div class="section-title shell-scroll-spy" id="heatmap"><i class="fas fa-th"></i> ICAO 5×5 Risk Heat Map</div>
-        <div class="chart-grid">
-            <div class="chart-card chart-full">
-                <h3>Risk Index Heat Map (Severity × Probability)</h3>
-                <div id="heatMapContainer" class="state-container" style="min-height:320px;">
-                    <div id="heatMapCanvas" style="overflow-x:auto;"></div>
-                </div>
-            </div>
-        </div>
-
         <!-- Section 3: Hazard Frequency -->
         <div class="section-title shell-scroll-spy" id="hazards"><i class="fas fa-triangle-exclamation"></i> Top Hazards</div>
         <div class="chart-grid">
@@ -336,17 +327,6 @@
             </div>
         </div>
 
-        <!-- Section 3c: CAN/CAP Widget -->
-        <div class="section-title shell-scroll-spy" id="cancap"><i class="fas fa-clipboard-check"></i> CAN/CAP Status</div>
-        <div class="chart-grid">
-            <div class="chart-card chart-full">
-                <h3>Corrective Action Progress <a href="/can_cap/cans.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All CANs</a></h3>
-                <div id="canCapWidget" class="state-container" style="min-height:80px;">
-                    <div id="canCapStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0.75rem;"></div>
-                </div>
-            </div>
-        </div>
-
         <!-- Section 3d: Verification & Closure Widget -->
         <div class="section-title shell-scroll-spy" id="verification"><i class="fas fa-check-double"></i> Verification & Closure</div>
         <div class="chart-grid">
@@ -358,31 +338,19 @@
             </div>
         </div>
 
-        <!-- Section 3e: Reports Widget -->
+        <!-- Section: Latest Reports (consolidated) -->
         <div class="section-title shell-scroll-spy" id="reports"><i class="fas fa-chart-bar"></i> Latest Reports</div>
-        <div class="chart-grid">
-            <div class="chart-card chart-full">
-                <h3>Recent Reports <a href="/reports/index.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All Reports</a></h3>
-                <div id="reportsWidget" style="min-height:60px;">
-                    <div id="reportsWidgetContent"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 3f: Flight Diversions Widget -->
-        <div class="section-title shell-scroll-spy" id="diversions"><i class="fas fa-plane-slash"></i> Flight Diversions</div>
-        <div class="chart-grid">
-            <div class="chart-card chart-full">
-                <h3>Diversion Summary <a href="/flight_diversions/index.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View All</a></h3>
-                <div id="diversionWidget" style="min-height:60px;">
-                    <div id="diversionWidgetContent"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 4: Recent Reports -->
-        <div class="section-title shell-scroll-spy" id="recent-reports"><i class="fas fa-table-list"></i> Recent Reports</div>
         <div id="reportsTable" class="table-card state-container">
+            <div class="filter-bar" style="border-radius:0;box-shadow:none;border-bottom:1px solid #e2e8f0;margin-bottom:0;">
+                <label for="recentRange"><i class="fas fa-calendar-alt"></i> Timeline:</label>
+                <select id="recentRange">
+                    <option value="7">This Week</option>
+                    <option value="30" selected>This Month</option>
+                    <option value="90">This Quarter</option>
+                    <option value="365">This Year</option>
+                </select>
+                <a href="/reports/index.html" style="margin-left:auto;font-size:0.8rem;color:#1a6b8a;"><i class="fas fa-external-link-alt"></i> View All Reports</a>
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -426,6 +394,19 @@
                         <span id="rmStatus" style="margin-left:0.75rem;font-size:0.85rem;display:none;"></span>
                     </div>
                 </form>
+                <div style="margin-top:1.25rem;border-top:1px solid #e2e8f0;padding-top:1rem;">
+                    <p style="font-size:0.8rem;color:#475569;font-weight:600;margin-bottom:0.5rem;">Preview — Severity × Probability (cell = risk index)</p>
+                    <div id="riskMatrixPreview" style="overflow-x:auto;"></div>
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-top:0.75rem;font-size:0.72rem;color:#475569;">
+                        <span style="display:inline-flex;align-items:center;gap:0.35rem;"><span style="width:14px;height:14px;background:#34a853;border-radius:3px;display:inline-block;"></span> Low</span>
+                        <span style="display:inline-flex;align-items:center;gap:0.35rem;"><span style="width:14px;height:14px;background:#f9ab00;border-radius:3px;display:inline-block;"></span> Medium</span>
+                        <span style="display:inline-flex;align-items:center;gap:0.35rem;"><span style="width:14px;height:14px;background:#f57c00;border-radius:3px;display:inline-block;"></span> High</span>
+                        <span style="display:inline-flex;align-items:center;gap:0.35rem;"><span style="width:14px;height:14px;background:#ea4335;border-radius:3px;display:inline-block;"></span> Very High</span>
+                    </div>
+                    <p style="font-size:0.72rem;color:#94a3b8;margin-top:0.5rem;text-align:center;">
+                        Thresholds are inclusive maximums (1–25). Risk index = Severity × Probability. Changes apply to your organization only.
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -446,15 +427,13 @@ window.SHELL_CONFIG = {
     nav: [
         { id: 'kpi', label: 'Key Indicators', icon: 'fa-chart-simple' },
         { id: 'risk-trends', label: 'Risk & Trends', icon: 'fa-chart-bar' },
-        { id: 'heatmap', label: 'Risk Heat Map', icon: 'fa-th' },
         { id: 'hazards', label: 'Top Hazards', icon: 'fa-triangle-exclamation' },
         { id: 'hazard-register', label: 'Hazard Register', icon: 'fa-book' },
-        { id: 'cancap', label: 'CAN/CAP Status', icon: 'fa-clipboard-check' },
         { id: 'verification', label: 'Verification & Closure', icon: 'fa-check-double' },
         { id: 'reports', label: 'Latest Reports', icon: 'fa-chart-bar' },
-        { id: 'diversions', label: 'Flight Diversions', icon: 'fa-plane-slash' },
-        { id: 'recent-reports', label: 'Recent Reports', icon: 'fa-table-list' },
         { id: 'risk-matrix', label: 'Risk Matrix', icon: 'fa-sliders-h' },
+        { href: '/flight_diversions/index.html', label: 'Flight Diversions', icon: 'fa-plane-slash' },
+        { href: '/can_cap/cans.html', label: 'CAN/CAP', icon: 'fa-clipboard-check' },
     ],
 };
 </script>
@@ -485,12 +464,12 @@ async function loadHazardWidget() {
             const cls = status === 'Open' ? 'badge-new' : status === 'Processing' ? 'badge-processing' : status === 'Under Review' ? 'badge-warning' : status === 'Closed' ? 'badge-completed' : 'badge-critical';
             html += `
                 <div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:3px solid ${status === 'Open' ? '#1565c0' : status === 'Processing' ? '#e65100' : status === 'Under Review' ? '#d97706' : status === 'Closed' ? '#2e7d32' : '#dc3545'};">
-                    <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${count}</div>
+                    <div style="font-size:1.5rem;font-weight:700;color:#0b2a42;">${count}</div>
                     <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;">${status}</div>
                 </div>`;
         }
         html += `
-            <div style="background:#002f6c;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+            <div style="background:#0b2a42;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
                 <div style="font-size:1.5rem;font-weight:700;">${total}</div>
                 <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.3px;opacity:0.8;">Total</div>
             </div>
@@ -502,40 +481,6 @@ async function loadHazardWidget() {
     } catch (err) {
         container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">Error loading hazard data.</p>';
         console.error('Hazard widget error:', err);
-    }
-}
-
-async function loadCanCapWidget() {
-    const grid = document.getElementById('canCapStatsGrid');
-    try {
-        const stats = await CanCapAPI.getStats();
-        if (!stats || !stats.cans) {
-            grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">No CAN/CAP data.</p>';
-            return;
-        }
-        const canStatuses = stats.cans.by_status || {};
-        const capTotal = stats.caps.total || 0;
-        const canTotal = stats.cans.total || 0;
-        let html = Object.entries(canStatuses).map(([k, v]) =>
-            `<div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:3px solid ${k === 'Open' ? '#1565c0' : k === 'Under Review' ? '#d97706' : '#2e7d32'};">
-                <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${v}</div>
-                <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;">CAN ${k}</div>
-            </div>`
-        ).join('');
-        html += `<div style="background:#002f6c;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
-                <div style="font-size:1.5rem;font-weight:700;">${capTotal}</div>
-                <div style="font-size:0.7rem;text-transform:uppercase;opacity:0.8;">CAPs</div>
-            </div>
-            <div style="background:#1a73e8;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
-                <div style="font-size:1.5rem;font-weight:700;">${canTotal}</div>
-                <div style="font-size:0.7rem;text-transform:uppercase;opacity:0.8;">Total CANs</div>
-            </div>
-            <div style="grid-column:1/-1;text-align:center;padding-top:0.5rem;">
-                <a href="/can_cap/cans.html" class="btn btn-outline btn-sm"><i class="fas fa-list"></i> View CANs</a>
-            </div>`;
-        grid.innerHTML = html;
-    } catch (err) {
-        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">Error loading CAN/CAP data.</p>';
     }
 }
 
@@ -556,9 +501,13 @@ async function loadVerificationWidget() {
             { label: 'Closed', value: stats.closed || 0, color: '#1b5e20' },
             { label: 'Reopened', value: stats.reopened || 0, color: '#dc3545' },
         ];
+        if (items.every(item => !item.value)) {
+            grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">No verifications or closures recorded yet.</p>';
+            return;
+        }
         let html = items.map(item => `
             <div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:3px solid ${item.color};">
-                <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${item.value}</div>
+                <div style="font-size:1.5rem;font-weight:700;color:#0b2a42;">${item.value}</div>
                 <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;">${item.label}</div>
             </div>
         `).join('');
@@ -569,84 +518,12 @@ async function loadVerificationWidget() {
     }
 }
 
-// Reports Widget
-async function loadReportsWidget() {
-    const container = document.getElementById('reportsWidgetContent');
-    try {
-        const [quarterly, annual] = await Promise.all([
-            ReportsAPI.listQuarterly(),
-            ReportsAPI.listAnnual(),
-        ]);
-        const all = [...(quarterly || []).map(r => ({ ...r, label: r.period })), ...(annual || []).map(r => ({ ...r, label: r.period }))];
-        all.sort((a, b) => new Date(b.generated_at || 0) - new Date(a.generated_at || 0));
-        const recent = all.slice(0, 5);
-        if (recent.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:0.5rem;">No reports generated yet. <a href="/reports/generate.html" style="color:#1a73e8;">Generate one</a></p>';
-            return;
-        }
-        container.innerHTML = `
-            <table>
-                <thead><tr><th>Period</th><th>Type</th><th>Status</th><th>Generated</th><th></th></tr></thead>
-                <tbody>${recent.map(r => `
-                    <tr>
-                        <td><strong>${r.period}</strong></td>
-                        <td><span class="badge ${r.report_type === 'quarterly' ? 'badge-new' : 'badge-completed'}">${r.report_type}</span></td>
-                        <td><span class="badge ${reportStatusBadgeClass(r.status)}">${r.status}</span></td>
-                        <td>${formatReportDate(r.generated_at)}</td>
-                        <td><a href="/reports/view.html?id=${r.id}&type=${r.report_type}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a></td>
-                    </tr>
-                `).join('')}</tbody>
-            </table>
-            <div style="text-align:center;padding:0.5rem;">
-                <a href="/reports/generate.html" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Generate Report</a>
-            </div>`;
-    } catch (err) {
-        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:0.5rem;">Error loading reports.</p>';
-    }
-}
-
-// Diversion Widget
-async function loadDiversionWidget() {
-    const container = document.getElementById('diversionWidgetContent');
-    try {
-        const stats = await DiversionsAPI.getStats();
-        if (!stats || stats.total_diversions === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:1rem;color:#94a3b8;">
-                    <p>No flight diversions recorded.</p>
-                    <a href="/flight_diversions/create.html" class="btn btn-primary btn-sm" style="margin-top:0.5rem;">Report Diversion</a>
-                </div>`;
-            return;
-        }
-        const reasons = stats.by_reason || {};
-        const statusCounts = {};
-        try {
-            const all = await DiversionsAPI.list();
-            (all || []).forEach(d => { statusCounts[d.status] = (statusCounts[d.status] || 0) + 1; });
-        } catch (_) {}
-
-        let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0.75rem;">';
-        html += `<div style="background:#f8fafc;padding:0.75rem;border-radius:8px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${stats.total_diversions}</div><div style="font-size:0.7rem;text-transform:uppercase;color:#64748b;">Total</div></div>`;
-        html += `<div style="background:#e3f2fd;padding:0.75rem;border-radius:8px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#1565c0;">${reasons['Weather'] || 0}</div><div style="font-size:0.7rem;text-transform:uppercase;color:#64748b;">Weather</div></div>`;
-        html += `<div style="background:#fff3e0;padding:0.75rem;border-radius:8px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#e65100;">${reasons['Technical'] || 0}</div><div style="font-size:0.7rem;text-transform:uppercase;color:#64748b;">Technical</div></div>`;
-        html += `<div style="background:#fef3c7;padding:0.75rem;border-radius:8px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#d97706;">${stats.avg_delay_minutes || 0}m</div><div style="font-size:0.7rem;text-transform:uppercase;color:#64748b;">Avg Delay</div></div>`;
-        html += `<div style="grid-column:1/-1;text-align:center;padding-top:0.25rem;"><a href="/flight_diversions/index.html" class="btn btn-outline btn-sm"><i class="fas fa-list"></i> View All Diversions</a></div>`;
-        html += '</div>';
-        container.innerHTML = html;
-    } catch (err) {
-        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">Error loading diversion data.</p>';
-    }
-}
-
-// Override loadAll to include all widgets
+// Override loadAll to include the remaining widgets
 const origLoadAll = loadAll;
 loadAll = function() {
     origLoadAll();
     loadHazardWidget();
-    loadCanCapWidget();
     loadVerificationWidget();
-    loadReportsWidget();
-    loadDiversionWidget();
 };
 </script>
 
