@@ -4,7 +4,7 @@ Verifies aggregation of tenant data into ICAO top-risk categories, persistence
 of the register, SSP target handling, and the benchmark wiring.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.services.state_risk_service import (
     StateRiskService,
@@ -616,3 +616,391 @@ def test_get_caan_sms_health_assessment_low_pillars(monkeypatch):
     assert by_id["air2"]["low_pillars"] == []
     assert by_id["air2"]["recommendations"] == []
     assert written.get("period_days") == 90
+
+
+# ============================================================================
+# Airline SMS health (tenant-scoped counterpart of the CAAN dashboard)
+# ============================================================================
+
+def test_get_airline_sms_health_tenant_scoped(monkeypatch):
+    from app.services.dashboard_service import DashboardService
+
+    written = {}
+
+    class _Snap:
+        def __init__(self, data):
+            self._data = data
+            self.exists = bool(data)
+
+        def to_dict(self):
+            return self._data
+
+    class _DocRef:
+        def __init__(self, data=None):
+            self._data = data or {}
+
+        def get(self):
+            return _Snap(self._data)
+
+        def set(self, data):
+            written.update(data)
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _Coll:
+        def __init__(self, docs):
+            self._docs = docs
+
+        def get(self):
+            return [_Snap(d) for d in self._docs]
+
+        def document(self, doc_id):
+            return _DocRef()
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _DB:
+        def __init__(self, surveys):
+            self._surveys = surveys
+
+        def collection_group(self, name):
+            return _Coll(self._surveys)
+
+        def collection(self, name):
+            return _Coll([])
+
+    docs = []
+    for _ in range(6):
+        docs.append({
+            "tenant_id": "air1",
+            "safety_policy": 5.0, "safety_risk_management": 1.0,
+            "safety_assurance": 2.0, "safety_promotion": 4.0,
+            "overall_sms_health": 3.0,
+            "question_scores": {"q1": 5.0},
+            "submitted_at": datetime.now(timezone.utc),
+        })
+    # A different tenant's data must never surface for air1's officer.
+    docs.append({
+        "tenant_id": "air2",
+        "safety_policy": 5.0, "safety_risk_management": 5.0,
+        "safety_assurance": 5.0, "safety_promotion": 5.0,
+        "overall_sms_health": 5.0,
+        "submitted_at": datetime.now(timezone.utc),
+    })
+
+    monkeypatch.setattr("app.firebase.get_db", lambda: _DB(docs))
+    svc = DashboardService({"uid": "air-officer", "role": "AIRLINE_ADMIN", "tenant_id": "air1"})
+    result = svc.get_airline_sms_health(days=365)
+
+    assert result["tenant_id"] == "air1"
+    assert result["response_count"] == 6
+    assert result["overall_score"] == 50.0
+    assert result["tier"] == "action"
+    assert result["tier_label"] == "Action Needed"
+    assert result["pillars"]["safety_policy"] == 100.0
+    assert result["pillars"]["safety_risk_management"] == 0.0
+    assert result["pillars"]["safety_assurance"] == 25.0
+    assert result["pillars"]["safety_promotion"] == 75.0
+    assert result["assessment"]["strengths"] == ["Safety Policy"]
+    assert sorted(result["assessment"]["improvement_opportunities"]) == [
+        "Safety Assurance", "Safety Risk Management"]
+    assert len(result["assessment"]["priority_actions"]) == 2
+    assert all(r["score_pct"] < 70 for r in result["assessment"]["priority_actions"])
+    assert len(result["history"]) == 1
+    assert result["history"][0]["overall_score"] == 50.0
+    assert result["history"][0]["response_count"] == 6
+    assert written.get("period_days") == 365
+
+
+def test_get_airline_sms_health_empty(monkeypatch):
+    from app.services.dashboard_service import DashboardService
+
+    class _Snap:
+        def __init__(self, data):
+            self._data = data
+            self.exists = bool(data)
+
+        def to_dict(self):
+            return self._data
+
+    class _DocRef:
+        def __init__(self, data=None):
+            self._data = data or {}
+
+        def get(self):
+            return _Snap(self._data)
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _Coll:
+        def __init__(self, docs=None):
+            self._docs = docs or []
+
+        def get(self):
+            return [_Snap(d) for d in self._docs]
+
+        def document(self, doc_id):
+            return _DocRef()
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _DB:
+        def collection_group(self, name):
+            return _Coll([])
+
+        def collection(self, name):
+            return _Coll([])
+
+    monkeypatch.setattr("app.firebase.get_db", lambda: _DB())
+    svc = DashboardService({"uid": "air-officer", "role": "AIRLINE_ADMIN", "tenant_id": "air1"})
+    result = svc.get_airline_sms_health(days=365)
+
+    assert result["tenant_id"] == "air1"
+    assert result["overall_score"] is None
+    assert result["assessment"]["priority_actions"] == []
+    assert result["history"] == []
+    assert result["response_count"] == 0
+
+
+def test_get_airline_sms_health_requires_tenant():
+    from app.services.dashboard_service import DashboardService
+
+    svc = DashboardService({"uid": "nobody", "role": "USER"})
+    result = svc.get_airline_sms_health()
+    assert result["overall_score"] is None
+    assert result["assessment"]["priority_actions"] == []
+
+
+def test_get_airline_sms_health_missing_pillars(monkeypatch):
+    from app.services.dashboard_service import DashboardService
+
+    class _Snap:
+        def __init__(self, data):
+            self._data = data
+            self.exists = bool(data)
+
+        def to_dict(self):
+            return self._data
+
+    class _DocRef:
+        def __init__(self, data=None):
+            self._data = data or {}
+
+        def get(self):
+            return _Snap(self._data)
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _Coll:
+        def __init__(self, docs=None):
+            self._docs = docs or []
+
+        def get(self):
+            return [_Snap(d) for d in self._docs]
+
+        def document(self, doc_id):
+            return _DocRef()
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _DB:
+        def __init__(self, surveys):
+            self._surveys = surveys
+
+        def collection_group(self, name):
+            return _Coll(self._surveys)
+
+        def collection(self, name):
+            return _Coll([])
+
+    docs = []
+    for _ in range(4):
+        docs.append({
+            "tenant_id": "air1",
+            "safety_policy": 4.0, "safety_risk_management": 2.0,
+            "safety_assurance": 3.0,  # safety_promotion intentionally absent
+            "overall_sms_health": 3.0,
+            "submitted_at": datetime.now(timezone.utc),
+        })
+    monkeypatch.setattr("app.firebase.get_db", lambda: _DB(docs))
+    monkeypatch.setattr(
+        "app.services.dashboard_service.recommend_sms_health_actions",
+        lambda *a, **k: [{"action": "Mock action A"}, {"action": "Mock action B"}])
+    svc = DashboardService({"uid": "air-officer", "role": "AIRLINE_ADMIN", "tenant_id": "air1"})
+    result = svc.get_airline_sms_health(days=365)
+
+    assert result["pillars"]["safety_policy"] == 75.0
+    assert "safety_promotion" not in result["pillars"]
+    assert result["overall_score"] == 50.0
+    assert "Safety Promotion" not in result["assessment"]["strengths"]
+    assert "Safety Promotion" not in result["assessment"]["improvement_opportunities"]
+    assert sorted(result["assessment"]["improvement_opportunities"]) == [
+        "Safety Assurance", "Safety Risk Management"]
+
+
+def test_get_airline_sms_health_history_ordering(monkeypatch):
+    from app.services.dashboard_service import DashboardService
+
+    class _Snap:
+        def __init__(self, data):
+            self._data = data
+            self.exists = bool(data)
+
+        def to_dict(self):
+            return self._data
+
+    class _DocRef:
+        def __init__(self, data=None):
+            self._data = data or {}
+
+        def get(self):
+            return _Snap(self._data)
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _Coll:
+        def __init__(self, docs=None):
+            self._docs = docs or []
+
+        def get(self):
+            return [_Snap(d) for d in self._docs]
+
+        def document(self, doc_id):
+            return _DocRef()
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _DB:
+        def __init__(self, surveys):
+            self._surveys = surveys
+
+        def collection_group(self, name):
+            return _Coll(self._surveys)
+
+        def collection(self, name):
+            return _Coll([])
+
+    older = datetime.now(timezone.utc) - timedelta(days=45)
+    docs = [
+        # Strong month (2 responses, ~45 days ago)
+        {"tenant_id": "air1", "safety_policy": 5.0, "safety_risk_management": 5.0,
+         "safety_assurance": 5.0, "safety_promotion": 5.0, "overall_sms_health": 5.0,
+         "submitted_at": older},
+        {"tenant_id": "air1", "safety_policy": 5.0, "safety_risk_management": 5.0,
+         "safety_assurance": 5.0, "safety_promotion": 5.0, "overall_sms_health": 5.0,
+         "submitted_at": older + timedelta(hours=1)},
+        # Weaker month (1 response, now)
+        {"tenant_id": "air1", "safety_policy": 2.0, "safety_risk_management": 2.0,
+         "safety_assurance": 4.0, "safety_promotion": 4.0, "overall_sms_health": 3.0,
+         "submitted_at": datetime.now(timezone.utc)},
+    ]
+    monkeypatch.setattr("app.firebase.get_db", lambda: _DB(docs))
+    svc = DashboardService({"uid": "air-officer", "role": "AIRLINE_ADMIN", "tenant_id": "air1"})
+    result = svc.get_airline_sms_health(days=365)
+
+    assert len(result["history"]) == 2
+    periods = [h["period"] for h in result["history"]]
+    assert periods == sorted(periods)  # chronological order
+    assert result["history"][0]["overall_score"] == 100.0
+    assert result["history"][0]["response_count"] == 2
+    assert result["history"][0]["tier"] == "strong"
+    assert result["history"][0]["assessment_date"] is not None
+    assert result["history"][1]["overall_score"] == 50.0
+    assert result["history"][1]["response_count"] == 1
+
+
+# ============================================================================
+# Airline SMS health API (route-level auth + envelope)
+# ============================================================================
+
+def _empty_firestore():
+    class _Snap:
+        def __init__(self, data):
+            self._data = data
+            self.exists = bool(data)
+
+        def to_dict(self):
+            return self._data
+
+    class _DocRef:
+        def get(self):
+            return _Snap({})
+
+        def set(self, data):
+            pass
+
+        def collection(self, name):
+            return _Coll()
+
+    class _Coll:
+        def get(self):
+            return []
+
+        def document(self, doc_id):
+            return _DocRef()
+
+        def collection(self, name):
+            return _Coll()
+
+    class _DB:
+        def collection_group(self, name):
+            return _Coll()
+
+        def collection(self, name):
+            return _Coll()
+
+    return _DB()
+
+
+def test_airline_sms_health_route_requires_auth(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    monkeypatch.setattr("app.firebase.get_db", lambda: _empty_firestore())
+    resp = TestClient(app).get("/api/v1/dashboard/airline/sms-health")
+    assert resp.status_code in (401, 403)
+
+
+def test_airline_sms_health_route_tenant_required(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.middleware.auth import get_current_user
+
+    monkeypatch.setattr("app.firebase.get_db", lambda: _empty_firestore())
+    app.dependency_overrides[get_current_user] = lambda: {
+        "uid": "u", "role": "USER", "tenant_id": None, "email": "user@aviasafe.com"}
+    try:
+        resp = TestClient(app).get("/api/v1/dashboard/airline/sms-health")
+        assert resp.status_code == 403
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_airline_sms_health_route_200_empty(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.middleware.auth import get_current_user
+
+    monkeypatch.setattr("app.firebase.get_db", lambda: _empty_firestore())
+    app.dependency_overrides[get_current_user] = lambda: {
+        "uid": "officer", "role": "AIRLINE_ADMIN", "tenant_id": "air1",
+        "email": "officer@air1.com"}
+    try:
+        resp = TestClient(app).get("/api/v1/dashboard/airline/sms-health")
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload.get("status") == "success"
+        data = payload["data"]
+        assert data["tenant_id"] == "air1"
+        assert data["overall_score"] is None
+        assert data["assessment"]["priority_actions"] == []
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

@@ -16,10 +16,18 @@ from loguru import logger
 from app.core.config import settings
 from app.services.repository import ReportRepository, ReportFilter
 from app.services.metrics_service import MetricsService
-from app.services.gemini import recommend_sms_health_actions, sms_health_tier
+from app.services.gemini import recommend_sms_health_actions, sms_health_tier, SURVEY_PILLAR_NAMES
 
 SURVEY_PILLARS = ["safety_policy", "safety_risk_management", "safety_assurance", "safety_promotion"]
 SMS_HEALTH_CACHE_TTL = 6 * 3600  # seconds
+
+# Friendly labels for the SMS health tiers produced by the shared engine.
+TIER_LABELS = {
+    "strong": "Good",
+    "watch": "Watch",
+    "action": "Action Needed",
+    "critical": "Critical",
+}
 
 
 class DashboardService:
@@ -57,6 +65,234 @@ class DashboardService:
             "ai_kpis": ai_kpis,
             "org_kpis": org_kpis,
         }
+
+    def get_airline_sms_health(self, **overrides) -> Dict[str, Any]:
+        """Tenant-scoped SMS health for the authenticated airline.
+
+        Derives every value from the same core SMS health model used by the
+        CAAN dashboard (_survey_docs + _aggregate_surveys + _sms_health_model +
+        _tenant_recommendations); only the data scope differs — this tenant's
+        surveys only (claims.tenant_id).
+        """
+        tenant_id = self.tenant_id
+        days = overrides.get("days", 365)
+        generated_at = datetime.now(timezone.utc)
+
+        empty = {
+            "tenant": tenant_id,
+            "tenant_id": tenant_id,
+            "overall_score": None,
+            "tier": None,
+            "tier_label": None,
+            "pillars": {p: None for p in SURVEY_PILLARS},
+            "assessment": {
+                "strengths": [],
+                "improvement_opportunities": [],
+                "priority_actions": [],
+            },
+            "history": [],
+            "latest_assessment_date": None,
+            "response_count": 0,
+            "period_days": days,
+        }
+        if not tenant_id:
+            return empty
+
+        docs = [
+            d for d in self._survey_docs(days)
+            if (d.to_dict().get("tenant_id") or None) == tenant_id
+        ]
+        data = self._aggregate_surveys(docs)
+        ops = data.get("operators", [])
+        op = ops[0] if ops else None
+        empty["tenant"] = self._tenant_name(tenant_id)
+        if not op:
+            return empty
+
+        model = self._sms_health_model(op)
+        recs = self._tenant_recommendations(tenant_id, days, op, model, generated_at)
+
+        latest = None
+        for d in docs:
+            ts = d.to_dict().get("submitted_at")
+            if ts is None:
+                continue
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            if latest is None or ts > latest:
+                latest = ts
+
+        return {
+            "tenant": self._tenant_name(tenant_id),
+            "tenant_id": tenant_id,
+            "overall_score": model["overall_score"],
+            "tier": model["tier"],
+            "tier_label": model["tier_label"],
+            "pillars": model["pcts"],
+            "assessment": {
+                "strengths": model["strengths"],
+                "improvement_opportunities": model["improvement_opportunities"],
+                "priority_actions": recs,
+            },
+            "history": self._survey_history(docs),
+            "latest_assessment_date": latest.date().isoformat() if latest else None,
+            "response_count": op["response_count"],
+            "period_days": days,
+        }
+
+    def _sms_health_model(self, op: Dict[str, Any]) -> Dict[str, Any]:
+        """Shared SMS health model derived from one aggregated operator row.
+
+        This is the single source of the score math for both the Airline and
+        CAAN dashboards: pillar percentages, tiers, strengths, and
+        improvement opportunities are computed here and nowhere else.
+        """
+        pcts: Dict[str, float] = {}
+        tiers: Dict[str, str] = {}
+        low: List[Dict[str, Any]] = []
+        for p in SURVEY_PILLARS:
+            v = op["pillars"].get(p)
+            if v is None:
+                continue
+            pct = round((v - 1) / 4 * 100, 1)
+            pcts[p] = pct
+            tiers[p] = sms_health_tier(pct)
+            if pct < 70:
+                low.append({"pillar": p, "score": v, "pct": pct, "tier": tiers[p]})
+
+        overall_1_5 = op["overall_sms_health"]
+        overall_pct = round((overall_1_5 - 1) / 4 * 100, 1) if overall_1_5 is not None else None
+        overall_tier = sms_health_tier(overall_pct) if overall_pct is not None else None
+
+        return {
+            "pcts": pcts,
+            "tiers": tiers,
+            "overall_score": overall_pct,
+            "tier": overall_tier,
+            "tier_label": TIER_LABELS.get(overall_tier, overall_tier) if overall_tier else None,
+            "strengths": [
+                SURVEY_PILLAR_NAMES.get(p, p) for p in SURVEY_PILLARS
+                if pcts.get(p) is not None and pcts[p] >= 85
+            ],
+            "improvement_opportunities": [
+                SURVEY_PILLAR_NAMES.get(p, p) for p in SURVEY_PILLARS
+                if pcts.get(p) is not None and pcts[p] < 70
+            ],
+            "low_pillars": low,
+        }
+
+    def _tenant_recommendations(
+        self, tenant_id: str, days: int, op: Dict[str, Any],
+        model: Dict[str, Any], generated_at: datetime, refresh: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """Cache-aware SMS health assessment actions for a single tenant.
+
+        Reused by both the CAAN and Airline dashboards so the AI assessment is
+        generated once per tenant+period and shared across scopes.
+        """
+        recs: List[Dict[str, Any]] = []
+        cached = self._read_sms_health(tenant_id, days)
+        use_cache = (
+            not refresh
+            and cached is not None
+            and cached.get("generated_at") is not None
+        )
+        if use_cache:
+            try:
+                gen_dt = cached["generated_at"]
+                if hasattr(gen_dt, "timestamp"):
+                    use_cache = (generated_at - gen_dt).total_seconds() < SMS_HEALTH_CACHE_TTL
+                else:
+                    use_cache = False
+            except Exception:
+                use_cache = False
+        if use_cache:
+            recs = cached.get("recommendations", [])
+        elif model["low_pillars"]:
+            recs = recommend_sms_health_actions(tenant_id, {
+                "pillars": op["pillars"],
+                "pcts": model["pcts"],
+                "tiers": model["tiers"],
+                "question_averages": op.get("question_averages", {}),
+                "response_count": op["response_count"],
+            })
+            self._write_sms_health(tenant_id, days, {
+                "period_days": days,
+                "generated_at": generated_at,
+                "pillars": op["pillars"],
+                "pcts": model["pcts"],
+                "tiers": model["tiers"],
+                "overall_sms_health": op["overall_sms_health"],
+                "question_averages": op.get("question_averages", {}),
+                "low_pillars": model["low_pillars"],
+                "recommendations": recs,
+            })
+        return recs
+
+    def _tenant_name(self, tenant_id: str) -> str:
+        try:
+            from app.firebase import get_db
+            snap = get_db().collection("tenants").document(tenant_id).get()
+            if snap.exists:
+                name = snap.to_dict().get("name")
+                if name:
+                    return name
+        except Exception as e:
+            logger.warning(f"Failed to read tenant name for {tenant_id}: {e}")
+        return tenant_id
+
+    def _survey_history(self, docs) -> List[Dict[str, Any]]:
+        """Bucket survey docs by calendar month and aggregate each bucket.
+
+        Reuses _aggregate_surveys so the history uses the same scoring math as
+        the current-period view and the CAAN dashboard. This is the single
+        source for trend charts.
+        """
+        buckets: Dict[str, list] = {}
+        for d in docs:
+            data = d.to_dict()
+            ts = data.get("submitted_at")
+            if ts is None:
+                continue
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            buckets.setdefault(ts.strftime("%Y-%m"), []).append(d)
+
+        history = []
+        for period in sorted(buckets):
+            agg = self._aggregate_surveys(buckets[period])
+            ops = agg.get("operators", [])
+            if not ops:
+                continue
+            op = ops[0]
+            overall = op["overall_sms_health"]
+            overall_pct = round((overall - 1) / 4 * 100, 1) if overall is not None else None
+            overall_tier = sms_health_tier(overall_pct) if overall_pct is not None else None
+
+            latest_ts = None
+            for d in buckets[period]:
+                ts = d.to_dict().get("submitted_at")
+                if ts is None:
+                    continue
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                if latest_ts is None or ts > latest_ts:
+                    latest_ts = ts
+
+            history.append({
+                "period": period,
+                "assessment_date": latest_ts.date().isoformat() if latest_ts else period + "-01",
+                "overall_score": overall_pct,
+                "tier": overall_tier,
+                "tier_label": TIER_LABELS.get(overall_tier, overall_tier) if overall_tier else None,
+                "pillars": {
+                    p: (round((op["pillars"].get(p) - 1) / 4 * 100, 1)
+                        if op["pillars"].get(p) is not None else None)
+                    for p in SURVEY_PILLARS
+                },
+                "response_count": op["response_count"],
+            })
+        return history
 
     def get_recent_reports(self, **overrides) -> Dict[str, Any]:
         page_size = overrides.pop("page_size", 10) if "page_size" in overrides else 10
@@ -164,65 +400,16 @@ class DashboardService:
         operators = []
         for op in data.get("operators", []):
             tid = op.get("tenant_id", "unknown")
-            pcts = {}
-            tiers = {}
-            low = []
-            for p in SURVEY_PILLARS:
-                v = op["pillars"].get(p)
-                if v is None:
-                    continue
-                pct = round((v - 1) / 4 * 100, 1)
-                pcts[p] = pct
-                tiers[p] = sms_health_tier(pct)
-                if pct < 70:
-                    low.append({"pillar": p, "score": v, "pct": pct, "tier": tiers[p]})
-
-            cached = self._read_sms_health(tid, days)
-            use_cache = (
-                not refresh
-                and cached is not None
-                and cached.get("generated_at") is not None
-            )
-            if use_cache:
-                try:
-                    gen_dt = cached["generated_at"]
-                    if hasattr(gen_dt, "timestamp"):
-                        cached_age = (generated_at - gen_dt).total_seconds()
-                        use_cache = cached_age < SMS_HEALTH_CACHE_TTL
-                    else:
-                        use_cache = False
-                except Exception:
-                    use_cache = False
-
-            recs = cached.get("recommendations", []) if use_cache else []
-            if not recs and low:
-                recs = recommend_sms_health_actions(tid, {
-                    "pillars": op["pillars"],
-                    "pcts": pcts,
-                    "tiers": tiers,
-                    "question_averages": op.get("question_averages", {}),
-                    "response_count": op["response_count"],
-                })
-                self._write_sms_health(tid, days, {
-                    "period_days": days,
-                    "generated_at": generated_at,
-                    "pillars": op["pillars"],
-                    "pcts": pcts,
-                    "tiers": tiers,
-                    "overall_sms_health": op["overall_sms_health"],
-                    "question_averages": op.get("question_averages", {}),
-                    "low_pillars": low,
-                    "recommendations": recs,
-                })
-
+            model = self._sms_health_model(op)
+            recs = self._tenant_recommendations(tid, days, op, model, generated_at, refresh)
             operators.append({
                 "tenant_id": tid,
                 "response_count": op["response_count"],
                 "overall_sms_health": op["overall_sms_health"],
                 "pillars": op["pillars"],
-                "pcts": pcts,
-                "tiers": tiers,
-                "low_pillars": low,
+                "pcts": model["pcts"],
+                "tiers": model["tiers"],
+                "low_pillars": model["low_pillars"],
                 "recommendations": recs,
             })
 

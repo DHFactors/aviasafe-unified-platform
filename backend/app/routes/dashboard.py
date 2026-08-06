@@ -149,6 +149,36 @@ async def get_actions_summary(
     return _envelope(data)
 
 
+@router.get("/airline/sms-health")
+async def get_airline_sms_health(
+    days: int = Query(365, ge=30, le=730),
+    user: Dict[str, Any] = Depends(get_tenant_user),
+):
+    """Tenant-scoped SMS health: overall score, ICAO pillars, SMS health
+    assessment, and historical trends — for the authenticated airline only.
+    """
+    svc = DashboardService(user)
+    try:
+        data = svc.get_airline_sms_health(days=days)
+    except Exception as e:
+        logger.error(f"Airline SMS health failed for tenant {user.get('tenant_id')}: {e}")
+        data = {
+            "tenant": user.get("tenant_id"),
+            "tenant_id": user.get("tenant_id"),
+            "overall_score": None,
+            "tier": None,
+            "tier_label": None,
+            "pillars": {},
+            "assessment": {"strengths": [], "improvement_opportunities": [], "priority_actions": []},
+            "history": [],
+            "latest_assessment_date": None,
+            "response_count": 0,
+            "period_days": days,
+            "error": str(e),
+        }
+    return _envelope(data)
+
+
 # ======================================================================
 # CAAN Dashboard (cross-tenant, aggregated)
 # ======================================================================
