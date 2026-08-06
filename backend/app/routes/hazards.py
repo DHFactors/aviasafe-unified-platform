@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from typing import Dict, Any, Optional, List
 from loguru import logger
 
 from app.models.hazard import HazardCreate, HazardUpdate, HazardResponse, HazardListItem, HazardStatus
 from app.middleware.auth import get_current_user, get_tenant_user, get_safety_manager
 from app.services.hazard_service import HazardService
+from app.services.audit_service import log_audit, request_context
 
 router = APIRouter()
 
@@ -12,6 +13,7 @@ router = APIRouter()
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_hazard(
     hazard: HazardCreate,
+    request: Request,
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
     tenant_id = user["tenant_id"]
@@ -19,6 +21,17 @@ async def create_hazard(
     payload = hazard.model_dump()
     payload["tenant_id"] = tenant_id
     stored = service.create_hazard(payload, user)
+    ip, request_id = request_context(request)
+    log_audit(
+        action="HAZARD_CREATED",
+        user=user.get("email"),
+        tenant_id=tenant_id,
+        target_type="hazard",
+        target_id=stored.get("id"),
+        ip=ip,
+        request_id=request_id,
+        metadata={"source": hazard.source.value if hasattr(hazard.source, "value") else str(hazard.source)},
+    )
     return _to_hazard_response(stored)
 
 

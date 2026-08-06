@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from typing import Dict, Any, Optional, List
 from loguru import logger
 
@@ -8,6 +8,7 @@ from app.models.flight_diversion import (
 )
 from app.middleware.auth import get_current_user, get_tenant_user, get_safety_manager, get_admin_user
 from app.services.flight_diversion_service import FlightDiversionService
+from app.services.audit_service import log_audit, request_context
 
 router = APIRouter()
 
@@ -87,6 +88,7 @@ async def update_diversion(
 @router.delete("/{diversion_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_diversion(
     diversion_id: str,
+    request: Request,
     user: Dict[str, Any] = Depends(get_admin_user),
 ):
     tenant_id = user.get("tenant_id", "default")
@@ -94,6 +96,16 @@ async def delete_diversion(
     deleted = service.delete_diversion(diversion_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Diversion not found")
+    ip, request_id = request_context(request)
+    log_audit(
+        action="DIVERSION_DELETED",
+        user=user.get("email"),
+        tenant_id=tenant_id,
+        target_type="flight_diversion",
+        target_id=diversion_id,
+        ip=ip,
+        request_id=request_id,
+    )
 
 
 @router.post("/{diversion_id}/link-hazard", response_model=dict)

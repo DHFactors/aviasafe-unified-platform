@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -67,18 +68,44 @@ def _req_id(request: Request) -> str:
     return getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID", "")
 
 
+def _error_body(
+    request: Request,
+    status_code: int,
+    message: str,
+    detail=None,
+    errors=None,
+) -> dict:
+    """Structured error envelope.
+
+    The primary `error` object carries the machine-readable contract
+    (code / message / timestamp / requestId). Legacy top-level fields
+    (`success`, `detail`, `errors`, `request_id`) are preserved so existing
+    frontend clients keep parsing error messages unchanged.
+    """
+    request_id = _req_id(request)
+    return {
+        "error": {
+            "code": status_code,
+            "message": message,
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "requestId": request_id,
+        },
+        "success": False,
+        "detail": detail if detail is not None else message,
+        "errors": errors,
+        "request_id": request_id,
+    }
+
+
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    request_id = _req_id(request)
+    logger.error(f"HTTP {exc.status_code} for {request.method} {request.url.path} (request_id={request_id}): {message}")
     return JSONResponse(
         status_code=exc.status_code,
         headers=exc.headers,
-        content={
-            "success": False,
-            "error": exc.detail if isinstance(exc.detail, str) else str(exc.detail),
-            "detail": None,
-            "errors": None,
-            "request_id": _req_id(request),
-        },
+        content=_error_body(request, exc.status_code, message),
     )
 
 
@@ -90,30 +117,32 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "field": " -> ".join(str(loc) for loc in err.get("loc", [])),
             "message": err.get("msg", str(err)),
         })
+    request_id = _req_id(request)
+    logger.error(f"Validation error for {request.method} {request.url.path} (request_id={request_id}): {errors}")
     return JSONResponse(
         status_code=422,
-        content={
-            "success": False,
-            "error": "Validation error",
-            "detail": str(exc),
-            "errors": errors,
-            "request_id": _req_id(request),
-        },
+        content=_error_body(
+            request,
+            422,
+            "Validation error",
+            detail=str(exc),
+            errors=errors,
+        ),
     )
 
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {exc}")
+    request_id = _req_id(request)
+    logger.error(f"Unhandled exception (request_id={request_id}): {exc}")
     return JSONResponse(
         status_code=500,
-        content={
-            "success": False,
-            "error": "Internal server error",
-            "detail": str(exc) if settings.DEBUG else None,
-            "errors": None,
-            "request_id": _req_id(request),
-        },
+        content=_error_body(
+            request,
+            500,
+            "Internal server error",
+            detail=str(exc) if settings.DEBUG else None,
+        ),
     )
 
 app.include_router(auth.router, prefix=settings.API_PREFIX_AUTH, tags=["Authentication"])

@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.firebase import get_auth, verify_firebase_token, create_custom_claims
 from app.middleware.rate_limit import rate_limit
 from app.middleware.auth import resolve_user_context
+from app.services.audit_service import log_audit, request_context
 
 router = APIRouter()
 
@@ -51,6 +52,14 @@ async def verify_token(request: Request, body: LoginRequest):
     role = decoded_token.get('role', settings.ROLE_DEFAULT)
     tenant_id = decoded_token.get('tenant_id')
     resolved = resolve_user_context(decoded_token.get('email', ''), role, tenant_id)
+    ip, request_id = request_context(request)
+    log_audit(
+        action="LOGIN",
+        user=decoded_token.get('email', ''),
+        tenant_id=resolved["tenant_id"],
+        ip=ip,
+        request_id=request_id,
+    )
     return {
         "uid": decoded_token['uid'],
         "email": decoded_token.get('email', ''),
@@ -81,6 +90,15 @@ async def register_user(request: RegisterRequest):
             claims["tenant_id"] = request.tenant_id
 
         auth.set_custom_user_claims(user.uid, claims)
+
+        ip, request_id = request_context(request)
+        log_audit(
+            action="REGISTER",
+            user=request.email,
+            tenant_id=request.tenant_id,
+            ip=ip,
+            request_id=request_id,
+        )
 
         return {
             "success": True,

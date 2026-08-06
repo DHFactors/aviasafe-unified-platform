@@ -20,6 +20,7 @@ from app.middleware.auth import get_tenant_user, get_safety_manager
 from app.services.report_service import ReportService
 from app.services.hazard_service import HazardService
 from app.services.risk_matrix import compute_risk_index, get_risk_level
+from app.services.audit_service import log_audit, request_context
 from app.middleware.rate_limit import rate_limit
 
 router = APIRouter()
@@ -35,6 +36,7 @@ class RiskAssessmentRequest(BaseModel):
 async def submit_report(
     report: ReportCreate,
     background_tasks: BackgroundTasks,
+    request: Request,
     user: Dict[str, Any] = Depends(get_tenant_user),
 ):
     tenant_id = user["tenant_id"]
@@ -42,6 +44,17 @@ async def submit_report(
     stored = service.create_report(report.model_dump(), user)
     background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
     _auto_create_hazard_from_report(stored, user)
+    ip, request_id = request_context(request)
+    log_audit(
+        action="REPORT_SUBMITTED",
+        user=user.get("email"),
+        tenant_id=tenant_id,
+        target_type="report",
+        target_id=stored["id"],
+        ip=ip,
+        request_id=request_id,
+        metadata={"report_type": "voluntary"},
+    )
     return _to_report_response(stored)
 
 
@@ -89,6 +102,17 @@ async def submit_mor(
     stored = service.create_report(payload, user)
     background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
     _auto_create_hazard_from_report(stored, user)
+    ip, request_id = request_context(request)
+    log_audit(
+        action="REPORT_SUBMITTED",
+        user=user.get("email"),
+        tenant_id=tenant_id,
+        target_type="report",
+        target_id=stored["id"],
+        ip=ip,
+        request_id=request_id,
+        metadata={"report_type": "mandatory"},
+    )
     return _to_report_response(stored)
 
 
@@ -123,6 +147,17 @@ async def submit_vsr(
     stored = service.create_report(payload, user)
     background_tasks.add_task(service.run_ai_analysis, stored["id"], report.narrative)
     _auto_create_hazard_from_report(stored, user)
+    ip, request_id = request_context(request)
+    log_audit(
+        action="REPORT_SUBMITTED",
+        user=user.get("email"),
+        tenant_id=tenant_id,
+        target_type="report",
+        target_id=stored["id"],
+        ip=ip,
+        request_id=request_id,
+        metadata={"report_type": "voluntary"},
+    )
     return _to_report_response(stored)
 
 
@@ -302,7 +337,16 @@ def _auto_create_hazard_from_report(stored: dict, user: dict):
             tenant_id=tenant_id,
         )
         service = HazardService(tenant_id)
-        service.create_hazard(hazard_payload.model_dump(), user)
+        created = service.create_hazard(hazard_payload.model_dump(), user)
         logger.info(f"Auto-created hazard from report {stored.get('id')}")
+        if created:
+            log_audit(
+                action="HAZARD_CREATED",
+                user=user.get("email"),
+                tenant_id=tenant_id,
+                target_type="hazard",
+                target_id=created.get("id"),
+                metadata={"source": "auto", "source_report_id": stored.get("id")},
+            )
     except Exception as e:
         logger.warning(f"Failed to auto-create hazard from report: {e}")

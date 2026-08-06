@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from typing import Dict, Any, Optional, List
 from loguru import logger
 from datetime import datetime, timezone
@@ -9,6 +9,7 @@ from app.models.can_cap import (
 )
 from app.middleware.auth import get_current_user, get_tenant_user, get_safety_manager, get_responsible_manager
 from app.services.can_cap_service import CanCapService
+from app.services.audit_service import log_audit, request_context
 
 router = APIRouter()
 
@@ -18,6 +19,7 @@ router = APIRouter()
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def issue_can(
     can: CANCreate,
+    request: Request,
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
     if not user.get("tenant_id"):
@@ -25,6 +27,17 @@ async def issue_can(
     tenant_id = user["tenant_id"]
     service = CanCapService(tenant_id)
     stored = service.issue_can(can.model_dump(), user)
+    ip, request_id = request_context(request)
+    log_audit(
+        action="CAN_ISSUED",
+        user=user.get("email"),
+        tenant_id=tenant_id,
+        target_type="can",
+        target_id=stored.get("id"),
+        ip=ip,
+        request_id=request_id,
+        metadata={"can_reference": stored.get("can_reference"), "hazard_id": stored.get("hazard_id")},
+    )
     return _to_can_response(stored)
 
 
@@ -119,6 +132,7 @@ async def update_can_status(
 @router.delete("/{can_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_can(
     can_id: str,
+    request: Request,
     user: Dict[str, Any] = Depends(get_safety_manager),
 ):
     if not user.get("tenant_id"):
@@ -128,6 +142,16 @@ async def delete_can(
     deleted = service.delete_can(can_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="CAN not found")
+    ip, request_id = request_context(request)
+    log_audit(
+        action="CAN_DELETED",
+        user=user.get("email"),
+        tenant_id=tenant_id,
+        target_type="can",
+        target_id=can_id,
+        ip=ip,
+        request_id=request_id,
+    )
 
 
 # ─── CAP Endpoints ───
@@ -136,6 +160,7 @@ async def delete_can(
 async def submit_cap(
     can_id: str,
     cap: CAPCreate,
+    request: Request,
     user: Dict[str, Any] = Depends(get_responsible_manager),
 ):
     if not user.get("tenant_id"):
@@ -144,6 +169,17 @@ async def submit_cap(
     service = CanCapService(tenant_id)
     try:
         stored = service.submit_cap(cap.can_id, cap.model_dump(), user)
+        ip, request_id = request_context(request)
+        log_audit(
+            action="CAP_SUBMITTED",
+            user=user.get("email"),
+            tenant_id=tenant_id,
+            target_type="cap",
+            target_id=stored.get("id"),
+            ip=ip,
+            request_id=request_id,
+            metadata={"can_id": can_id},
+        )
         return _to_cap_response(stored)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
