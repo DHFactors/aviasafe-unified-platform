@@ -1,4 +1,4 @@
-SEED_VERSION = "1.0.0"
+SEED_VERSION = "1.1.0"
 SEED_DOC_PATH = "seed_metadata/seed"
 
 SURVEY_COLLECTION = "surveys"
@@ -314,6 +314,45 @@ OPERATOR_PROFILES = [
         "routes": ["PKR-JMO", "PKR-KEP", "PKR-DP", "PKR-SYX", "PKR-MUG"],
         "email_domain": "simrikair.com",
     },
+    {
+        "id": "tara-air",
+        "name": "Tara Air",
+        "type": "STOL Passenger/Cargo",
+        "icao": "THR",
+        "iata": "TP",
+        "country": "Nepal",
+        "base": "Kathmandu (KTM/VNKT)",
+        "fleet_size": 5,
+        "employees": 180,
+        "survey_count": 100,
+        "element_scores": {
+            "management_commitment": 3.7,
+            "safety_accountability": 3.6,
+            "key_safety_personnel": 3.8,
+            "emergency_response_planning": 3.7,
+            "sms_documentation": 3.6,
+            "hazard_identification": 4.2,
+            "risk_assessment_and_mitigation": 4.1,
+            "safety_performance_monitoring": 3.5,
+            "management_of_change": 3.4,
+            "continuous_improvement": 3.3,
+            "training_and_education": 3.4,
+            "safety_communication": 3.5,
+        },
+        "culture_variance": 0.45,
+        "culture_description": "Strong hazard identification and risk management in demanding mountain STOL operations; Safety Promotion needs attention",
+        "vsr_count": 60,
+        "mor_count": 22,
+        "vsr_risk_mean": 0.47,
+        "vsr_risk_std": 0.21,
+        "mor_risk_mean": 0.60,
+        "mor_risk_std": 0.19,
+        "anonymous_rate": 0.22,
+        "aircraft_types": ["de Havilland DHC-6 Twin Otter", "Dornier 228"],
+        "flight_number_prefixes": ["TP-", "THR-"],
+        "routes": ["KTM-LUA", "KTM-IMK", "KTM-JUM", "KTM-DPR", "KTM-TPJ", "KTM-KEP"],
+        "email_domain": "taraair.com",
+    },
 ]
 
 NEPAL_AIRPORTS = [
@@ -379,6 +418,7 @@ AIRCRAFT_REGISTRATIONS = {
     "air-dynasty": ["9N-AMR", "9N-AMS", "9N-AMT", "9N-AMU", "9N-AMV", "9N-AMW", "9N-AMX",
                     "9N-AMY", "9N-AMZ", "9N-ANA"],
     "simrik-air": ["9N-ANB", "9N-ANC", "9N-AND", "9N-ANE", "9N-ANF", "9N-ANG", "9N-ANH"],
+    "tara-air": ["9N-APB", "9N-APC", "9N-APD", "9N-APE", "9N-APF"],
 }
 
 GENERIC_MOR_OCCURRENCE_TYPES = [
