@@ -15,6 +15,23 @@ from app.routes import reports, dashboard, auth, admin, hazards, can_cap, verifi
 
 setup_logging()
 
+# The application's own hosting frontends are always valid CORS origins. They are
+# merged into whatever ALLOWED_ORIGINS is configured with so a stale or partial
+# environment variable can never break the browser -> API calls (CORS preflight).
+CANONICAL_ALLOWED_ORIGINS = (
+    "https://sms.aviasafesystems.com",
+    "https://aerosafety-sms-prod.web.app",
+    "https://sms-beta.web.app",
+)
+
+
+def _allowed_origins() -> list[str]:
+    configured = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+    for origin in CANONICAL_ALLOWED_ORIGINS:
+        if origin not in configured:
+            configured.append(origin)
+    return configured
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,7 +52,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()],
+    allow_origins=_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
