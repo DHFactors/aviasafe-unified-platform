@@ -535,7 +535,7 @@ def test_get_caan_survey_health_empty(monkeypatch):
     assert result["national"]["response_count"] == 0
 
 
-def test_get_caan_survey_recommendations_low_pillars(monkeypatch):
+def test_get_caan_sms_health_assessment_low_pillars(monkeypatch):
     from app.services.dashboard_service import DashboardService
 
     written = {}
@@ -603,7 +603,7 @@ def test_get_caan_survey_recommendations_low_pillars(monkeypatch):
     ])
     monkeypatch.setattr("app.firebase.get_db", lambda: db)
     svc = DashboardService({"uid": "caan-user", "role": "CAAN_SMD"})
-    result = svc.get_caan_survey_recommendations(days=90)
+    result = svc.get_caan_sms_health_assessment(days=90)
 
     assert result["period_days"] == 90
     by_id = {op["tenant_id"]: op for op in result["operators"]}

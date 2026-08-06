@@ -16,10 +16,10 @@ from loguru import logger
 from app.core.config import settings
 from app.services.repository import ReportRepository, ReportFilter
 from app.services.metrics_service import MetricsService
-from app.services.gemini import recommend_survey_actions, survey_tier
+from app.services.gemini import recommend_sms_health_actions, sms_health_tier
 
 SURVEY_PILLARS = ["safety_policy", "safety_risk_management", "safety_assurance", "safety_promotion"]
-SURVEY_HEALTH_CACHE_TTL = 6 * 3600  # seconds
+SMS_HEALTH_CACHE_TTL = 6 * 3600  # seconds
 
 
 class DashboardService:
@@ -146,12 +146,13 @@ class DashboardService:
         docs = self._survey_docs(days)
         return self._aggregate_surveys(docs)
 
-    def get_caan_survey_recommendations(self, **overrides) -> Dict[str, Any]:
-        """Aggregate period SMS health and generate AI recommendations for
-        every pillar scoring below 70% (tiers: action/critical).
+    def get_caan_sms_health_assessment(self, **overrides) -> Dict[str, Any]:
+        """Aggregate period SMS health and generate an AI SMS health assessment
+        with recommended actions for every pillar scoring below 70%
+        (tiers: action/critical).
 
-        Recommendations are cached per tenant in tenants/{id}/survey_health and
-        reused within SURVEY_HEALTH_CACHE_TTL unless refresh=True.
+        Assessments are cached per tenant in tenants/{id}/sms_health and
+        reused within SMS_HEALTH_CACHE_TTL unless refresh=True.
         """
         days = overrides.get("days", 90)
         refresh = bool(overrides.get("refresh", False))
@@ -172,11 +173,11 @@ class DashboardService:
                     continue
                 pct = round((v - 1) / 4 * 100, 1)
                 pcts[p] = pct
-                tiers[p] = survey_tier(pct)
+                tiers[p] = sms_health_tier(pct)
                 if pct < 70:
                     low.append({"pillar": p, "score": v, "pct": pct, "tier": tiers[p]})
 
-            cached = self._read_survey_health(tid, days)
+            cached = self._read_sms_health(tid, days)
             use_cache = (
                 not refresh
                 and cached is not None
@@ -187,7 +188,7 @@ class DashboardService:
                     gen_dt = cached["generated_at"]
                     if hasattr(gen_dt, "timestamp"):
                         cached_age = (generated_at - gen_dt).total_seconds()
-                        use_cache = cached_age < SURVEY_HEALTH_CACHE_TTL
+                        use_cache = cached_age < SMS_HEALTH_CACHE_TTL
                     else:
                         use_cache = False
                 except Exception:
@@ -195,14 +196,14 @@ class DashboardService:
 
             recs = cached.get("recommendations", []) if use_cache else []
             if not recs and low:
-                recs = recommend_survey_actions(tid, {
+                recs = recommend_sms_health_actions(tid, {
                     "pillars": op["pillars"],
                     "pcts": pcts,
                     "tiers": tiers,
                     "question_averages": op.get("question_averages", {}),
                     "response_count": op["response_count"],
                 })
-                self._write_survey_health(tid, days, {
+                self._write_sms_health(tid, days, {
                     "period_days": days,
                     "generated_at": generated_at,
                     "pillars": op["pillars"],
@@ -318,29 +319,29 @@ class DashboardService:
             },
         }
 
-    def _read_survey_health(self, tenant_id: str, days: int) -> Optional[Dict[str, Any]]:
+    def _read_sms_health(self, tenant_id: str, days: int) -> Optional[Dict[str, Any]]:
         try:
             from app.firebase import get_db
             ref = (
                 get_db().collection("tenants").document(tenant_id)
-                .collection("survey_health").document(f"days_{days}")
+                .collection("sms_health").document(f"days_{days}")
             )
             snap = ref.get()
             return snap.to_dict() if snap.exists else None
         except Exception as e:
-            logger.warning(f"Failed to read survey_health cache for {tenant_id}: {e}")
+            logger.warning(f"Failed to read sms_health cache for {tenant_id}: {e}")
             return None
 
-    def _write_survey_health(self, tenant_id: str, days: int, data: Dict[str, Any]) -> None:
+    def _write_sms_health(self, tenant_id: str, days: int, data: Dict[str, Any]) -> None:
         try:
             from app.firebase import get_db
             ref = (
                 get_db().collection("tenants").document(tenant_id)
-                .collection("survey_health").document(f"days_{days}")
+                .collection("sms_health").document(f"days_{days}")
             )
             ref.set(data)
         except Exception as e:
-            logger.warning(f"Failed to write survey_health cache for {tenant_id}: {e}")
+            logger.warning(f"Failed to write sms_health cache for {tenant_id}: {e}")
 
     def get_caan_benchmark(self, **overrides) -> Dict[str, Any]:
         reports = self._caan_reports(**overrides)

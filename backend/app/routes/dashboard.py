@@ -203,17 +203,17 @@ async def get_caan_survey_health(
     return _envelope(data)
 
 
-@router.get("/caan/survey-recommendations")
-async def get_caan_survey_recommendations(
+@router.get("/caan/sms-health-assessment")
+async def get_caan_sms_health_assessment(
     days: int = Query(90, ge=30, le=365),
     refresh: bool = Query(False),
     user: Dict[str, Any] = Depends(get_caan_user),
 ):
     svc = DashboardService(user)
     try:
-        data = svc.get_caan_survey_recommendations(days=days, refresh=refresh)
+        data = svc.get_caan_sms_health_assessment(days=days, refresh=refresh)
     except Exception as e:
-        logger.error(f"CAAN survey recommendations failed: {e}")
+        logger.error(f"CAAN SMS health assessment failed: {e}")
         data = {"period_days": days, "generated_at": None, "operators": [], "national": None, "error": str(e)}
     return _envelope(data)
 
