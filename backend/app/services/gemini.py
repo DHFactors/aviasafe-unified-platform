@@ -266,3 +266,190 @@ def mock_analysis(narrative: str) -> Dict[str, Any]:
         "suggested_probability": prob_val,
         "probability_explanation": f"Probability {prob_val} based on recurrence keywords. Industry safety reports indicate events at this level are documented in IATA Safety Report benchmarks.",
     }
+
+
+# ============================================================================
+# SMS SURVEY HEALTH RECOMMENDATIONS
+# ============================================================================
+
+SURVEY_PILLAR_NAMES = {
+    "safety_policy": "Safety Policy",
+    "safety_risk_management": "Safety Risk Management",
+    "safety_assurance": "Safety Assurance",
+    "safety_promotion": "Safety Promotion",
+}
+
+SURVEY_PILLAR_ORDER = ["safety_policy", "safety_risk_management", "safety_assurance", "safety_promotion"]
+
+ICAO_DOC_GUIDANCE = """
+Reference ICAO standards and guidance where relevant:
+- Annex 19 — Safety Management (safety policy, SRM, safety assurance, safety promotion)
+- Doc 9859 — Safety Management Manual (SMS implementation guidance)
+- Doc 10159 — Safety Intelligence Manual (2025) (safety data analysis and intelligence)
+"""
+
+
+def survey_tier(pct: float) -> str:
+    if pct >= 85:
+        return "strong"
+    if pct >= 70:
+        return "watch"
+    if pct >= 50:
+        return "action"
+    return "critical"
+
+
+def _mock_survey_actions(pillar: str, pct: float, tier: str) -> dict:
+    base = {
+        "safety_policy": {
+            "summary": "Safety policy awareness and management commitment are below target.",
+            "root_causes": ["Policy not actively communicated", "Limited executive visibility"],
+            "actions": [
+                {"action": "Reissue and cascade the safety policy statement through all levels and media",
+                 "priority": "high", "icao_reference": "Annex 19, Doc 9859 Ch.3",
+                 "owner": "Accountable Executive", "timeframe": "30 days",
+                 "success_metric": "90% of employees confirm policy awareness in next survey"},
+                {"action": "Hold a management safety review to reaffirm commitment and safety objectives",
+                 "priority": "medium", "icao_reference": "Annex 19, Doc 9859 Ch.3",
+                 "owner": "Safety Manager", "timeframe": "60 days",
+                 "success_metric": "Safety objectives published and tracked quarterly"},
+            ],
+        },
+        "safety_risk_management": {
+            "summary": "Hazard identification and reporting culture need strengthening.",
+            "root_causes": ["Reporting process perceived as complex", "Fear of consequences"],
+            "actions": [
+                {"action": "Simplify the hazard reporting workflow and add quick-report channels",
+                 "priority": "high", "icao_reference": "Annex 19, Doc 9859 Ch.5",
+                 "owner": "Safety Manager", "timeframe": "45 days",
+                 "success_metric": "Reporting volume up and positive ease-of-use response"},
+                {"action": "Reinforce just-culture policy and protection against reprisals",
+                 "priority": "high", "icao_reference": "Annex 19, Doc 9859 Ch.3/5",
+                 "owner": "Accountable Executive", "timeframe": "30 days",
+                 "success_metric": "Zero reports of pressure not to report"},
+            ],
+        },
+        "safety_assurance": {
+            "summary": "Safety performance monitoring, audits and follow-up need attention.",
+            "root_causes": ["Irregular audits/inspections", "Weak feedback on reported issues"],
+            "actions": [
+                {"action": "Establish a regular audit/inspection schedule with published findings",
+                 "priority": "high", "icao_reference": "Annex 19, Doc 9859 Ch.6",
+                 "owner": "Safety Manager", "timeframe": "60 days",
+                 "success_metric": "Audits/inspections completed per schedule; findings closed on time"},
+                {"action": "Create a closed-loop feedback process for reported issues",
+                 "priority": "medium", "icao_reference": "Annex 19, Doc 9859 Ch.6",
+                 "owner": "Safety Manager", "timeframe": "45 days",
+                 "success_metric": "Reporters receive outcome feedback within SLA"},
+            ],
+        },
+        "safety_promotion": {
+            "summary": "Safety training and communication require reinforcement.",
+            "root_causes": ["Insufficient SMS training", "Limited safety communication"],
+            "actions": [
+                {"action": "Deliver SMS induction and refresher training on purpose and goals",
+                 "priority": "high", "icao_reference": "Annex 19, Doc 9859 Ch.7",
+                 "owner": "Training Manager / Safety Manager", "timeframe": "60 days",
+                 "success_metric": "Training completion rate and improved awareness score"},
+                {"action": "Launch regular safety communication and open-ended feedback channels",
+                 "priority": "medium", "icao_reference": "Annex 19, Doc 9859 Ch.7",
+                 "owner": "Safety Manager", "timeframe": "30 days",
+                 "success_metric": "Active participation in follow-up survey"},
+            ],
+        },
+    }
+    entry = dict(base[pillar])
+    entry["pillar"] = pillar
+    entry["pillar_name"] = SURVEY_PILLAR_NAMES.get(pillar, pillar)
+    entry["score_pct"] = pct
+    entry["tier"] = tier
+    entry["kpi_target"] = round(max(75.0, pct + 15.0), 1)
+    return entry
+
+
+def mock_survey_recommendations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    pcts = data.get("pcts") or {}
+    tiers = data.get("tiers") or {}
+    recs = []
+    for p in SURVEY_PILLAR_ORDER:
+        pct = pcts.get(p)
+        if pct is None or pct >= 70:
+            continue
+        recs.append(_mock_survey_actions(p, pct, tiers.get(p) or survey_tier(pct)))
+    return recs
+
+
+def recommend_survey_actions(tenant_id: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Generate per-pillar improvement recommendations for low-scoring pillars."""
+    if not model:
+        return mock_survey_recommendations(data)
+
+    pcts = data.get("pcts") or {}
+    low = {p: pcts[p] for p in SURVEY_PILLAR_ORDER if pcts.get(p) is not None and pcts[p] < 70}
+    if not low:
+        return []
+
+    pillar_block = "\n".join(
+        f"- {SURVEY_PILLAR_NAMES.get(p, p)}: {pct}% (tier: {survey_tier(pct)})"
+        for p, pct in low.items()
+    )
+    all_scores = ", ".join(
+        f"{SURVEY_PILLAR_NAMES.get(p, p)}={pcts.get(p)}%" for p in SURVEY_PILLAR_ORDER if pcts.get(p) is not None
+    )
+    question_context = data.get("question_averages") or {}
+    q_lines = "\n".join(f"  - {qid}: avg {v}/5" for qid, v in sorted(question_context.items()))[:settings.AI_NARRATIVE_TRUNCATE]
+
+    prompt = f"""You are an ICAO SMS safety analyst producing an organizational safety health action plan.
+Operator tenant id: {tenant_id}
+Survey responses analysed: {data.get('response_count', 0)}
+Pillar scores (percentage scale): {all_scores}
+
+Only the following pillars scored below 70% and need recommended actions:
+{pillar_block}
+
+Per-question averages (id: avg/5) for context:
+{q_lines or '  - (no per-question data)'}
+
+{ICAO_DOC_GUIDANCE}
+
+Return ONLY valid JSON matching exactly this structure:
+{{
+  "recommendations": [
+    {{
+      "pillar": "safety_policy",
+      "pillar_name": "Safety Policy",
+      "score_pct": 55.0,
+      "tier": "action",
+      "summary": "1-2 sentence diagnosis grounded in the pillar and question averages",
+      "root_causes": ["2-3 likely contributing factors tied to low-scoring questions"],
+      "actions": [
+        {{
+          "action": "Concrete corrective action",
+          "priority": "high|medium|low",
+          "icao_reference": "Annex 19 / Doc 9859 / Doc 10159 reference",
+          "owner": "Responsible role (e.g. Accountable Executive, Safety Manager)",
+          "timeframe": "e.g. 30 days",
+          "success_metric": "Measurable outcome"
+        }}
+      ],
+      "kpi_target": 75.0
+    }}
+  ]
+}}
+Provide one recommendation object per low-scoring pillar. Do not invent pillar scores.
+"""
+
+    try:
+        response = model.generate_content(prompt)
+        response_text = response.text
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            result = json.loads(json_match.group())
+            recs = result.get("recommendations") or []
+            if isinstance(recs, list) and recs:
+                return recs
+        logger.error(f"Failed to parse Gemini survey recommendations: {response_text[:500]}")
+    except Exception as e:
+        logger.error(f"Gemini survey recommendations failed: {e}")
+
+    return mock_survey_recommendations(data)

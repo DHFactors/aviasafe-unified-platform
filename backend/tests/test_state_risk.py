@@ -4,6 +4,8 @@ Verifies aggregation of tenant data into ICAO top-risk categories, persistence
 of the register, SSP target handling, and the benchmark wiring.
 """
 
+from datetime import datetime, timezone
+
 from app.services.state_risk_service import (
     StateRiskService,
     ICAO_TOP_RISK_CATEGORIES,
@@ -531,3 +533,86 @@ def test_get_caan_survey_health_empty(monkeypatch):
     assert result["operators"] == []
     assert result["national"]["overall_sms_health"] is None
     assert result["national"]["response_count"] == 0
+
+
+def test_get_caan_survey_recommendations_low_pillars(monkeypatch):
+    from app.services.dashboard_service import DashboardService
+
+    written = {}
+
+    class _Snap:
+        def __init__(self, data):
+            self._data = data
+            self.exists = bool(data)
+
+        def to_dict(self):
+            return self._data
+
+    class _DocRef:
+        def __init__(self, data=None):
+            self._data = data or {}
+
+        def get(self):
+            return _Snap(self._data)
+
+        def set(self, data):
+            written.update(data)
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _Coll:
+        def __init__(self, docs):
+            self._docs = docs
+
+        def get(self):
+            return [_Snap(d) for d in self._docs]
+
+        def document(self, doc_id):
+            return _DocRef()
+
+        def collection(self, name):
+            return _Coll([])
+
+    class _DB:
+        def __init__(self, surveys):
+            self._surveys = surveys
+
+        def collection_group(self, name):
+            return _Coll(self._surveys)
+
+        def collection(self, name):
+            return _Coll([])
+
+    db = _DB([
+        {
+            "tenant_id": "air1",
+            "safety_policy": 2.0, "safety_risk_management": 2.0,
+            "safety_assurance": 4.0, "safety_promotion": 4.0,
+            "overall_sms_health": 3.0,
+            "question_scores": {"q1": 2.0, "q5": 2.0},
+            "submitted_at": datetime.now(timezone.utc),
+        },
+        {
+            "tenant_id": "air2",
+            "safety_policy": 5.0, "safety_risk_management": 5.0,
+            "safety_assurance": 5.0, "safety_promotion": 5.0,
+            "overall_sms_health": 5.0,
+            "submitted_at": datetime.now(timezone.utc),
+        },
+    ])
+    monkeypatch.setattr("app.firebase.get_db", lambda: db)
+    svc = DashboardService({"uid": "caan-user", "role": "CAAN_SMD"})
+    result = svc.get_caan_survey_recommendations(days=90)
+
+    assert result["period_days"] == 90
+    by_id = {op["tenant_id"]: op for op in result["operators"]}
+    # air1: policy & SRM below 70% -> mock recommendations generated
+    low_pillars = {lp["pillar"] for lp in by_id["air1"]["low_pillars"]}
+    assert low_pillars == {"safety_policy", "safety_risk_management"}
+    assert len(by_id["air1"]["recommendations"]) == 2
+    assert all(r["score_pct"] < 70 for r in by_id["air1"]["recommendations"])
+    # air2: all strong -> no recommendations
+    assert by_id["air2"]["low_pillars"] == []
+    assert by_id["air2"]["recommendations"] == []
+    assert written.get("period_days") == 90

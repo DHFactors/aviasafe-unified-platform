@@ -16,6 +16,10 @@ from loguru import logger
 from app.core.config import settings
 from app.services.repository import ReportRepository, ReportFilter
 from app.services.metrics_service import MetricsService
+from app.services.gemini import recommend_survey_actions, survey_tier
+
+SURVEY_PILLARS = ["safety_policy", "safety_risk_management", "safety_assurance", "safety_promotion"]
+SURVEY_HEALTH_CACHE_TTL = 6 * 3600  # seconds
 
 
 class DashboardService:
@@ -138,16 +142,124 @@ class DashboardService:
         overall SMS health (1-5). Returns both the per-operator breakdown and
         the national averages.
         """
-        pillars = ["safety_policy", "safety_risk_management", "safety_assurance", "safety_promotion"]
+        days = overrides.get("days")
+        docs = self._survey_docs(days)
+        return self._aggregate_surveys(docs)
+
+    def get_caan_survey_recommendations(self, **overrides) -> Dict[str, Any]:
+        """Aggregate period SMS health and generate AI recommendations for
+        every pillar scoring below 70% (tiers: action/critical).
+
+        Recommendations are cached per tenant in tenants/{id}/survey_health and
+        reused within SURVEY_HEALTH_CACHE_TTL unless refresh=True.
+        """
+        days = overrides.get("days", 90)
+        refresh = bool(overrides.get("refresh", False))
+        generated_at = datetime.now(timezone.utc)
+
+        docs = self._survey_docs(days)
+        data = self._aggregate_surveys(docs)
+
+        operators = []
+        for op in data.get("operators", []):
+            tid = op.get("tenant_id", "unknown")
+            pcts = {}
+            tiers = {}
+            low = []
+            for p in SURVEY_PILLARS:
+                v = op["pillars"].get(p)
+                if v is None:
+                    continue
+                pct = round((v - 1) / 4 * 100, 1)
+                pcts[p] = pct
+                tiers[p] = survey_tier(pct)
+                if pct < 70:
+                    low.append({"pillar": p, "score": v, "pct": pct, "tier": tiers[p]})
+
+            cached = self._read_survey_health(tid, days)
+            use_cache = (
+                not refresh
+                and cached is not None
+                and cached.get("generated_at") is not None
+            )
+            if use_cache:
+                try:
+                    gen_dt = cached["generated_at"]
+                    if hasattr(gen_dt, "timestamp"):
+                        cached_age = (generated_at - gen_dt).total_seconds()
+                        use_cache = cached_age < SURVEY_HEALTH_CACHE_TTL
+                    else:
+                        use_cache = False
+                except Exception:
+                    use_cache = False
+
+            recs = cached.get("recommendations", []) if use_cache else []
+            if not recs and low:
+                recs = recommend_survey_actions(tid, {
+                    "pillars": op["pillars"],
+                    "pcts": pcts,
+                    "tiers": tiers,
+                    "question_averages": op.get("question_averages", {}),
+                    "response_count": op["response_count"],
+                })
+                self._write_survey_health(tid, days, {
+                    "period_days": days,
+                    "generated_at": generated_at,
+                    "pillars": op["pillars"],
+                    "pcts": pcts,
+                    "tiers": tiers,
+                    "overall_sms_health": op["overall_sms_health"],
+                    "question_averages": op.get("question_averages", {}),
+                    "low_pillars": low,
+                    "recommendations": recs,
+                })
+
+            operators.append({
+                "tenant_id": tid,
+                "response_count": op["response_count"],
+                "overall_sms_health": op["overall_sms_health"],
+                "pillars": op["pillars"],
+                "pcts": pcts,
+                "tiers": tiers,
+                "low_pillars": low,
+                "recommendations": recs,
+            })
+
+        return {
+            "period_days": days,
+            "generated_at": generated_at.isoformat(),
+            "operators": operators,
+            "national": data.get("national"),
+        }
+
+    def _survey_docs(self, days: Optional[int] = None) -> list:
+        """Fetch tenants/{id}/surveys docs, optionally filtered to the period."""
         try:
             from app.firebase import get_db
             docs = list(get_db().collection_group("surveys").get())
         except Exception as e:
             logger.warning(f"CAAN survey health query failed: {e}")
-            docs = []
+            return []
+        if not days:
+            return docs
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        result = []
+        for d in docs:
+            ts = d.to_dict().get("submitted_at")
+            try:
+                if ts is None:
+                    continue
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                if ts >= cutoff:
+                    result.append(d)
+            except Exception:
+                continue
+        return result
 
+    def _aggregate_surveys(self, docs) -> Dict[str, Any]:
         by_tenant: Dict[str, Dict[str, Any]] = {}
-        national = {p: {"sum": 0.0, "n": 0} for p in pillars}
+        national = {p: {"sum": 0.0, "n": 0} for p in SURVEY_PILLARS}
         national_overall = {"sum": 0.0, "n": 0}
 
         for d in docs:
@@ -157,42 +269,78 @@ class DashboardService:
                 "tenant_id": tid,
                 "response_count": 0,
                 "pillars": {},
+                "question_scores": {},
                 "overall_sms_health": None,
             })
             entry["response_count"] += 1
-            for p in pillars:
+            for p in SURVEY_PILLARS:
                 v = data.get(p)
                 if isinstance(v, (int, float)):
                     entry["pillars"][p] = entry["pillars"].get(p, 0.0) + float(v)
                     national[p]["sum"] += float(v)
                     national[p]["n"] += 1
+            qs = data.get("question_scores")
+            if isinstance(qs, dict):
+                for qid, val in qs.items():
+                    if isinstance(val, (int, float)):
+                        bucket = entry["question_scores"].setdefault(qid, [0.0, 0])
+                        bucket[0] += float(val)
+                        bucket[1] += 1
             ov = data.get("overall_sms_health")
             if isinstance(ov, (int, float)):
                 national_overall["sum"] += float(ov)
                 national_overall["n"] += 1
 
+        rows = []
         for tid, entry in by_tenant.items():
             n = entry["response_count"]
-            entry["pillars"] = {
-                p: round(entry["pillars"][p] / n, 2) if entry["pillars"].get(p) else None
-                for p in pillars
+            for p in SURVEY_PILLARS:
+                entry["pillars"][p] = round(entry["pillars"][p] / n, 2) if entry["pillars"].get(p) else None
+            entry["question_averages"] = {
+                qid: round(s / c, 2) for qid, (s, c) in entry["question_scores"].items()
             }
+            entry.pop("question_scores", None)
             vals = [v for v in entry["pillars"].values() if v is not None]
             entry["overall_sms_health"] = round(sum(vals) / len(vals), 2) if vals else None
+            rows.append(entry)
 
-        rows = sorted(by_tenant.values(), key=lambda t: t["overall_sms_health"] or 0, reverse=True)
+        rows = sorted(rows, key=lambda t: t["overall_sms_health"] or 0, reverse=True)
         return {
             "operators": rows,
             "national": {
                 "pillars": {
                     p: round(national[p]["sum"] / national[p]["n"], 2) if national[p]["n"] else None
-                    for p in pillars
+                    for p in SURVEY_PILLARS
                 },
                 "overall_sms_health": round(national_overall["sum"] / national_overall["n"], 2)
                 if national_overall["n"] else None,
                 "response_count": sum(e["response_count"] for e in rows),
             },
         }
+
+    def _read_survey_health(self, tenant_id: str, days: int) -> Optional[Dict[str, Any]]:
+        try:
+            from app.firebase import get_db
+            ref = (
+                get_db().collection("tenants").document(tenant_id)
+                .collection("survey_health").document(f"days_{days}")
+            )
+            snap = ref.get()
+            return snap.to_dict() if snap.exists else None
+        except Exception as e:
+            logger.warning(f"Failed to read survey_health cache for {tenant_id}: {e}")
+            return None
+
+    def _write_survey_health(self, tenant_id: str, days: int, data: Dict[str, Any]) -> None:
+        try:
+            from app.firebase import get_db
+            ref = (
+                get_db().collection("tenants").document(tenant_id)
+                .collection("survey_health").document(f"days_{days}")
+            )
+            ref.set(data)
+        except Exception as e:
+            logger.warning(f"Failed to write survey_health cache for {tenant_id}: {e}")
 
     def get_caan_benchmark(self, **overrides) -> Dict[str, Any]:
         reports = self._caan_reports(**overrides)
