@@ -72,9 +72,7 @@ class ReportRepository:
                 filter.sort_by, direction=self._sort_order(filter.sort_order)
             )
 
-            count_query = query.count()
-            count_result = count_query.get()
-            total = count_result[0].value if count_result else 0
+            total = self._count_total(query.count().get())
 
             if filter.cursor:
                 parsed = self._parse_cursor(filter.cursor, filter)
@@ -200,14 +198,33 @@ class ReportRepository:
     def count_by_status(self, filter: ReportFilter) -> Dict[str, int]:
         base = self._build_collection(filter)
         query = self._apply_filters(base, filter)
-        count_result = query.count().get()
-        return {"total": count_result[0].value if count_result else 0}
+        return {"total": self._count_total(query.count().get())}
 
     def count_by_severity(self, filter: ReportFilter) -> Dict[str, int]:
         base = self._build_collection(filter)
         query = self._apply_filters(base, filter)
-        count_result = query.count().get()
-        return {"total": count_result[0].value if count_result else 0}
+        return {"total": self._count_total(query.count().get())}
+
+    @staticmethod
+    def _count_total(count_result) -> int:
+        """Parse the Firestore count() aggregation result across SDK versions.
+
+        google-cloud-firestore historically returned [AggregationResult], but
+        newer releases return a query-results list wrapping another list,
+        i.e. [[AggregationResult]]. Read both shapes defensively so a version
+        bump can never turn the Recent Reports endpoint into an empty payload.
+        """
+        if not count_result:
+            return 0
+        try:
+            first = count_result[0]
+        except (IndexError, TypeError):
+            return 0
+        if hasattr(first, "value"):
+            return first.value or 0
+        if isinstance(first, (list, tuple)) and first and hasattr(first[0], "value"):
+            return first[0].value or 0
+        return 0
 
     def _build_collection(self, filter: ReportFilter):
         if filter.cross_tenant:

@@ -1,3 +1,25 @@
+def test_count_total_handles_all_sdk_shapes():
+    """The Recent Reports endpoint must survive google-cloud-firestore version
+    differences in the count() aggregation result (list-of-results vs. the
+    nested [[AggregationResult]] shape returned by newer SDKs)."""
+    from app.services.repository import ReportRepository
+
+    class Agg:
+        def __init__(self, value):
+            self.value = value
+
+    # Newer SDK shape: [[Aggregation(value=18)]]
+    assert ReportRepository._count_total([[Agg(18)]]) == 18
+    # Older SDK shape: [Aggregation(value=18)]
+    assert ReportRepository._count_total([Agg(18)]) == 18
+    # Empty result set
+    assert ReportRepository._count_total([]) == 0
+    assert ReportRepository._count_total(None) == 0
+    # Zero count (non-nested and nested)
+    assert ReportRepository._count_total([Agg(0)]) == 0
+    assert ReportRepository._count_total([[Agg(0)]]) == 0
+
+
 def test_health_endpoint(client):
     resp = client.get("/health")
     assert resp.status_code == 200
