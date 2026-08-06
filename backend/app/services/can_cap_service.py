@@ -324,6 +324,61 @@ class CanCapService:
             logger.error(f"Failed to list CAPs for CAN {can_id}: {e}")
             raise
 
+    def list_all_caps(self, user: dict, filters: dict = None) -> List[dict]:
+        """List every CAP across the tenant's CANs, joined with the parent CAN
+        (reference + issued date) so pages can show 'date CAN received' and the
+        CAN a CAP refers to without an extra round-trip."""
+        try:
+            if user.get("role") in settings.CROSS_TENANT_ROLES:
+                docs = get_cross_tenant_collection(CAN_COLLECTION).get()
+            else:
+                docs = self._can_collection().get()
+
+            filters = filters or {}
+            status_f = filters.get("status")
+            can_id_f = filters.get("can_id")
+            search = (filters.get("search") or "").lower()
+
+            results = []
+            for can_doc in docs:
+                can_data = can_doc.to_dict()
+                if can_id_f and can_doc.id != can_id_f and can_data.get("can_reference") != can_id_f:
+                    continue
+                caps = can_doc.reference.collection(CAP_SUBCOLLECTION).get()
+                for cap in caps:
+                    data = cap.to_dict()
+                    if status_f and data.get("status") != status_f:
+                        continue
+                    data["id"] = cap.id
+                    data["can_id"] = can_doc.id
+                    data["can_reference"] = can_data.get("can_reference", "")
+                    can_issued = can_data.get("issued_at")
+                    if hasattr(can_issued, "isoformat"):
+                        can_issued = can_issued.isoformat()
+                    data["can_issued_at"] = can_issued
+                    data["hazard_id"] = can_data.get("hazard_id", "")
+                    data["priority"] = can_data.get("priority", "")
+                    self._serialize_timestamps(data)
+                    if search:
+                        hay = " ".join(str(v) for v in [
+                            data.get("cap_reference", ""),
+                            data.get("can_reference", ""),
+                            data.get("action_plan", ""),
+                            data.get("status", ""),
+                        ]).lower()
+                        if search not in hay:
+                            continue
+                    results.append(data)
+
+            results.sort(
+                key=lambda r: r.get("submitted_at") or r.get("created_at") or datetime.min,
+                reverse=True,
+            )
+            return results
+        except Exception as e:
+            logger.error(f"Failed to list all CAPs: {e}")
+            raise
+
     def get_cap(self, cap_id: str, user: dict) -> Optional[dict]:
         try:
             if user.get("role") in settings.CROSS_TENANT_ROLES:

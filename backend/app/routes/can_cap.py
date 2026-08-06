@@ -65,6 +65,28 @@ async def get_can_stats(
     return {"cans": can_stats, "caps": cap_stats}
 
 
+@router.get("/caps", response_model=List[dict])
+async def list_all_caps(
+    status: Optional[str] = Query(None),
+    can_id: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """List all CAPs for the current tenant, each joined with the CAN it refers
+    to (reference + issued date) for the CAP register page."""
+    effective_tenant = user.get("tenant_id", "default")
+    service = CanCapService(effective_tenant)
+    filters = {}
+    if status:
+        filters["status"] = status
+    if can_id:
+        filters["can_id"] = can_id
+    if search:
+        filters["search"] = search
+    docs = service.list_all_caps(user, filters)
+    return [_to_cap_list_item(d) for d in docs]
+
+
 @router.get("/{can_id}", response_model=dict)
 async def get_can(
     can_id: str,
@@ -268,7 +290,12 @@ def _to_cap_list_item(data: dict) -> dict:
     return {
         "id": data.get("id", ""),
         "can_id": data.get("can_id", ""),
+        "can_reference": data.get("can_reference", ""),
+        "can_issued_at": data.get("can_issued_at"),
+        "hazard_id": data.get("hazard_id", ""),
+        "priority": data.get("priority", ""),
         "cap_reference": data.get("cap_reference", ""),
+        "action_plan": data.get("action_plan", ""),
         "status": data.get("status", "In Progress"),
         "submitted_by": data.get("submitted_by", ""),
         "submitted_at": data.get("submitted_at"),
