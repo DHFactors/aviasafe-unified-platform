@@ -36,7 +36,7 @@ def _lookup_tenant_by_email(email: str) -> Optional[Dict[str, Any]]:
                 continue
             sm = td.get("safety_manager")
             if sm and sm.get("email") == email:
-                return {"tenant_id": td.get("tenant_id"), "role": "AIRLINE_ADMIN"}
+                return {"tenant_id": td.get("tenant_id") or t.id, "role": "AIRLINE_ADMIN"}
             # Also check for CAAN_SMD emails in a separate config
         return None
     except Exception as e:
