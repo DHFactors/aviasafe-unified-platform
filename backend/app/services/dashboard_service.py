@@ -376,10 +376,17 @@ class DashboardService:
         Pulls every survey response in the tenants/{id}/surveys collection
         group and computes, per operator, the average ICAO pillar scores and
         overall SMS health (1-5). Returns both the per-operator breakdown and
-        the national averages.
+        the national averages. `regulator_id` scopes the aggregation to one
+        State Regulator's operators (e.g. CAAN for Nepal).
         """
         days = overrides.get("days")
         docs = self._survey_docs(days)
+        regulator_id = overrides.get("regulator_id")
+        if regulator_id:
+            from app.services.regulator_service import operator_tenant_ids_for_regulator
+            allowed = set(operator_tenant_ids_for_regulator(regulator_id))
+            if allowed:
+                docs = [d for d in docs if (d.to_dict().get("tenant_id") or None) in allowed]
         return self._aggregate_surveys(docs)
 
     def get_caan_sms_health_assessment(self, **overrides) -> Dict[str, Any]:
@@ -389,12 +396,19 @@ class DashboardService:
 
         Assessments are cached per tenant in tenants/{id}/sms_health and
         reused within SMS_HEALTH_CACHE_TTL unless refresh=True.
+        `regulator_id` scopes the assessment to one State Regulator's operators.
         """
         days = overrides.get("days", 90)
         refresh = bool(overrides.get("refresh", False))
         generated_at = datetime.now(timezone.utc)
 
         docs = self._survey_docs(days)
+        regulator_id = overrides.get("regulator_id")
+        if regulator_id:
+            from app.services.regulator_service import operator_tenant_ids_for_regulator
+            allowed = set(operator_tenant_ids_for_regulator(regulator_id))
+            if allowed:
+                docs = [d for d in docs if (d.to_dict().get("tenant_id") or None) in allowed]
         data = self._aggregate_surveys(docs)
 
         operators = []

@@ -43,7 +43,7 @@ Authorization: Bearer <FIREBASE_ID_TOKEN>
 
 ## 3. Endpoint Inventory (verified against the running app, RC-3)
 
-> Inventory below lists the canonical `/api/v1` paths. 73 business endpoints + system endpoints.
+> Inventory below lists the canonical `/api/v1` paths (69 paths incl. system).
 > Every `/api/v1` path also has a legacy `/api` twin.
 
 ### 3.1 Auth — `/api/v1/auth`
@@ -164,9 +164,16 @@ fields: `severity_level`, `probability_level`, `risk_index`, `risk_level`, `risk
 | GET | `/caan/risk` | CAAN risk view |
 | GET | `/caan/hazards` | CAAN hazard view |
 | GET | `/caan/trends` | CAAN trends |
+| GET | `/caan/survey-health` | National SMS health from survey pillars (aggregated over a regulator's operators) |
+| GET | `/caan/sms-health-assessment` | Gemini assessment per operator; low pillars (<70%) get actions (aggregated over a regulator's operators) |
 | GET | `/admin/system` | System status (SUPER_ADMIN) |
 | GET | `/admin/tenants` | Tenant list (SUPER_ADMIN) |
 | GET | `/admin/usage` | Usage analytics (SUPER_ADMIN) |
+
+**Regulator scoping (CAAN / State Regulator):** `GET /caan/survey-health` and
+`GET /caan/sms-health-assessment` accept an optional `regulator_id` query param. When supplied,
+the aggregation covers only the operator tenants overseen by that State Regulator (see §3.13);
+omitted, it covers all tenants.
 
 ### 3.10 Surveys — `/api/v1/surveys`
 
@@ -277,7 +284,60 @@ the same PUT contract with survey instructions and adds an auth-optional GET.
   leaves the existing value untouched; passing an empty string clears it.
 - Audited with `TENANT_CONFIG_UPDATED`. Responses use the `{status, timestamp, data}` envelope.
 
-### 3.12 System
+### 3.12 State Risk — `/api/v1/state-risk` (CAAN_SMD / SUPER_ADMIN)
+
+National risk register + live cross-tenant aggregation for the State Safety Programme.
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/register` | Persisted national risk register for a period |
+| GET | `/aggregate` | Live recomputation of national risk from tenant hazards/reports |
+| POST | `/sync` | Rebuild the persisted register from the live aggregation |
+| PUT | `/register/{risk_id}/ssp-target` | Set SSP target / risk-reduction rate (SUPER_ADMIN) |
+
+Query params: `year`, `quarter` (1-4), and optional `regulator_id` to scope to a single State
+Regulator's operators. When `regulator_id` is omitted the aggregation spans all tenants.
+
+### 3.13 Regulators — `/api/v1/regulators` (CAAN_SMD / SUPER_ADMIN)
+
+State Regulator model. A State Regulator (e.g. **CAAN** for Nepal, **DGCA** for India) is the
+national civil-aviation authority overseeing a set of operator tenants. Regulators live in the
+Firestore `regulators` collection; each operator tenant carries `regulator_id` + `country` tags.
+This is the generic national-oversight model behind the State Regulator dashboard
+(`public/caan-state-risk.html`), which reads the regulator via `GET /{regulator_id}` (URL
+`?regulator=` override, default `caan`).
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | List every State Regulator |
+| GET | `/{regulator_id}` | One regulator, enriched with its overseen operators |
+
+`GET /{regulator_id}` response (`{status, timestamp, data:{regulator}}`):
+
+```json
+{
+  "regulator": {
+    "id": "caan",
+    "type": "state_regulator",
+    "name": "Civil Aviation Authority of Nepal",
+    "short_name": "CAAN",
+    "country": "NP",
+    "country_name": "Nepal",
+    "active": true,
+    "operator_tenant_ids": ["sita-air", "yeti-airlines"],
+    "operators": [
+      { "tenant_id": "sita-air", "name": "Sita Air", "country": "NP",
+        "regulator_id": "caan", "active": true }
+    ]
+  }
+}
+```
+
+- Operators come from the regulator doc's `operator_tenant_ids` when present; otherwise they are
+  derived from any tenant tagged `regulator_id == <id>`.
+- `404` for an unknown regulator id. Both routes require `CAAN_SMD` or `SUPER_ADMIN`.
+
+### 3.14 System
 
 | Method | Path | Description |
 |---|---|---|

@@ -1,13 +1,16 @@
 <!-- ============================================================================
 FILE: caan-state-risk.html
 PATH: public/caan-state-risk.html
-VERSION: 1.0.0
+VERSION: 1.1.0
 DATE CREATED: 2026-08-04
-PURPOSE: CAAN SMD State Safety Programme (SSP) dashboard. Provides the
-         national view of SMS health (survey pillars), the state risk register
-         (ICAO top-risk categories vs SSP targets, with staleness detection),
-         and the live cross-tenant aggregation. SSP-target editing is
-         restricted to SUPER_ADMIN. Uses the shared dashboard shell
+PURPOSE: State Regulator (SSP) dashboard. Works generically for any country's
+         civil-aviation authority (CAAN/Nepal, DGCA/India, ...): the regulator
+         is resolved from /api/v1/regulators (URL ?regulator= override, default
+         'caan') and every national aggregation is scoped via regulator_id.
+         Provides the national view of SMS health (survey pillars), the state
+         risk register (ICAO top-risk categories vs SSP targets, with staleness
+         detection), and the live cross-tenant aggregation. SSP-target editing
+         is restricted to SUPER_ADMIN. Uses the shared dashboard shell
          (css/shell.css + js/shell.js) shared with tenant dashboards.
 AUTHOR: AviaSAFE Systems
 ============================================================================ -->
@@ -17,7 +20,7 @@ AUTHOR: AviaSAFE Systems
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAAN State Risk Register — AviaSAFE SSP</title>
+    <title>State Risk Register — AviaSAFE SSP</title>
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/shell.css">
@@ -27,19 +30,19 @@ AUTHOR: AviaSAFE Systems
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         .section-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem; }
-        .section-head h2 { margin:0; color:var(--color-primary-dark, #0d47a1); }
+        .section-head h2 { margin:0; color:var(--color-primary-dark, #0b2a42); }
         .section-sub { color:#64748b; font-size:0.875rem; }
 
         .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1.5rem; }
-        .stat-card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.06); padding:1.25rem; border-top:4px solid #1a73e8; }
+        .stat-card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.06); padding:1.25rem; border-top:4px solid #1a6b8a; }
         .stat-card.gold { border-top-color:#d4af37; }
         .stat-card.green { border-top-color:#34a853; }
         .stat-card.red { border-top-color:#ea4335; }
-        .stat-card .num { font-size:1.9rem; font-weight:700; color:#1e293b; }
+        .stat-card .num { font-size:1.9rem; font-weight:700; color:#0b2a42; }
         .stat-card .lbl { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.4px; color:#64748b; margin-top:0.25rem; }
 
         .card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.06); padding:1.25rem; margin-bottom:1.5rem; }
-        .card h3 { margin:0 0 1rem; font-size:1rem; color:#002f6c; }
+        .card h3 { margin:0 0 1rem; font-size:1rem; color:#0b2a42; }
 
         table { width:100%; border-collapse:collapse; }
         th { background:#f8fafc; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.4px; color:#64748b; padding:0.7rem 0.8rem; text-align:left; border-bottom:2px solid #e2e8f0; }
@@ -51,7 +54,7 @@ AUTHOR: AviaSAFE Systems
         .b-tolerable { background:#fff3cd; color:#9a6700; }
         .b-intolerable { background:#fce8e6; color:#c5221f; }
         .b-improving { background:#e6f4ea; color:#1e7e34; }
-        .b-stable { background:#e8f0fe; color:#1a73e8; }
+        .b-stable { background:#e8f0f8; color:#1a6b8a; }
         .b-deteriorating { background:#fce8e6; color:#c5221f; }
 
         .tolerability-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:0.35rem; }
@@ -62,13 +65,13 @@ AUTHOR: AviaSAFE Systems
         .staleness-banner { border-radius:8px; padding:0.75rem 1rem; font-size:0.85rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; }
         .st-fresh { background:#e6f4ea; color:#1e7e34; border-left:4px solid #34a853; }
         .st-stale { background:#fff3cd; color:#9a6700; border-left:4px solid #f9ab00; }
-        .st-unknown { background:#e8f0fe; color:#1a73e8; border-left:4px solid #1a73e8; }
+        .st-unknown { background:#e8f0f8; color:#1a6b8a; border-left:4px solid #1a6b8a; }
 
         .btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 1rem; border:none; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.15s; text-decoration:none; }
-        .btn-primary { background:#1a73e8; color:#fff; }
-        .btn-primary:hover { background:#0d47a1; }
-        .btn-outline { background:transparent; color:#1a73e8; border:1px solid #1a73e8; }
-        .btn-outline:hover { background:#e8f0fe; }
+        .btn-primary { background:#1a6b8a; color:#fff; }
+        .btn-primary:hover { background:#0b2a42; }
+        .btn-outline { background:transparent; color:#1a6b8a; border:1px solid #1a6b8a; }
+        .btn-outline:hover { background:#e8f0f8; }
         .btn-sm { padding:0.3rem 0.7rem; font-size:0.8rem; }
         .btn:disabled { opacity:0.5; cursor:not-allowed; }
 
@@ -85,11 +88,14 @@ AUTHOR: AviaSAFE Systems
 
         .period-select { display:flex; align-items:center; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap; }
         .period-select select { padding:0.45rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; font-size:0.875rem; background:#fff; }
-        .period-select label { font-size:0.85rem; font-weight:600; color:#002f6c; }
+        .period-select label { font-size:0.85rem; font-weight:600; color:#0b2a42; }
 
         .ssp-progress { background:#e2e8f0; border-radius:6px; height:10px; width:100px; overflow:hidden; }
         .ssp-progress .fill { height:100%; border-radius:6px; }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -103,13 +109,13 @@ AUTHOR: AviaSAFE Systems
     <section id="sms-health" class="shell-scroll-spy" style="display:none;">
         <div class="section-head">
             <div>
-                <h2><i class="fas fa-heart-pulse" style="color:#1a73e8;"></i> National SMS Health</h2>
-                <div class="section-sub">Aggregated ICAO Annex 19 survey culture across all operators</div>
+                <h2><i class="fas fa-heart-pulse" style="color:#1a6b8a;"></i> National SMS Health</h2>
+                <div class="section-sub" id="smsHealthSub">Aggregated ICAO Annex 19 survey culture across all operators</div>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="loadSmsHealth()"><i class="fas fa-rotate"></i> Refresh</button>
+            <button class="btn btn-outline btn-sm" onclick="loadSmsHealth(); loadSmsHealthAssessment(false);"><i class="fas fa-rotate"></i> Refresh</button>
         </div>
         <div style="background:#fff8e1;border:1px solid #ffca28;border-radius:8px;padding:10px 14px;font-size:13px;color:#8a6d00;margin-bottom:16px;line-height:1.5;">
-            <strong>[BETA NOTICE]</strong> Survey statistics are currently in offline/preview mode and will sync automatically in release v1.1.0.
+            <strong>[BETA NOTICE]</strong> Survey pillar scores are computed live from submitted responses. SMS Health Assessment (Gemini) targets pillars scoring below 70%.
         </div>
         <div id="smsHealthStats" class="stat-grid"></div>
         <div class="card">
@@ -127,14 +133,32 @@ AUTHOR: AviaSAFE Systems
                 <tbody id="smsHealthBody"></tbody>
             </table></div>
         </div>
+        <div class="card">
+            <div class="section-head">
+                <div>
+                    <h3><i class="fas fa-robot" style="color:#1a6b8a;"></i> SMS Health Assessment</h3>
+                    <div class="section-sub">ICAO-aligned assessment of each operator's SMS health, with improvement actions for pillars scoring below 70% (Gemini). Aggregated over the selected period.</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <select id="recDays" class="form-control" style="width:auto;">
+                        <option value="30">Last 30 days</option>
+                        <option value="90" selected>Last 90 days</option>
+                        <option value="180">Last 180 days</option>
+                        <option value="365">Last 365 days</option>
+                    </select>
+                    <button class="btn btn-outline btn-sm" onclick="loadSmsHealthAssessment(true)"><i class="fas fa-wand-magic-sparkles"></i> Regenerate</button>
+                </div>
+            </div>
+            <div id="smsHealthRecs" style="margin-top:4px;"><p style="color:#64748b;">Loading SMS health assessment...</p></div>
+        </div>
     </section>
 
     <!-- ==================== NATIONAL RISK REGISTER ==================== -->
     <section id="risk-register" class="shell-scroll-spy" style="display:none;">
         <div class="section-head">
             <div>
-                <h2><i class="fas fa-book" style="color:#1a73e8;"></i> National Risk Register — Hazard Risk vs SSP Top Risk</h2>
-                <div class="section-sub">ICAO top-risk categories measured against state SSP targets</div>
+                <h2><i class="fas fa-book" style="color:#1a6b8a;"></i> National Risk Register — Hazard Risk vs SSP Top Risk</h2>
+                <div class="section-sub" id="registerSub">ICAO top-risk categories measured against state SSP targets</div>
             </div>
             <button class="btn btn-outline btn-sm" onclick="loadRegister()"><i class="fas fa-rotate"></i> Refresh</button>
         </div>
@@ -185,8 +209,8 @@ AUTHOR: AviaSAFE Systems
     <section id="aggregation" class="shell-scroll-spy" style="display:none;">
         <div class="section-head">
             <div>
-                <h2><i class="fas fa-chart-bar" style="color:#1a73e8;"></i> Cross-Tenant Aggregation (Live)</h2>
-                <div class="section-sub">Live recomputation of national risk from tenant hazards and reports — not yet persisted</div>
+                <h2><i class="fas fa-chart-bar" style="color:#1a6b8a;"></i> Cross-Tenant Aggregation (Live)</h2>
+                <div class="section-sub" id="aggregationSub">Live recomputation of national risk from tenant hazards and reports — not yet persisted</div>
             </div>
             <button class="btn btn-outline btn-sm" onclick="loadAggregation()"><i class="fas fa-rotate"></i> Recompute</button>
         </div>
@@ -246,16 +270,57 @@ const CAAN_API = window.API_BASE_URL || 'https://aviasafe-unified-platform.onren
 let currentUser = null;
 let isSuperAdmin = false;
 let registerRows = [];
+let regulatorId = 'caan';
+let regulatorMeta = null;
 
 window.SHELL_CONFIG = {
     brand: 'AviaSAFE',
-    roleLabel: 'CAAN Safety Management Division',
+    roleLabel: 'State Safety Programme (SSP)',
     nav: [
         { id: 'sms-health', label: 'SMS Health', icon: 'fa-heart-pulse' },
         { id: 'risk-register', label: 'Risk Register vs SSP', icon: 'fa-book' },
         { id: 'aggregation', label: 'Cross-Tenant Aggregation', icon: 'fa-chart-bar' },
     ],
 };
+
+// ============================================================================
+// STATE REGULATOR META
+// ============================================================================
+async function loadRegulatorMeta() {
+    // Allow explicit selection (e.g. ?regulator=dgca). Otherwise the default
+    // regulator for this deployment ('caan' for Nepal) is used.
+    const override = (new URLSearchParams(window.location.search).get('regulator') || '').trim();
+    let id = override || 'caan';
+    try {
+        const res = await ApiClient.get(`/api/v1/regulators/${id}`);
+        regulatorMeta = res.regulator || null;
+        if (regulatorMeta) regulatorId = regulatorMeta.id;
+    } catch {
+        regulatorId = id;
+    }
+    applyRegulatorBranding();
+}
+
+function applyRegulatorBranding() {
+    const reg = regulatorMeta || {};
+    const name = reg.name || 'State Regulator';
+    const short = reg.short_name || reg.id || regulatorId;
+    const country = reg.country_name || reg.country || '';
+    document.title = `${short} State Risk Register — AviaSAFE SSP`;
+    window.SHELL_CONFIG.roleLabel = `${short} · Safety Management Division`;
+    const opCount = (reg.operators || []).length;
+    const setSub = (id, base) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = `${base} — ${name}${country ? ` (${country})` : ''}${opCount ? ` · ${opCount} operators` : ''}`;
+    };
+    setSub('smsHealthSub', 'Aggregated ICAO Annex 19 survey culture across all operators');
+    setSub('registerSub', 'ICAO top-risk categories measured against state SSP targets');
+    setSub('aggregationSub', 'Live recomputation of national risk from tenant hazards and reports');
+}
+
+function regQuery() {
+    return `regulator_id=${encodeURIComponent(regulatorId)}`;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     await waitForFirebase();
@@ -271,15 +336,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
     document.getElementById('authGate').style.display = 'none';
+    await loadRegulatorMeta();
     ['sms-health', 'risk-register', 'aggregation'].forEach(id => {
         document.getElementById(id).style.display = 'block';
     });
+    const regShort = regulatorMeta?.short_name || 'State Regulator';
     window.updateShellTenant(
-        'CAAN — State Safety Programme',
+        regShort + ' — State Safety Programme',
         'Safety Management Division · ' + (isSuperAdmin ? 'SUPER_ADMIN' : 'CAAN_SMD')
     );
     populateYearSelects();
-    await Promise.all([loadSmsHealth(), loadRegister(), loadAggregation()]);
+document.getElementById('recDays').addEventListener('change', () => loadSmsHealthAssessment(false));
+await Promise.all([loadSmsHealth(), loadSmsHealthAssessment(false), loadRegister(), loadAggregation()]);
 });
 
 function populateYearSelects() {
@@ -319,7 +387,7 @@ async function loadSmsHealth() {
     const body = document.getElementById('smsHealthBody');
     statsEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
     try {
-        const data = await ApiClient.get('/api/v1/dashboard/caan/survey-health');
+        const data = await ApiClient.get(`/api/v1/dashboard/caan/survey-health?${regQuery()}`);
         const nat = data.national || {};
         const ops = data.operators || [];
 
@@ -356,6 +424,63 @@ async function loadSmsHealth() {
 }
 
 // ============================================================================
+// SMS HEALTH ASSESSMENT
+// ============================================================================
+async function loadSmsHealthAssessment(refresh) {
+    const el = document.getElementById('smsHealthRecs');
+    if (!el) return;
+    const days = document.getElementById('recDays').value;
+    el.innerHTML = '<p style="color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Generating SMS health assessment (aggregating survey responses)...</p>';
+    try {
+        const data = await ApiClient.get(`/api/v1/dashboard/caan/sms-health-assessment?days=${days}&refresh=${refresh ? 'true' : 'false'}&${regQuery()}`);
+        const ops = data.operators || [];
+        if (!ops.length) {
+            el.innerHTML = '<p class="empty">No survey data in the selected period.</p>';
+            return;
+        }
+        const withLow = ops.filter(o => (o.low_pillars || []).length > 0);
+        if (!withLow.length) {
+            el.innerHTML = '<div class="success-banner" style="background:#e6f4ea;color:#1e7e34;padding:12px 16px;border-radius:8px;font-weight:600;">All operators scored ≥70% on every pillar for the selected period — no actions required.</div>';
+            return;
+        }
+        el.innerHTML = withLow.map(op => {
+            const recs = op.recommendations || [];
+            const cards = recs.map(r => {
+                const tierBadge = r.tier === 'critical'
+                    ? '<span class="badge b-intolerable">CRITICAL</span>'
+                    : '<span class="badge b-tolerable">ACTION</span>';
+                const actions = (r.actions || []).map(a => `
+                    <li style="margin-bottom:8px;">
+                        <strong>${a.action}</strong>
+                        <div style="color:#475569;font-size:12px;margin-top:2px;">
+                            <span class="badge ${a.priority === 'high' ? 'b-intolerable' : a.priority === 'medium' ? 'b-tolerable' : 'b-acceptable'}" style="text-transform:uppercase;">${a.priority || '—'}</span>
+                            ${a.icao_reference || ''} · Owner: ${a.owner || '—'} · ${a.timeframe || ''}
+                        </div>
+                        <div style="color:#64748b;font-size:12px;margin-top:2px;">Success metric: ${a.success_metric || '—'}</div>
+                    </li>`).join('');
+                return `<div style="border:1px solid #e2e8f0;border-left:4px solid ${r.tier === 'critical' ? '#dc3545' : '#f57c00'};border-radius:8px;padding:14px 16px;margin-bottom:12px;background:#fff;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                        <strong style="font-size:15px;color:#0b2a42;">${r.pillar_name} — ${r.score_pct}%</strong>
+                        ${tierBadge}
+                    </div>
+                    <p style="margin:8px 0;color:#475569;font-size:13px;">${r.summary || ''}</p>
+                    ${r.root_causes && r.root_causes.length ? `<div style="font-size:12px;color:#64748b;margin-bottom:8px;"><strong>Root causes:</strong> ${r.root_causes.join('; ')}</div>` : ''}
+                    <ul style="margin:0;padding-left:18px;list-style:disc;font-size:13px;">${actions}</ul>
+                    ${r.kpi_target ? `<div style="margin-top:8px;font-size:12px;color:#1a6b8a;"><strong>Target:</strong> raise to ≥${r.kpi_target}%</div>` : ''}
+                </div>`;
+            }).join('');
+            const opName = op.tenant_id;
+            return `<div style="margin-bottom:20px;">
+                <h4 style="color:#0b2a42;margin:0 0 8px;"><i class="fas fa-building"></i> ${opName} <span style="font-weight:400;color:#64748b;font-size:12px;">(${op.response_count} responses · overall ${op.overall_sms_health ?? '—'}/5)</span></h4>
+                ${cards}
+            </div>`;
+        }).join('');
+    } catch (err) {
+        el.innerHTML = '<div class="error">Failed to load SMS health assessment: ' + err.message + '</div>';
+    }
+}
+
+// ============================================================================
 // NATIONAL RISK REGISTER
 // ============================================================================
 function tolerabilityClass(t) {
@@ -385,7 +510,7 @@ async function loadRegister() {
     body.innerHTML = '<tr><td colspan="11" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading register...</td></tr>';
 
     try {
-        const data = await ApiClient.get(`/api/v1/state-risk/register?year=${year}&quarter=${quarter}`);
+        const data = await ApiClient.get(`/api/v1/state-risk/register?year=${year}&quarter=${quarter}&${regQuery()}`);
         const rows = data.risks || [];
         registerRows = rows;
 
@@ -402,7 +527,7 @@ async function loadRegister() {
         `;
 
         // Staleness indicator
-        const agg = await ApiClient.get(`/api/v1/state-risk/aggregate?year=${year}&quarter=${quarter}`).catch(() => null);
+        const agg = await ApiClient.get(`/api/v1/state-risk/aggregate?year=${year}&quarter=${quarter}&${regQuery()}`).catch(() => null);
         renderStaleness(rows, agg ? agg.risks : null);
 
         if (!rows.length) {
@@ -481,7 +606,7 @@ async function syncRegister() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
     try {
-        const result = await ApiClient.post(`/api/v1/state-risk/sync?year=${year}&quarter=${quarter}`);
+        const result = await ApiClient.post(`/api/v1/state-risk/sync?year=${year}&quarter=${quarter}&${regQuery()}`);
         alert(`Register synced: ${result.synced} categories aggregated at ${new Date(result.aggregated_at).toLocaleString()}`);
         await Promise.all([loadRegister(), loadAggregation()]);
     } catch (err) {
@@ -524,7 +649,7 @@ async function loadAggregation() {
     compareCard.style.display = 'none';
 
     try {
-        const data = await ApiClient.get(`/api/v1/state-risk/aggregate?year=${year}&quarter=${quarter}`);
+        const data = await ApiClient.get(`/api/v1/state-risk/aggregate?year=${year}&quarter=${quarter}&${regQuery()}`);
         const rows = data.risks || [];
         if (!rows.length) {
             body.innerHTML = '<tr><td colspan="8" class="empty">No tenant hazard/report data for ' + year + 'Q' + quarter + '.</td></tr>';
@@ -544,7 +669,7 @@ async function loadAggregation() {
             </tr>`).join('');
 
         // Compare against persisted register
-        const reg = await ApiClient.get(`/api/v1/state-risk/register?year=${year}&quarter=${quarter}`).catch(() => null);
+        const reg = await ApiClient.get(`/api/v1/state-risk/register?year=${year}&quarter=${quarter}&${regQuery()}`).catch(() => null);
         if (reg && reg.risks && reg.risks.length) {
             const regMap = {};
             reg.risks.forEach(r => { regMap[r.icoc_category] = r.actual_ssp_value; });

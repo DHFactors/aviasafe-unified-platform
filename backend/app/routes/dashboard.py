@@ -226,10 +226,11 @@ async def get_caan_hazards(
 
 @router.get("/caan/survey-health")
 async def get_caan_survey_health(
+    regulator_id: Optional[str] = Query(None, description="State Regulator id (e.g. caan) to scope the health view"),
     user: Dict[str, Any] = Depends(get_caan_user),
 ):
     svc = DashboardService(user)
-    data = svc.get_caan_survey_health()
+    data = svc.get_caan_survey_health(regulator_id=regulator_id)
     return _envelope(data)
 
 
@@ -237,11 +238,12 @@ async def get_caan_survey_health(
 async def get_caan_sms_health_assessment(
     days: int = Query(90, ge=30, le=365),
     refresh: bool = Query(False),
+    regulator_id: Optional[str] = Query(None, description="State Regulator id (e.g. caan) to scope the assessment"),
     user: Dict[str, Any] = Depends(get_caan_user),
 ):
     svc = DashboardService(user)
     try:
-        data = svc.get_caan_sms_health_assessment(days=days, refresh=refresh)
+        data = svc.get_caan_sms_health_assessment(days=days, refresh=refresh, regulator_id=regulator_id)
     except Exception as e:
         logger.error(f"CAAN SMS health assessment failed: {e}")
         data = {"period_days": days, "generated_at": None, "operators": [], "national": None, "error": str(e)}

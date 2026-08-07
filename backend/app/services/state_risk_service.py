@@ -103,11 +103,23 @@ class StateRiskService:
     # Public: aggregation (drills tenant data up to national level)
     # ------------------------------------------------------------------
 
-    def aggregate_national_risk(self, year: int, quarter: int) -> Dict[str, Any]:
+    def aggregate_national_risk(self, year: int, quarter: int, regulator_id: Optional[str] = None) -> Dict[str, Any]:
         """Aggregate all tenant hazards/reports by ICAO category and compute
-        national current risk index per category."""
+        national current risk index per category.
+
+        `regulator_id` scopes the aggregation to that State Regulator's
+        operators (e.g. CAAN for Nepal). When omitted, every operator tenant is
+        included (the whole-state national view).
+        """
         hazards = self._cross_tenant_hazards()
         reports = self._cross_tenant_reports()
+
+        if regulator_id:
+            from app.services.regulator_service import operator_tenant_ids_for_regulator
+            allowed = set(operator_tenant_ids_for_regulator(regulator_id))
+            if allowed:
+                hazards = [h for h in hazards if h.get("tenant_id") in allowed]
+                reports = [r for r in reports if r.get("tenant_id") in allowed]
 
         category_totals: Dict[str, Dict[str, Any]] = {}
         for cat_def in ICAO_TOP_RISK_CATEGORIES:
@@ -180,7 +192,7 @@ class StateRiskService:
         rows.sort(key=lambda r: r["current_risk_index"] or 0, reverse=True)
         return {"year": year, "quarter": quarter, "risks": rows}
 
-    def sync_register_from_aggregation(self, year: int, quarter: int) -> Dict[str, Any]:
+    def sync_register_from_aggregation(self, year: int, quarter: int, regulator_id: Optional[str] = None) -> Dict[str, Any]:
         """Persist the aggregated national risk into the state risk register,
         measuring actual values against seeded SSP targets where present.
 
@@ -189,7 +201,7 @@ class StateRiskService:
         Every entry records `aggregated_at` (UTC ISO) so consumers can detect
         how stale the register is relative to live tenant data.
         """
-        agg = self.aggregate_national_risk(year, quarter)
+        agg = self.aggregate_national_risk(year, quarter, regulator_id=regulator_id)
         now = datetime.now(timezone.utc).isoformat()
         updated_by = self.user.get("uid", "system")
         collection = _risk_collection()

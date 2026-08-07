@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     API_PREFIX_STATE_RISK: str = "/api/v1/state-risk"
     API_PREFIX_SURVEYS: str = "/api/v1/surveys"
     API_PREFIX_TENANTS: str = "/api/v1/tenants"
+    API_PREFIX_REGULATORS: str = "/api/v1/regulators"
     API_PREFIX_AUTH_LEGACY: str = "/api/auth"
     API_PREFIX_REPORTS_LEGACY: str = "/api/reports"
     API_PREFIX_DASHBOARD_LEGACY: str = "/api/dashboard"
@@ -59,6 +60,7 @@ class Settings(BaseSettings):
     FIREBASE_COLLECTION_REPORTS: str = "reports"
     FIREBASE_COLLECTION_METADATA: str = "metadata"
     FIREBASE_COLLECTION_USERS: str = "users"
+    FIREBASE_COLLECTION_REGULATORS: str = "regulators"
     FIREBASE_DOCUMENT_INFO: str = "info"
     FIREBASE_TOKEN_URI: str = "https://oauth2.googleapis.com/token"
 

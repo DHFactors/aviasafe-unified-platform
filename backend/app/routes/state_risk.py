@@ -30,11 +30,17 @@ class SspTargetUpdate(BaseModel):
 async def get_state_risk_register(
     year: Optional[int] = Query(None, ge=2000, le=2100),
     quarter: Optional[int] = Query(None, ge=1, le=4),
+    regulator_id: Optional[str] = Query(None, description="State Regulator id (e.g. caan) to scope the register"),
     user: Dict[str, Any] = Depends(get_caan_user),
 ):
-    """Return the state-level risk register, optionally filtered by period."""
+    """Return the state-level risk register, optionally filtered by period and
+    regulator (regulator_id narrows to that regulator's operator tenants)."""
     svc = StateRiskService(user)
     rows = svc.list_register(year=year, quarter=quarter)
+    if regulator_id:
+        from app.services.regulator_service import operator_tenant_ids_for_regulator
+        allowed = set(operator_tenant_ids_for_regulator(regulator_id))
+        rows = [r for r in rows if allowed and (set(r.get("contributing_tenants") or []) & allowed)]
     return {"success": True, "count": len(rows), "risks": rows}
 
 
@@ -42,24 +48,27 @@ async def get_state_risk_register(
 async def get_aggregated_national_risk(
     year: int = Query(..., ge=2000, le=2100),
     quarter: int = Query(..., ge=1, le=4),
+    regulator_id: Optional[str] = Query(None, description="State Regulator id (e.g. caan) to scope the aggregation"),
     user: Dict[str, Any] = Depends(get_caan_user),
 ):
-    """Aggregate risk across all tenants by ICAO category (live computation,
-    not yet persisted)."""
+    """Aggregate risk across tenants by ICAO category (live computation, not
+    yet persisted). When `regulator_id` is provided the aggregation is scoped
+    to that State Regulator's operators."""
     svc = StateRiskService(user)
-    return {"success": True, **svc.aggregate_national_risk(year, quarter)}
+    return {"success": True, **svc.aggregate_national_risk(year, quarter, regulator_id=regulator_id)}
 
 
 @router.post("/sync")
 async def sync_state_risk_register(
     year: int = Query(..., ge=2000, le=2100),
     quarter: int = Query(..., ge=1, le=4),
+    regulator_id: Optional[str] = Query(None, description="State Regulator id (e.g. caan) to scope the sync"),
     user: Dict[str, Any] = Depends(get_caan_user),
 ):
     """Persist the aggregated national risk into the state risk register,
     carrying over existing SSP targets where present."""
     svc = StateRiskService(user)
-    result = svc.sync_register_from_aggregation(year, quarter)
+    result = svc.sync_register_from_aggregation(year, quarter, regulator_id=regulator_id)
     logger.info(f"State risk register synced for {year}Q{quarter} by {user.get('uid')}")
     return {"success": True, **result}
 
