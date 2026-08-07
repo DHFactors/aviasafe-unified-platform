@@ -123,3 +123,23 @@ Hosting console "Release history" and promote a previous version.
 
 **Known limitation:** no dedicated staging Firestore project exists; staging and production share
 `aerosafety-sms-prod`. See [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md).
+
+## 9. Release Log
+
+| Date | Commit | Scope | Environments |
+|---|---|---|---|
+| 2026-08-07 | `4f71944` | Phases 1–3: per-tenant survey rate-limit control, view-only authorized users list, survey instructions management | Beta + Production |
+
+**Release notes (Phases 1–3, `4f71944`):**
+
+- Backend: `PUT /api/v1/tenants/{tenantId}/config`, `GET /api/v1/tenants/{tenantId}/config` (auth
+  optional), `GET /api/v1/tenants/{tenantId}/users`, plus Redis key `rl:survey:{tenantId}:{date}`.
+- Frontend: dashboard Administration section (Survey Rate Limit, Survey Instructions, Authorized
+  Users); portal survey renders tenant `survey_instructions` at the top.
+- Database: `users` collection mirrored from Firebase Auth. Backfilled on beta (`sms-db-beta`) and
+  production (`sms-db`): `python scripts/backfill_users.py sms-db-beta | sms-db`.
+- **Production tenant policy:** production `sms-db` is intentionally kept empty of tenant documents
+  until contracts are signed. Tenant config is validated on beta and the correct `tenants/{id}`
+  document (with `config.survey_rate_limit` / `config.survey_instructions`) is replicated to
+  production at go-live. Until then, prod `GET /{tenantId}/config` returns `404` and the rate-limit
+  resolver uses the `SURVEY_RATE_LIMIT` env default.
