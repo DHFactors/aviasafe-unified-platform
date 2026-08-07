@@ -10,7 +10,7 @@
 # ============================================================================
 
 import secrets
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 from loguru import logger
@@ -333,3 +333,187 @@ async def seed_demo_data(
     except Exception as e:
         logger.error(f"Seed failed: {e}")
         return {"success": False, "error": str(e)}
+
+
+# ============================================================================
+# Super-Admin web seeding panel (production-setup.html)
+# ============================================================================
+
+class RegulatorCreate(BaseModel):
+    id: str
+    name: str
+    short_name: Optional[str] = None
+    country: Optional[str] = None
+    country_name: Optional[str] = None
+    domain: Optional[str] = None
+    operator_tenant_ids: Optional[List[str]] = None
+    active: bool = True
+
+
+class TenantCreate(BaseModel):
+    tenant_id: str
+    name: str
+    icao: Optional[str] = None
+    country: Optional[str] = "Nepal"
+    active: bool = True
+    regulator_id: Optional[str] = None
+    safety_manager: Optional[Dict[str, Any]] = None
+    survey_config: Optional[Dict[str, Any]] = None
+
+
+class TenantBulkRequest(BaseModel):
+    setup_key: str
+    records: Optional[List[TenantCreate]] = None
+    csv: Optional[str] = None
+
+
+class SeedDeployRequest(BaseModel):
+    setup_key: str
+    force: bool = False
+
+
+class RegulatorSetupRequest(BaseModel):
+    setup_key: str
+    regulator: RegulatorCreate
+
+
+class TenantSetupRequest(BaseModel):
+    setup_key: str
+    tenant: TenantCreate
+
+
+@router.post("/regulators", status_code=status.HTTP_200_OK)
+async def admin_create_regulator(
+    req: RegulatorSetupRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Create a State Regulator document (SUPER_ADMIN + setup key)."""
+    _verify_admin_setup(req.setup_key)
+    from app.services.production_seed import create_regulator
+    try:
+        doc = create_regulator(req.regulator.model_dump(), user)
+        return {"success": True, "regulator": doc}
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        logger.error(f"Create regulator failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/regulators", status_code=status.HTTP_200_OK)
+async def admin_list_regulators(
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """List every State Regulator (SUPER_ADMIN)."""
+    from app.services.production_seed import list_regulators_admin
+    return {"success": True, "regulators": list_regulators_admin()}
+
+
+@router.post("/tenants", status_code=status.HTTP_200_OK)
+async def admin_create_tenant(
+    req: TenantSetupRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Create one operator tenant (SUPER_ADMIN + setup key)."""
+    _verify_admin_setup(req.setup_key)
+    from app.services.production_seed import create_tenant
+    try:
+        doc = create_tenant(req.tenant.model_dump(), user)
+        return {"success": True, "tenant": doc}
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        logger.error(f"Create tenant failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/tenants/bulk", status_code=status.HTTP_200_OK)
+async def admin_bulk_create_tenants(
+    req: TenantBulkRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Bulk-import tenants from a JSON list or CSV text (SUPER_ADMIN + setup key)."""
+    _verify_admin_setup(req.setup_key)
+    from app.services.production_seed import bulk_create_tenants
+
+    records: List[Dict[str, Any]] = []
+    if req.records:
+        records = [r.model_dump() for r in req.records]
+    elif req.csv:
+        import csv as _csv
+        import io
+        reader = _csv.DictReader(io.StringIO(req.csv))
+        for row in reader:
+            rec = {k.strip(): (v or "").strip() for k, v in row.items() if k}
+            if not rec.get("tenant_id") and rec.get("id"):
+                rec["tenant_id"] = rec.pop("id")
+            if not rec.get("tenant_id"):
+                continue
+            records.append(rec)
+    else:
+        raise HTTPException(status_code=400, detail="Provide 'records' (JSON) or 'csv' text")
+
+    if not records:
+        raise HTTPException(status_code=400, detail="No valid tenant records provided")
+
+    try:
+        result = bulk_create_tenants(records, user)
+        return {"success": True, **result}
+    except Exception as e:
+        logger.error(f"Bulk tenant import failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/tenants", status_code=status.HTTP_200_OK)
+async def admin_list_tenants(
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """List all operator tenants with per-subcollection counts (SUPER_ADMIN)."""
+    from app.services.production_seed import list_tenants_admin
+    return {"success": True, "tenants": list_tenants_admin()}
+
+
+@router.get("/seed/preview", status_code=status.HTTP_200_OK)
+async def admin_seed_preview(
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Preview the CAAN demo seed plan against the current database (SUPER_ADMIN)."""
+    from app.services.production_seed import preview_seed
+    try:
+        plan = preview_seed(actor=user)
+        return {"success": True, **plan}
+    except Exception as e:
+        logger.error(f"Seed preview failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/seed/deploy", status_code=status.HTTP_200_OK)
+async def admin_seed_deploy(
+    req: SeedDeployRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Deploy the CAAN demo seed plan (SUPER_ADMIN + setup key).
+
+    Writes the regulator, tags the operator tenants, and seeds surveys +
+    hazards + reports. Runs against the backend's configured database
+    (beta -> sms-db-beta, production -> sms-db).
+    """
+    _verify_admin_setup(req.setup_key)
+    from app.services import production_seed
+    try:
+        result = production_seed.deploy_seed(force=req.force, actor=user)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Seed deploy failed: {e}")
+        production_seed._audit("SEED_DEPLOY", user, "caan", f"Deploy failed: {str(e)}", result="error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/seed/logs", status_code=status.HTTP_200_OK)
+async def admin_seed_logs(
+    limit: int = Query(50, ge=1, le=200),
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Recent seeding/admin audit log entries (SUPER_ADMIN)."""
+    from app.services.production_seed import list_audit_logs
+    return {"success": True, "logs": list_audit_logs(limit=limit)}

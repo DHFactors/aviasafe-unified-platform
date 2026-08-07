@@ -65,6 +65,21 @@ Authorization: Bearer <FIREBASE_ID_TOKEN>
 | PUT | `/risk-matrix` * | Update default risk matrix |
 | POST | `/seed-demo-data` * | Destructive re-seed (404 when disabled) |
 | POST | `/create-seed-users` * | Recreate seed users (404 when disabled) |
+| POST | `/regulators` * | Create a State Regulator (`regulators/{id}`) |
+| GET | `/regulators` | List State Regulators |
+| POST | `/tenants` * | Create a single operator tenant (`tenants/{tenant_id}`) |
+| POST | `/tenants/bulk` * | Bulk-create tenants from a JSON array or CSV text |
+| GET | `/tenants` | List tenants with per-subcollection counts (surveys/hazards/reports) |
+| GET | `/seed/preview` | Preview the CAAN demo seed plan against the live database |
+| POST | `/seed/deploy` * | Deploy the seed plan (regulator + tenant tags + surveys/hazards/reports); `force` re-seeds existing surveys |
+| GET | `/seed/logs?limit=N` | Audit log of every regulator/tenant/seed action (newest first) |
+
+Admin seed endpoints (**`/regulators`, `/tenants`, `/tenants/bulk`, `/seed/deploy`**) require the
+`SETUP_SECRET` (503 if unset, 403 on wrong key) and a `SUPER_ADMIN` ID token. All mutations write
+an audit row to Firestore `audit_logs` (action/actor/target/detail/result/timestamp). The seed
+plan targets the deployed environment's database (beta → `sms-db-beta`, production → `sms-db`),
+mirrors `scripts/seed_caan_demo_data.py`, and writes every survey/hazard/report with
+`seed_version="caan-demo-1"`.
 
 ### 3.3 Reports — `/api/v1/reports`
 

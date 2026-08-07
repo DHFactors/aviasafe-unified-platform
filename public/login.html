@@ -249,6 +249,8 @@ AUTHOR: AviaSAFE Systems
 
         <div class="footer-links">
             <a href="/">← Back to Home</a>
+            <span class="footer-divider">|</span>
+            <a href="/admin/login.html">Developer Login</a>
         </div>
     </div>
 </div>
@@ -334,16 +336,8 @@ function getTenantFromSubdomain() {
 // ============================================================================
 
 function redirectBasedOnRole(user) {
-    var role = user.role || 'USER';
-    var redirectUrl = '/safety.html';
-    
-    if (role === 'SUPER_ADMIN') {
-        redirectUrl = '/admin/';
-    } else if (role === 'CAAN_SMD') {
-        redirectUrl = '/caan.html';
-    }
-    
-    console.log('Redirecting to ' + redirectUrl + ' (role=' + role + ')');
+    var redirectUrl = getRoleDestination(user);
+    console.log('Redirecting to ' + redirectUrl + ' (role=' + (user.role || 'USER') + ')');
     window.location.href = redirectUrl;
 }
 

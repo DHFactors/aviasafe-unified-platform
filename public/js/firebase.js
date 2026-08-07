@@ -290,4 +290,19 @@ async function getCurrentUser() {
     });
 }
 
+// ============================================================================
+// ROLE-BASED ROUTING — where should a signed-in user land after login?
+// ============================================================================
+
+function getRoleDestination(user) {
+    var role = (user && user.role) || 'USER';
+    if (role === 'SUPER_ADMIN') return '/admin/production-setup.html';
+    if (role === 'CAAN_SMD') return '/caan.html';
+    return '/safety.html';
+}
+
+function redirectByRole(user) {
+    window.location.href = getRoleDestination(user);
+}
+
 console.log('📦 firebase.js loaded');

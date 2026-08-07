@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     FIREBASE_COLLECTION_METADATA: str = "metadata"
     FIREBASE_COLLECTION_USERS: str = "users"
     FIREBASE_COLLECTION_REGULATORS: str = "regulators"
+    FIREBASE_COLLECTION_AUDIT_LOGS: str = "audit_logs"
     FIREBASE_DOCUMENT_INFO: str = "info"
     FIREBASE_TOKEN_URI: str = "https://oauth2.googleapis.com/token"
 
