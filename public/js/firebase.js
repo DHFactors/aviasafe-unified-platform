@@ -188,6 +188,12 @@ function initAppCheck() {
         console.log('ℹ️ App Check skipped (localhost)');
         return;
     }
+    // Admin pages are SUPER_ADMIN + SETUP_SECRET gated; the reCAPTCHA provider
+    // must not be able to break their auth requests.
+    if (window.location.pathname.indexOf('/admin/') === 0) {
+        console.log('ℹ️ App Check skipped (admin pages)');
+        return;
+    }
     if (RECAPTCHA_SITE_KEY.length < 20) {
         console.warn('⚠️ App Check skipped — invalid reCAPTCHA key. Set RECAPTCHA_SITE_KEY in firebase.js');
         return;
