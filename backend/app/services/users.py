@@ -39,8 +39,13 @@ def _parse_ms_timestamp(value: Any) -> Optional[datetime]:
 def user_doc_from_auth_record(record: Any) -> Dict[str, Any]:
     """Map a firebase_admin.auth.UserRecord to the Firestore users/{uid} shape."""
     claims = record.custom_claims or {}
-    created_at = _parse_ms_timestamp(getattr(record.user_metadata, "creation_timestamp", None))
-    last_login = _parse_ms_timestamp(getattr(record, "last_sign_in_at", None))
+    meta = getattr(record, "user_metadata", None)
+    created_at = _parse_ms_timestamp(getattr(meta, "creation_timestamp", None))
+    last_login = (
+        getattr(meta, "last_sign_in_at", None)
+        or getattr(meta, "last_sign_in_timestamp", None)
+    )
+    last_login = _parse_ms_timestamp(last_login)
     return {
         "uid": record.uid,
         "email": record.email,
@@ -74,7 +79,7 @@ def backfill_users_from_auth(max_pages: Optional[int] = None) -> int:
     page_token = None
     pages = 0
     while True:
-        page = auth.list_users(1000, page_token=page_token)
+        page = auth.list_users(max_results=1000, page_token=page_token)
         for record in page.users:
             upsert_user_doc(record.uid, user_doc_from_auth_record(record))
             written += 1

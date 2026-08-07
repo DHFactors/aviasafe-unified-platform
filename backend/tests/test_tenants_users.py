@@ -18,8 +18,9 @@ from app.services import users
 # ============================================================================
 
 class _FakeMeta:
-    def __init__(self, ts):
+    def __init__(self, ts, last_sign_in=None):
         self.creation_timestamp = ts
+        self.last_sign_in_timestamp = last_sign_in
 
 
 class _FakeRecord:
@@ -28,8 +29,7 @@ class _FakeRecord:
         self.email = email
         self.display_name = "Tara Safety"
         self.custom_claims = claims or {"role": "AIRLINE_ADMIN", "tenant_id": "tara-air"}
-        self.user_metadata = _FakeMeta(meta_ts)
-        self.last_sign_in_at = last_login
+        self.user_metadata = _FakeMeta(meta_ts, last_sign_in=last_login)
 
 
 def test_user_doc_from_auth_record_full():
@@ -46,7 +46,7 @@ def test_user_doc_from_auth_record_full():
 def test_user_doc_defaults_when_no_claims():
     rec = _FakeRecord(claims=None)
     rec.custom_claims = None
-    rec.last_sign_in_at = None
+    rec.user_metadata.last_sign_in_timestamp = None
     doc = users.user_doc_from_auth_record(rec)
     assert doc["role"] == "USER"
     assert doc["tenant_id"] is None
