@@ -282,3 +282,57 @@ def test_put_config_unknown_tenant(monkeypatch):
 
     resp = _put("ghost-air", {"survey_rate_limit": 10})
     assert resp.status_code == 404
+
+
+# ============================================================================
+# GET /api/v1/tenants/{tenantId}/config (Phase 3, auth optional)
+# ============================================================================
+
+def _get(tid, headers=None):
+    return TestClient(app).get(f"/api/v1/tenants/{tid}/config", headers=headers)
+
+
+def test_get_config_authenticated(monkeypatch):
+    db = _FakeDB()
+    db._tenants["tara-air"] = {
+        "config": {"survey_rate_limit": 25, "survey_instructions": "Please answer honestly"},
+    }
+    _patch_db(monkeypatch, db)
+    _patch_user(monkeypatch, _admin())
+
+    resp = _get("tara-air", headers={"Authorization": "Bearer faketoken"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "success"
+    assert body["data"]["tenant_id"] == "tara-air"
+    assert body["data"]["config"]["survey_rate_limit"] == 25
+    assert body["data"]["config"]["survey_instructions"] == "Please answer honestly"
+
+
+def test_get_config_no_auth_allowed(monkeypatch):
+    """The public survey page reads instructions without a login."""
+    db = _FakeDB()
+    db._tenants["tara-air"] = {"config": {"survey_instructions": "Read the manual first"}}
+    _patch_db(monkeypatch, db)
+
+    resp = _get("tara-air")
+    assert resp.status_code == 200
+    assert resp.json()["data"]["config"]["survey_instructions"] == "Read the manual first"
+
+
+def test_get_config_missing_config_map(monkeypatch):
+    """Tenant doc without a config field returns an empty config map."""
+    db = _FakeDB()
+    db._tenants["tara-air"] = {"tenant_id": "tara-air", "name": "Tara Air"}
+    _patch_db(monkeypatch, db)
+
+    resp = _get("tara-air")
+    assert resp.status_code == 200
+    assert resp.json()["data"]["config"] == {}
+
+
+def test_get_config_unknown_tenant(monkeypatch):
+    _patch_db(monkeypatch, _FakeDB())
+
+    resp = _get("ghost-air")
+    assert resp.status_code == 404

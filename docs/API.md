@@ -217,8 +217,29 @@ the same PUT contract with survey instructions and adds an auth-optional GET.
 
 | Method | Path | Description |
 |---|---|---|
+| GET | `/{tenantId}/config` | Read tenant config (auth **optional**; public survey page) |
 | GET | `/{tenantId}/users` | List authorized users (AIRLINE_ADMIN of that tenant or SUPER_ADMIN) |
 | PUT | `/{tenantId}/config` | Update tenant config (AIRLINE_ADMIN of that tenant only) |
+
+`GET /{tenantId}/config` returns the stored `config` map (missing fields omitted):
+
+```json
+{
+  "status": "success",
+  "timestamp": "...",
+  "data": {
+    "tenant_id": "tara-air",
+    "config": {
+      "survey_rate_limit": 25,
+      "survey_instructions": "Please answer all questions honestly."
+    }
+  }
+}
+```
+
+- Authentication is **optional**: the public survey page fetches `survey_instructions` without a login.
+  A supplied but invalid token is still rejected with `401`.
+- `404` for unknown tenants; tenants without a `config` field return an empty `{}` map.
 
 `GET /{tenantId}/users` returns the view-only authorized-users list for a tenant:
 
@@ -244,13 +265,16 @@ the same PUT contract with survey instructions and adds an auth-optional GET.
 
 ```json
 {
-  "survey_rate_limit": 25
+  "survey_rate_limit": 25,
+  "survey_instructions": "Please answer all questions honestly."
 }
 ```
 
 - `survey_rate_limit` must be one of **5, 10, 25, 50, 100**.
+- `survey_instructions` is an optional string (Rich Text / Markdown) shown at the top of the survey.
 - Authorization: `AIRLINE_ADMIN` of the target tenant only (`403` otherwise). `404` for unknown tenant.
-- Persists under the tenant doc's `config` map, preserving other keys (e.g. `survey_instructions`).
+- Persists under the tenant doc's `config` map, preserving other keys. A `null` `survey_instructions`
+  leaves the existing value untouched; passing an empty string clears it.
 - Audited with `TENANT_CONFIG_UPDATED`. Responses use the `{status, timestamp, data}` envelope.
 
 ### 3.12 System

@@ -7,9 +7,10 @@
 # ============================================================================
 
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from loguru import logger
 
@@ -20,6 +21,21 @@ from app.services.audit_service import log_audit, request_context
 from app.services.users import list_tenant_users
 
 router = APIRouter()
+
+optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer),
+) -> Optional[Dict[str, Any]]:
+    """Return the authenticated user when a Bearer token is supplied.
+
+    Public pages (e.g. the survey) must be able to read tenant config without
+    a login. A supplied but invalid token is still rejected with 401.
+    """
+    if credentials is None:
+        return None
+    return await get_current_user(credentials)
 
 SURVEY_RATE_LIMIT_OPTIONS = (5, 10, 25, 50, 100)
 
@@ -65,6 +81,33 @@ def _require_tenant_viewer(user: Dict[str, Any], tenant_id: str) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="tenantId does not match the authenticated user's tenant",
         )
+
+
+@router.get("/{tenant_id}/config", status_code=status.HTTP_200_OK)
+async def get_tenant_config(
+    tenant_id: str,
+    request: Request,
+    user: Optional[Dict[str, Any]] = Depends(get_optional_user),
+):
+    """Read per-tenant configuration (survey rate limit, survey instructions).
+
+    Authentication is optional: the public survey page calls this to render the
+    airline's instructions at the top of the survey. Returns 404 for unknown
+    tenants. The config map is returned as stored (missing fields omitted).
+    """
+    tenant_id = tenant_id.strip()
+    db = get_db()
+    tenant_ref = db.collection(settings.FIREBASE_COLLECTION_TENANTS).document(tenant_id)
+    try:
+        tenant_snap = tenant_ref.get()
+    except Exception as e:
+        logger.warning(f"Tenant config lookup failed for {tenant_id}: {e}")
+        raise HTTPException(status_code=500, detail="Tenant storage unavailable")
+    if not tenant_snap.exists:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown tenant: {tenant_id}")
+
+    config = (tenant_snap.to_dict() or {}).get("config") or {}
+    return _envelope({"tenant_id": tenant_id, "config": config})
 
 
 @router.get("/{tenant_id}/users", status_code=status.HTTP_200_OK)
