@@ -63,6 +63,9 @@ class _TenantRef:
 
 
 class _Doc:
+    """Mimics the real Firestore DocumentSnapshot: get() raises KeyError when
+    the field is missing, to_dict() returns the full data map."""
+
     def __init__(self, data, exists=True):
         self._data = data or {}
         self.exists = exists
@@ -70,7 +73,12 @@ class _Doc:
     def get(self, field, default=None):
         if field is None:
             return self._data
-        return self._data.get(field, default)
+        if field not in self._data:
+            raise KeyError(f"'{field}' is not contained in the data")
+        return self._data[field]
+
+    def to_dict(self):
+        return self._data
 
 
 def test_resolve_limit_per_tenant_override(monkeypatch):
@@ -84,6 +92,14 @@ def test_resolve_limit_per_tenant_override(monkeypatch):
 def test_resolve_limit_falls_back_to_global(monkeypatch):
     db = _RateLimitDB()
     db._tenants["tara-air"] = {"config": {}}
+    monkeypatch.setattr("app.middleware.rate_limit.get_db", lambda: db)
+    count, _ = rl._resolve_limit("survey_submit", "tara-air")
+    assert count == settings.SURVEY_RATE_LIMIT
+
+
+def test_resolve_limit_missing_config_field(monkeypatch):
+    db = _RateLimitDB()
+    db._tenants["tara-air"] = {"tenant_id": "tara-air", "name": "Tara Air"}
     monkeypatch.setattr("app.middleware.rate_limit.get_db", lambda: db)
     count, _ = rl._resolve_limit("survey_submit", "tara-air")
     assert count == settings.SURVEY_RATE_LIMIT
@@ -213,6 +229,17 @@ def test_put_config_preserves_existing_keys(monkeypatch):
     assert resp.status_code == 200
     assert db._tenants["tara-air"]["config"]["survey_instructions"] == "Please answer honestly"
     assert db._tenants["tara-air"]["config"]["survey_rate_limit"] == 50
+
+
+def test_put_config_creates_config_when_missing(monkeypatch):
+    db = _FakeDB()
+    db._tenants["tara-air"] = {"tenant_id": "tara-air", "name": "Tara Air"}
+    _patch_db(monkeypatch, db)
+    _patch_user(monkeypatch, _admin())
+
+    resp = _put("tara-air", {"survey_rate_limit": 10})
+    assert resp.status_code == 200
+    assert db._tenants["tara-air"]["config"]["survey_rate_limit"] == 10
 
 
 def test_put_config_wrong_tenant_denied(monkeypatch):

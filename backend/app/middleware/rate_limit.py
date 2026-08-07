@@ -155,7 +155,7 @@ def _tenant_survey_limit(tenant_id: str) -> Optional[int]:
     try:
         snap = get_db().collection(settings.FIREBASE_COLLECTION_TENANTS).document(tenant_id).get()
         if snap.exists:
-            config = snap.get("config") or {}
+            config = (snap.to_dict() or {}).get("config") or {}
             val = config.get("survey_rate_limit")
             if isinstance(val, int) and val > 0:
                 return val

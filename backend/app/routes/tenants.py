@@ -81,7 +81,7 @@ async def update_tenant_config(
     if not tenant_snap.exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown tenant: {tenant_id}")
 
-    existing = (tenant_snap.get("config") or {}) if tenant_snap.exists else {}
+    existing = (tenant_snap.to_dict() or {}).get("config") or {}
     updated = dict(existing)
     updated["survey_rate_limit"] = config.survey_rate_limit
     if config.survey_instructions is not None:
