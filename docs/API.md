@@ -207,9 +207,32 @@ Rules:
 - Pillar grouping: `safety_policy` = q1–q5, `safety_risk_management` = q6–q13,
   `safety_assurance` = q14–q16 + q19–q20, `safety_promotion` = q17–q18 + q21–q23.
 - Responses: `201` with `{id, tenant_id, overall_sms_health, overall_score_pct, pillar_scores}`.
-- Rate limited to **`SURVEY_RATE_LIMIT` submissions per tenant per day** (default 5, env-configurable).
+- Rate limited to **`SURVEY_RATE_LIMIT` submissions per tenant per day** (default 5, env-configurable;
+  overridable per tenant via `tenants/{id}/config.survey_rate_limit`). Counter key: `rl:survey:{tenantId}:{date}`.
 
-### 3.11 System
+### 3.11 Tenants — `/api/v1/tenants`
+
+Per-tenant configuration endpoints. Phase 1 ships the survey rate-limit control; Phase 3 extends
+the same PUT contract with survey instructions and adds an auth-optional GET.
+
+| Method | Path | Description |
+|---|---|---|
+| PUT | `/{tenantId}/config` | Update tenant config (AIRLINE_ADMIN of that tenant only) |
+
+`PUT /{tenantId}/config` request body:
+
+```json
+{
+  "survey_rate_limit": 25
+}
+```
+
+- `survey_rate_limit` must be one of **5, 10, 25, 50, 100**.
+- Authorization: `AIRLINE_ADMIN` of the target tenant only (`403` otherwise). `404` for unknown tenant.
+- Persists under the tenant doc's `config` map, preserving other keys (e.g. `survey_instructions`).
+- Audited with `TENANT_CONFIG_UPDATED`. Responses use the `{status, timestamp, data}` envelope.
+
+### 3.12 System
 
 | Method | Path | Description |
 |---|---|---|

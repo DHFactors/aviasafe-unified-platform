@@ -1,6 +1,7 @@
 import os
 import functools
 from datetime import datetime, timezone, timedelta
+from typing import Optional, Tuple
 
 import redis.asyncio as aioredis
 
@@ -8,6 +9,7 @@ from fastapi import HTTPException, Request
 from loguru import logger
 
 from app.core.config import settings
+from app.firebase import get_db
 
 redis_url = settings.REDIS_URL or os.getenv("REDIS_URL", "")
 redis_enabled = settings.REDIS_ENABLED or os.getenv("REDIS_ENABLED", "").lower() == "true"
@@ -55,10 +57,8 @@ def rate_limit(limit_type: str):
                 return await func(*args, **kwargs)
 
             tenant_id = _get_tenant_id(kwargs)
-            bucket_key = f"tenant:{tenant_id}" if tenant_id else f"ip:{_get_client_ip(request)}"
-            max_count, window_sec = RATE_LIMITS.get(limit_type, (100, 3600))
-            period_key = _period_key(window_sec)
-            redis_key = f"rl:{limit_type}:{bucket_key}:{period_key}"
+            max_count, window_sec = _resolve_limit(limit_type, tenant_id)
+            redis_key = _build_redis_key(limit_type, tenant_id, _get_client_ip(request), window_sec)
 
             try:
                 r = await get_redis()
@@ -130,6 +130,52 @@ def _get_tenant_id(kwargs: dict) -> str:
         if tid:
             return tid
     return None
+
+
+def _resolve_limit(limit_type: str, tenant_id: Optional[str]) -> Tuple[int, int]:
+    """Resolve the (max_count, window_sec) bucket for a limit type.
+
+    Per-tenant survey overrides (tenants/{tid}/config.survey_rate_limit) take
+    precedence over the global SURVEY_RATE_LIMIT setting for survey_submit.
+    """
+    base_count, window_sec = RATE_LIMITS.get(limit_type, (100, 3600))
+    if limit_type == "survey_submit" and tenant_id:
+        override = _tenant_survey_limit(tenant_id)
+        if override:
+            return override, window_sec
+    return base_count, window_sec
+
+
+def _tenant_survey_limit(tenant_id: str) -> Optional[int]:
+    """Per-tenant daily survey cap from the tenant doc's `config` map.
+
+    Returns None (-> global fallback) when the tenant has no explicit
+    override, the value is not a positive int, or Firestore is unavailable.
+    """
+    try:
+        snap = get_db().collection(settings.FIREBASE_COLLECTION_TENANTS).document(tenant_id).get()
+        if snap.exists:
+            config = snap.get("config") or {}
+            val = config.get("survey_rate_limit")
+            if isinstance(val, int) and val > 0:
+                return val
+    except Exception as e:
+        logger.warning(f"Failed to resolve per-tenant survey limit for {tenant_id}: {e}")
+    return None
+
+
+def _build_redis_key(limit_type: str, tenant_id: Optional[str], ip: str, window_sec: int) -> str:
+    """Build the Redis counter key for a rate-limited bucket.
+
+    Survey submissions use the compact `rl:survey:{tenantId}:{date}` shape so
+    operators can inspect per-tenant quota directly in Redis.
+    """
+    period_key = _period_key(window_sec)
+    if limit_type == "survey_submit":
+        bucket = tenant_id if tenant_id else f"ip:{ip}"
+        return f"rl:survey:{bucket}:{period_key}"
+    bucket_key = f"tenant:{tenant_id}" if tenant_id else f"ip:{ip}"
+    return f"rl:{limit_type}:{bucket_key}:{period_key}"
 
 
 def _get_client_ip(request: Request) -> str:
