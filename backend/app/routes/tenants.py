@@ -106,8 +106,13 @@ async def get_tenant_config(
     if not tenant_snap.exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown tenant: {tenant_id}")
 
-    config = (tenant_snap.to_dict() or {}).get("config") or {}
-    return _envelope({"tenant_id": tenant_id, "config": config})
+    tenant_data = tenant_snap.to_dict() or {}
+    config = tenant_data.get("config") or {}
+    return _envelope({
+        "tenant_id": tenant_id,
+        "name": tenant_data.get("name"),
+        "config": config,
+    })
 
 
 @router.get("/{tenant_id}/users", status_code=status.HTTP_200_OK)

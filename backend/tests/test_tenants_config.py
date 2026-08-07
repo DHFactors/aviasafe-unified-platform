@@ -295,6 +295,7 @@ def _get(tid, headers=None):
 def test_get_config_authenticated(monkeypatch):
     db = _FakeDB()
     db._tenants["tara-air"] = {
+        "name": "Tara Air",
         "config": {"survey_rate_limit": 25, "survey_instructions": "Please answer honestly"},
     }
     _patch_db(monkeypatch, db)
@@ -305,6 +306,7 @@ def test_get_config_authenticated(monkeypatch):
     body = resp.json()
     assert body["status"] == "success"
     assert body["data"]["tenant_id"] == "tara-air"
+    assert body["data"]["name"] == "Tara Air"
     assert body["data"]["config"]["survey_rate_limit"] == 25
     assert body["data"]["config"]["survey_instructions"] == "Please answer honestly"
 
