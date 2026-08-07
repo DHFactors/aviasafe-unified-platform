@@ -297,6 +297,7 @@ def test_get_config_authenticated(monkeypatch):
     db._tenants["tara-air"] = {
         "name": "Tara Air",
         "config": {"survey_rate_limit": 25, "survey_instructions": "Please answer honestly"},
+        "surveyConfig": {"openDate": "2026-08-01T00:00:00Z", "closeDate": "2026-08-31T23:59:59Z"},
     }
     _patch_db(monkeypatch, db)
     _patch_user(monkeypatch, _admin())
@@ -309,6 +310,8 @@ def test_get_config_authenticated(monkeypatch):
     assert body["data"]["name"] == "Tara Air"
     assert body["data"]["config"]["survey_rate_limit"] == 25
     assert body["data"]["config"]["survey_instructions"] == "Please answer honestly"
+    assert body["data"]["surveyConfig"]["openDate"] == "2026-08-01T00:00:00Z"
+    assert body["data"]["surveyConfig"]["closeDate"] == "2026-08-31T23:59:59Z"
 
 
 def test_get_config_no_auth_allowed(monkeypatch):

@@ -108,10 +108,12 @@ async def get_tenant_config(
 
     tenant_data = tenant_snap.to_dict() or {}
     config = tenant_data.get("config") or {}
+    survey_config = tenant_data.get("surveyConfig") or {}
     return _envelope({
         "tenant_id": tenant_id,
         "name": tenant_data.get("name"),
         "config": config,
+        "surveyConfig": survey_config,
     })
 
 
