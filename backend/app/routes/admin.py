@@ -359,6 +359,10 @@ class TenantCreate(BaseModel):
     regulator_id: Optional[str] = None
     safety_manager: Optional[Dict[str, Any]] = None
     survey_config: Optional[Dict[str, Any]] = None
+    contact: Optional[Dict[str, Any]] = None
+    contract: Optional[Dict[str, Any]] = None
+    users: Optional[List[Dict[str, Any]]] = None
+    status: Optional[str] = "active"
 
 
 class TenantBulkRequest(BaseModel):
@@ -414,11 +418,28 @@ async def admin_create_tenant(
     req: TenantSetupRequest,
     user: Dict[str, Any] = Depends(get_admin_user),
 ):
-    """Create one operator tenant (SUPER_ADMIN + setup key)."""
+    """Create one operator tenant (SUPER_ADMIN + setup key).
+
+    When `tenant.users` is provided the tenant is created together with its
+    Firebase Auth users (AIRLINE_ADMIN etc.) and the generated passwords are
+    returned exactly once (never persisted).
+    """
     _verify_admin_setup(req.setup_key)
+    data = req.tenant.model_dump()
+    if data.get("users"):
+        from app.services.tenant_credentials import create_tenant_with_credentials
+        try:
+            result = create_tenant_with_credentials(data, user)
+            return {"success": True, **result}
+        except ValueError as e:
+            raise HTTPException(status_code=409, detail=str(e))
+        except Exception as e:
+            logger.error(f"Create tenant with credentials failed: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
     from app.services.production_seed import create_tenant
     try:
-        doc = create_tenant(req.tenant.model_dump(), user)
+        doc = create_tenant(data, user)
         return {"success": True, "tenant": doc}
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
@@ -517,3 +538,99 @@ async def admin_seed_logs(
     """Recent seeding/admin audit log entries (SUPER_ADMIN)."""
     from app.services.production_seed import list_audit_logs
     return {"success": True, "logs": list_audit_logs(limit=limit)}
+
+
+# ============================================================================
+# Tenant credentials management (tenant-credentials.html)
+# ============================================================================
+
+class CheckEmailRequest(BaseModel):
+    setup_key: str
+    email: str
+
+
+class TenantIdSetupRequest(BaseModel):
+    setup_key: str
+    tenant_id: str
+
+
+@router.post("/tenants/check-email", status_code=status.HTTP_200_OK)
+async def admin_check_email(
+    req: CheckEmailRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Check whether an email is already registered in Firebase Auth (SUPER_ADMIN + setup key)."""
+    _verify_admin_setup(req.setup_key)
+    from app.services.tenant_credentials import check_email_available
+    try:
+        return {"success": True, **check_email_available(req.email)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Email availability check failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/tenants/{tenant_id}/credentials", status_code=status.HTTP_200_OK)
+async def admin_get_tenant_credentials(
+    tenant_id: str,
+    setup_key: str = Query("", description="Admin setup key (SETUP_SECRET)"),
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Get a tenant's stored credential metadata (SUPER_ADMIN + setup key).
+
+    Never returns passwords — those are generated, applied to Firebase Auth,
+    surfaced once, and never persisted.
+    """
+    _verify_admin_setup(setup_key)
+    from app.services.tenant_credentials import get_tenant_credentials
+    try:
+        return {"success": True, "credentials": get_tenant_credentials(tenant_id)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Get tenant credentials failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/tenants/{tenant_id}/reset-password", status_code=status.HTTP_200_OK)
+async def admin_reset_tenant_password(
+    tenant_id: str,
+    req: AdminSetupRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Reset a tenant's admin password (SUPER_ADMIN + setup key).
+
+    The new password is returned exactly once and is never stored.
+    """
+    _verify_admin_setup(req.setup_key)
+    from app.services.tenant_credentials import reset_admin_password
+    try:
+        return {"success": True, **reset_admin_password(tenant_id, user)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Reset tenant password failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/tenants/{tenant_id}/send-welcome", status_code=status.HTTP_200_OK)
+async def admin_send_tenant_welcome(
+    tenant_id: str,
+    req: AdminSetupRequest,
+    user: Dict[str, Any] = Depends(get_admin_user),
+):
+    """Set a fresh temporary password and email it to the tenant admin.
+
+    Requires an email provider (EMAIL_PROVIDER=smtp|sendgrid). With the default
+    'none' provider the message is rendered, logged, and returned as a preview.
+    """
+    _verify_admin_setup(req.setup_key)
+    from app.services.tenant_credentials import send_welcome_email_for_tenant
+    try:
+        return {"success": True, **send_welcome_email_for_tenant(tenant_id, user)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Send welcome email failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

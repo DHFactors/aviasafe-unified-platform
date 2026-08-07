@@ -118,6 +118,19 @@ class Settings(BaseSettings):
     # /create-seed-users) return 404. Disable only in non-production environments.
     DISABLE_DESTRUCTIVE_ENDPOINTS: bool = True
 
+    # ── Tenant credentials / welcome email ──
+    # Provider: none (log + preview only), smtp, or sendgrid.
+    EMAIL_PROVIDER: str = "none"
+    EMAIL_FROM: Optional[str] = None
+    EMAIL_FROM_NAME: str = "AviaSAFE SMS Team"
+    APP_LOGIN_URL: str = "https://sms.aviasafesystems.com"
+    APP_SUPPORT_EMAIL: str = "info@aviasafesystems.com"
+    SENDGRID_API_KEY: Optional[str] = None
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASS: Optional[str] = None
+
     # ── Server ──
     HOST: str = "0.0.0.0"
     PORT: int = 8000

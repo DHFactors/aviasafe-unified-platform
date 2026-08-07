@@ -67,7 +67,11 @@ Authorization: Bearer <FIREBASE_ID_TOKEN>
 | POST | `/create-seed-users` * | Recreate seed users (404 when disabled) |
 | POST | `/regulators` * | Create a State Regulator (`regulators/{id}`) |
 | GET | `/regulators` | List State Regulators |
-| POST | `/tenants` * | Create a single operator tenant (`tenants/{tenant_id}`) |
+| POST | `/tenants` * | Create a single operator tenant (`tenants/{tenant_id}`) — with a `users[]` array, creates tenant + provisions Firebase Auth accounts with role/tenant claims and returns generated passwords once |
+| POST | `/tenants/check-email` * | Check whether an email is available for a new Auth account (`{setup_key, email}` → `{available, exists}`) |
+| GET | `/tenants/{tenant_id}/credentials?setup_key=` | Read a tenant's stored credential metadata (contact/contract/users — never passwords) |
+| POST | `/tenants/{tenant_id}/reset-password` * | Reset the tenant admin's Auth password; returns the new password once |
+| POST | `/tenants/{tenant_id}/send-welcome` * | Set a fresh temp password and email the tenant's admin the welcome email (provider `none` = logged/preview only) |
 | POST | `/tenants/bulk` * | Bulk-create tenants from a JSON array or CSV text |
 | GET | `/tenants` | List tenants with per-subcollection counts (surveys/hazards/reports) |
 | GET | `/seed/preview` | Preview the CAAN demo seed plan against the live database |

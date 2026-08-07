@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to AviaSAFE SMS</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f7fa;font-family:Arial,Helvetica,sans-serif;color:#1a202c;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fa;padding:32px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;">
+                    <tr>
+                        <td style="background:#0b2a42;padding:24px 32px;">
+                            <span style="color:#ffffff;font-size:20px;font-weight:bold;">Avia<span style="color:#34a853;">SAFE</span> SMS</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:32px;">
+                            <h1 style="margin:0 0 16px;font-size:22px;color:#0b2a42;">Welcome to AviaSAFE SMS</h1>
+                            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">
+                                Dear <strong>{contact_name}</strong>,
+                            </p>
+                            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">
+                                Your organization <strong>{tenant_name}</strong> has been onboarded to
+                                AviaSAFE SMS — the ICAO Annex 19, Doc 9859 &amp; Doc 10951 aligned
+                                safety management platform.
+                            </p>
+
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin:20px 0;">
+                                <tr>
+                                    <td style="padding:16px 20px;">
+                                        <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Login URL</p>
+                                        <p style="margin:0 0 16px;font-size:15px;"><a href="{login_url}" style="color:#1a6b8a;">{login_url}</a></p>
+                                        <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Admin Email</p>
+                                        <p style="margin:0 0 16px;font-size:15px;"><strong>{admin_email}</strong></p>
+                                        <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Temporary Password</p>
+                                        <p style="margin:0 0 8px;font-size:16px;font-family:Consolas,Menlo,monospace;"><strong>{password}</strong></p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin:0 0 16px;font-size:13px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:10px 14px;">
+                                &#9888;&#65039; For security, please change your password immediately after your first login.
+                            </p>
+
+                            <h2 style="margin:24px 0 12px;font-size:16px;color:#0b2a42;">Next Steps</h2>
+                            <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.8;color:#334155;">
+                                <li>Login with the credentials above</li>
+                                <li>Complete your organization's SMS Health Assessment</li>
+                                <li>Start submitting safety reports</li>
+                                <li>Access your safety dashboard</li>
+                            </ol>
+
+                            <p style="margin:24px 0 0;font-size:14px;color:#334155;">
+                                For assistance, contact: <a href="mailto:{support_email}" style="color:#1a6b8a;">{support_email}</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;">
+                            <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">
+                                &copy; {year} AviaSAFE Systems. All rights reserved.<br>
+                                This email contains confidential access credentials. If you did not expect it, contact us immediately.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
