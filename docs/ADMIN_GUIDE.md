@@ -64,7 +64,7 @@ destructive endpoints. Disable only in non-production.
 - [ ] Verify tenant isolation on one cross-tenant read.
 - [ ] Confirm rate-limit config is as intended.
 - [ ] Confirm no plaintext credentials exist in docs/repo (grep for known passwords).
-- [ ] Record any operational event in `PROJECT_STATUS_REPORT_02AUG2026.md`.
+- [ ] Record any operational event in the status report under `docs/archive/`.
 
 ## 6. Troubleshooting
 

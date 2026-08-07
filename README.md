@@ -3,10 +3,9 @@
 A multi-tenant aviation **Safety Management System (SMS) intelligence platform** for Nepal,
 aligned with **ICAO Annex 19**, **ICAO Doc 9859**, and **CAAN CAR-19**.
 
-> **Status:** Release Candidate — RC-1 (Security Hardening) and RC-2 (Functional Corrections) are
-> **COMPLETE**. RC-3 (Documentation & Operational Readiness) is in progress. See
-> [PROJECT_STATUS_REPORT_02AUG2026.md](./PROJECT_STATUS_REPORT_02AUG2026.md) for the authoritative
-> status and [PROJECT_CHARTER.md](./PROJECT_CHARTER.md) for the product charter.
+> **Status:** Released as production **v1.0.0**. See
+> [docs/archive/PROJECT_STATUS_REPORT_05AUG2026.md](./docs/archive/PROJECT_STATUS_REPORT_05AUG2026.md) for the
+> release record and [docs/archive/PROJECT_CHARTER.md](./docs/archive/PROJECT_CHARTER.md) for the product charter.
 
 ---
 
@@ -30,7 +29,7 @@ Supporting modules extend the core flows: Hazard Register, Corrective Action Not
 an AI assistant (Gemini) that *suggests* severity/probability — never authoritatively overrides the
 Safety Manager.
 
-Per the [Product Charter](./PROJECT_CHARTER.md): this is **not** an investigation management
+Per the [Product Charter](./docs/archive/PROJECT_CHARTER.md): this is **not** an investigation management
 system, CAPA system, QMS, ERP, OEI, or enterprise risk platform. No feature expansion without
 approval.
 
@@ -108,9 +107,10 @@ Live endpoints:
 | Security | [docs/SECURITY.md](./docs/SECURITY.md) |
 | Testing | [tests/README.md](./tests/README.md) |
 | Known limitations / tech debt | [docs/KNOWN_LIMITATIONS.md](./docs/KNOWN_LIMITATIONS.md) |
-| Product charter | [PROJECT_CHARTER.md](./PROJECT_CHARTER.md) |
-| Status & roadmap | [PROJECT_STATUS_REPORT_05AUG2026.md](./PROJECT_STATUS_REPORT_05AUG2026.md), [ROADMAP.md](./ROADMAP.md) |
-| Demo walkthrough | [DEMO_GUIDE.md](./DEMO_GUIDE.md) |
+| Product charter | [docs/archive/PROJECT_CHARTER.md](./docs/archive/PROJECT_CHARTER.md) |
+| Status & roadmap | [docs/archive/PROJECT_STATUS_REPORT_05AUG2026.md](./docs/archive/PROJECT_STATUS_REPORT_05AUG2026.md), [ROADMAP.md](./ROADMAP.md) |
+| Demo walkthrough | [docs/archive/DEMO_GUIDE.md](./docs/archive/DEMO_GUIDE.md) |
+| File structure & routing | [docs/FILE_STRUCTURE.md](./docs/FILE_STRUCTURE.md) |
 | Tenant onboarding | [public/docs/tenant-guide/](./public/docs/tenant-guide/) |
 | UAT evidence | [UAT_DEFECT_REGISTER.md](./UAT_DEFECT_REGISTER.md) |
 
@@ -141,7 +141,7 @@ Firebase setup, and local emulation.
 ## Contributing & Governance
 
 - No architectural or functional expansion without explicit approval (see
-  [PROJECT_CHARTER.md](./PROJECT_CHARTER.md) Governance Rule).
+  [docs/archive/PROJECT_CHARTER.md](./docs/archive/PROJECT_CHARTER.md) Governance Rule).
 - All changes must keep `python -m pytest tests/ -q` green.
 - Do not commit secrets. All credentials and API keys are environment-driven.
 

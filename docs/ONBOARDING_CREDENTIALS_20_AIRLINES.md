@@ -54,4 +54,4 @@ For any tenant `T` (e.g. `buddha-air`), the portal pages are:
 
 Tenants are created via `POST /api/v1/admin/provision-airlines` (SUPER_ADMIN token + `SETUP_SECRET`).
 See [ADMIN_GUIDE.md](./ADMIN_GUIDE.md) and [API.md](./API.md). The demo seed dataset (6 profiles) is
-loaded with `python -m seed.runner` — see [DEMO_GUIDE.md](../DEMO_GUIDE.md).
+loaded with `python -m seed.runner` — see [DEMO_GUIDE.md](../docs/archive/DEMO_GUIDE.md).

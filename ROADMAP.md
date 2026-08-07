@@ -2,7 +2,7 @@
 
 Current-state roadmap for the AviaSAFE SMS Platform. Supersedes the earlier "Safety-Health" roadmap
 (Supabase/Netlify era). The authoritative status source is
-[PROJECT_STATUS_REPORT_02AUG2026.md](./PROJECT_STATUS_REPORT_02AUG2026.md).
+[docs/archive/PROJECT_STATUS_REPORT_05AUG2026.md](./docs/archive/PROJECT_STATUS_REPORT_05AUG2026.md).
 
 ## Milestones Reached
 
@@ -25,7 +25,7 @@ Current-state roadmap for the AviaSAFE SMS Platform. Supersedes the earlier "Saf
 
 ## Product Roadmap (post-pilot, charter-gated)
 
-Per the [Product Charter](./PROJECT_CHARTER.md), feature expansion requires explicit approval.
+Per the [Product Charter](./docs/archive/PROJECT_CHARTER.md), feature expansion requires explicit approval.
 Candidate product work (not committed):
 
 - Monitoring / alerting for SMS health thresholds.

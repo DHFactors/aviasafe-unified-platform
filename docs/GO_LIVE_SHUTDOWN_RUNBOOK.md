@@ -87,5 +87,5 @@ firebase deploy --only hosting:sms-beta --project gap-analysis-ssp
 
 - `docs/BETA_TESTERS.md` — demo accounts for testers
 - `docs/BETA_ENVIRONMENT.md` — beta environment setup
-- `docs/BETA_MONITORING_GUIDE.md` — monitoring during beta
+- `docs/archive/BETA_MONITORING_GUIDE.md` — monitoring during beta (now §9 of `docs/OPERATIONS.md`)
 - `docs/BETA_TEST_CHECKLIST.md` — tester checklist

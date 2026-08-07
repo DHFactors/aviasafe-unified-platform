@@ -1,7 +1,7 @@
 # Known Limitations & Technical Debt
 
 Tracking register for the AviaSAFE platform as of RC-3. Each item maps to a `TD-<n>` identifier used
-in `PROJECT_STATUS_REPORT_02AUG2026.md` (the authoritative register).
+in `docs/archive/PROJECT_STATUS_REPORT_05AUG2026.md` (the authoritative register).
 
 Legend: ✅ **Resolved** · 🔶 **Partially resolved** · ⏳ **Open**
 
