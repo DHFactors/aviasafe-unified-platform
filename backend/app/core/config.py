@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     FIREBASE_COLLECTION_TENANTS: str = "tenants"
     FIREBASE_COLLECTION_REPORTS: str = "reports"
     FIREBASE_COLLECTION_METADATA: str = "metadata"
+    FIREBASE_COLLECTION_USERS: str = "users"
     FIREBASE_DOCUMENT_INFO: str = "info"
     FIREBASE_TOKEN_URI: str = "https://oauth2.googleapis.com/token"
 

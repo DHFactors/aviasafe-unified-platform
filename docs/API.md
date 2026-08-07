@@ -217,7 +217,28 @@ the same PUT contract with survey instructions and adds an auth-optional GET.
 
 | Method | Path | Description |
 |---|---|---|
+| GET | `/{tenantId}/users` | List authorized users (AIRLINE_ADMIN of that tenant or SUPER_ADMIN) |
 | PUT | `/{tenantId}/config` | Update tenant config (AIRLINE_ADMIN of that tenant only) |
+
+`GET /{tenantId}/users` returns the view-only authorized-users list for a tenant:
+
+```json
+{
+  "status": "success",
+  "timestamp": "...",
+  "data": {
+    "tenant_id": "tara-air",
+    "users": [
+      { "uid": "abc", "email": "officer@taraair.com", "role": "AIRLINE_ADMIN",
+        "createdAt": "2026-08-06T10:00:00+00:00", "lastLogin": null }
+    ]
+  }
+}
+```
+
+- Authorization: `AIRLINE_ADMIN` of the target tenant or `SUPER_ADMIN` (`403` otherwise).
+- Data source: the Firestore `users` collection, mirrored from Firebase Auth (backfilled via
+  `backend/scripts/backfill_users.py` and maintained on register / claims updates).
 
 `PUT /{tenantId}/config` request body:
 

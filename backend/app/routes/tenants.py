@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.firebase import get_db
 from app.middleware.auth import get_current_user
 from app.services.audit_service import log_audit, request_context
+from app.services.users import list_tenant_users
 
 router = APIRouter()
 
@@ -48,6 +49,42 @@ def _require_tenant_admin(user: Dict[str, Any], tenant_id: str) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="tenantId does not match the authenticated user's tenant",
         )
+
+
+def _require_tenant_viewer(user: Dict[str, Any], tenant_id: str) -> None:
+    """Phase 2: AIRLINE_ADMIN of the tenant or SUPER_ADMIN may list users."""
+    if user.get("role") == "SUPER_ADMIN":
+        return
+    if user.get("role") != "AIRLINE_ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the AIRLINE_ADMIN of this tenant or SUPER_ADMIN can view users",
+        )
+    if user.get("tenant_id") != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="tenantId does not match the authenticated user's tenant",
+        )
+
+
+@router.get("/{tenant_id}/users", status_code=status.HTTP_200_OK)
+async def list_users(
+    tenant_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """List the authorized users for a tenant (view-only).
+
+    AIRLINE_ADMIN of the target tenant or SUPER_ADMIN. Returns uid, email, role,
+    createdAt and lastLogin (when available) from the mirrored users collection.
+    """
+    tenant_id = tenant_id.strip()
+    _require_tenant_viewer(user, tenant_id)
+    try:
+        users = list_tenant_users(tenant_id)
+    except Exception as e:
+        logger.warning(f"Failed to list users for tenant {tenant_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list tenant users")
+    return _envelope({"tenant_id": tenant_id, "users": users})
 
 
 @router.put("/{tenant_id}/config", status_code=status.HTTP_200_OK)

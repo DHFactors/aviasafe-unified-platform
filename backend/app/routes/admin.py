@@ -24,6 +24,7 @@ from app.services.risk_matrix import (
     set_risk_matrix_config,
     THRESHOLDS_DEFAULT,
 )
+from app.services.users import upsert_user_doc, user_doc_from_auth_record
 
 router = APIRouter()
 
@@ -136,6 +137,7 @@ async def setup_test_user_claims(
                 claims["tenant_id"] = tenant_id
             uid = user_record.uid
             auth.update_user(uid, custom_claims=claims)
+            upsert_user_doc(uid, user_doc_from_auth_record(auth.get_user(uid)))
             results.append({"email": email, "uid": uid, "role": role, "tenant_id": tenant_id, "status": "ok"})
             logger.info(f"Claims set for {email}: role={role}, tenant_id={tenant_id}")
         except Exception as e:
@@ -216,6 +218,7 @@ async def provision_20_airlines(
 
             uid = user.uid
             auth.update_user(uid, custom_claims={"role": "AIRLINE_ADMIN", "tenant_id": tid})
+            upsert_user_doc(uid, user_doc_from_auth_record(auth.get_user(uid)))
 
             tenant_ref = db.collection("tenants").document(tid)
             tenant_doc = tenant_ref.get()

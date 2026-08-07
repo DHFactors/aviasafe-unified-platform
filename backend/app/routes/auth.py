@@ -12,12 +12,14 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime, timezone
 
 from app.core.config import settings
 from app.firebase import get_auth, verify_firebase_token, create_custom_claims
 from app.middleware.rate_limit import rate_limit
 from app.middleware.auth import resolve_user_context
 from app.services.audit_service import log_audit, request_context
+from app.services.users import upsert_user_doc
 
 router = APIRouter()
 
@@ -90,6 +92,17 @@ async def register_user(request: RegisterRequest):
             claims["tenant_id"] = request.tenant_id
 
         auth.set_custom_user_claims(user.uid, claims)
+
+        now = datetime.now(timezone.utc)
+        upsert_user_doc(user.uid, {
+            "uid": user.uid,
+            "email": user.email,
+            "display_name": request.full_name,
+            "role": request.role,
+            "tenant_id": request.tenant_id,
+            "created_at": now,
+            "updated_at": now,
+        })
 
         ip, request_id = request_context(request)
         log_audit(
