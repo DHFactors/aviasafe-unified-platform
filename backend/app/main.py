@@ -12,7 +12,7 @@ from app.core.logging import setup_logging, RequestLoggingMiddleware
 from app.core.metrics import router as metrics_router
 from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
 from app.firebase import initialize_firebase, is_firebase_ready
-from app.routes import reports, dashboard, auth, admin, hazards, can_cap, verification, reporting, flight_diversions, state_risk, surveys, tenants, regulators
+from app.routes import reports, dashboard, auth, admin, hazards, can_cap, verification, reporting, flight_diversions, state_risk, surveys, tenants, regulators, contact
 
 setup_logging()
 
@@ -188,6 +188,8 @@ app.include_router(tenants.router, prefix=settings.API_PREFIX_TENANTS, tags=["Te
 app.include_router(tenants.router, prefix=settings.API_PREFIX_TENANTS_LEGACY, tags=["Tenants (Legacy)"], include_in_schema=False)
 
 app.include_router(regulators.router, prefix=settings.API_PREFIX_REGULATORS, tags=["Regulators"])
+
+app.include_router(contact.router, prefix=settings.API_PREFIX_CONTACT, tags=["Contact"])
 
 app.include_router(metrics_router, prefix="", tags=["Metrics"])
 

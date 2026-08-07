@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     API_PREFIX_SURVEYS: str = "/api/v1/surveys"
     API_PREFIX_TENANTS: str = "/api/v1/tenants"
     API_PREFIX_REGULATORS: str = "/api/v1/regulators"
+    API_PREFIX_CONTACT: str = "/api/v1/contact"
     API_PREFIX_AUTH_LEGACY: str = "/api/auth"
     API_PREFIX_REPORTS_LEGACY: str = "/api/reports"
     API_PREFIX_DASHBOARD_LEGACY: str = "/api/dashboard"
@@ -130,6 +131,16 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: Optional[str] = None
     SMTP_PASS: Optional[str] = None
+
+    # ── Contact form / Sender.net ──
+    # Sender.net REST API v2. The key must be set via the environment (Render
+    # dashboard); never commit the key to the repository.
+    SENDER_API_KEY: Optional[str] = None
+    # Email the contact form submissions are associated with.
+    SENDER_FROM_EMAIL: str = "info@aviasafesystems.com"
+    # Optional Sender list/group id to add contacts to. Empty = account default.
+    SENDER_LIST_ID: Optional[str] = None
+    SENDER_API_BASE_URL: str = "https://api.sender.net/v2"
 
     # ── Server ──
     HOST: str = "0.0.0.0"
