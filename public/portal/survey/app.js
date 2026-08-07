@@ -1,25 +1,15 @@
 /**
- * FOLDER/FILE PATH: public/survey/app.js
- * VERSION NO: 3.0.0
- * DATE: 2026-07-17
+ * FOLDER/FILE PATH: public/portal/survey/app.js
+ * VERSION NO: 3.1.0
+ * DATE: 2026-08-07
  * PURPOSE OF THE FILE: Core multi-tenant survey runtime engine. Dynamically resolves 
  * the active aviation tenant profile (airline or regulator) from subdomains or URL parameters,
  * renders bilingual ICAO-aligned questions from the master data contract, manages 
- * client interaction states, and directly injects validated responses into isolated Firestore partitions.
+ * client interaction states, and submits validated responses to the backend
+ * survey endpoint (POST /api/v1/surveys) which validates, scores, and persists them.
  */
 
 import { MASTER_QUESTIONS } from './default_q.js';
-
-// ── MULTI-TENANT CONFIGURATION MATRIX ──
-// Firebase configuration parameters (Safe for public clients as security is enforced via Firestore Rules)
-const firebaseConfig = {
-    apiKey: "AIzaSyCdCtUuyOcUIoCBEaiWGbhp6_XwZKHsicc",
-    authDomain: "aerosafety-sms-prod.firebaseapp.com",
-    projectId: "aerosafety-sms-prod",
-    storageBucket: "aerosafety-sms-prod.firebasestorage.app",
-    messagingSenderId: "527947363983",
-    appId: "1:527947363983:web:4b736b6d1d50dd9b7a22fa"
-};
 
 // ── STATE MANAGEMENT ──
 let currentLang = 'en';
@@ -75,28 +65,17 @@ function resolveTenantContext() {
 document.addEventListener('DOMContentLoaded', async () => {
     activeTenantId = resolveTenantContext();
     
-    // Verify tenant access boundary before binding database hooks
+    // Verify tenant access boundary before binding submission hooks
     if (activeTenantId === 'unknown-tenant') {
         document.getElementById('loadingScreen')?.classList.add('hidden');
         document.getElementById('notFoundScreen').style.display = 'block';
         return;
     }
 
-    // Dynamically fetch Firebase Web core modules from standard CDN network
-    try {
-        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
-        const { getFirestore, collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app, "sms-db");
-
-        initInterfaceHooks(db, collection, addDoc);
-    } catch (e) {
-        console.error("Firebase SDK initialization failure: ", e);
-    }
+    initInterfaceHooks();
 });
 
-function initInterfaceHooks(db, collection, addDoc) {
+function initInterfaceHooks() {
     document.getElementById('loadingScreen')?.classList.add('hidden');
     document.getElementById('mainContent').style.display = 'block';
 
@@ -106,7 +85,15 @@ function initInterfaceHooks(db, collection, addDoc) {
     // Wire up UX event drivers
     document.getElementById('btn-en')?.addEventListener('click', () => switchLanguage('en'));
     document.getElementById('btn-ne')?.addEventListener('click', () => switchLanguage('ne'));
-    document.getElementById('surveyForm')?.addEventListener('submit', (e) => executeSubmission(e, db, collection, addDoc));
+    document.getElementById('surveyForm')?.addEventListener('submit', (e) => executeSubmission(e));
+}
+
+function getApiBaseUrl() {
+    if (window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl) return window.APP_CONFIG.apiBaseUrl;
+    const host = window.location.hostname;
+    return (host.includes('beta') || host === 'localhost' || host === '127.0.0.1')
+        ? 'https://sms-aviasafesystems-beta.onrender.com'
+        : 'https://aviasafe-unified-platform.onrender.com';
 }
 
 // ── UI RENDERING FRAMEWORK ──
@@ -214,8 +201,8 @@ function switchLanguage(targetLang) {
     updateProgressMetrics();
 }
 
-// ── CLOUD DATABASE SYNC EXECUTOR ──
-async function executeSubmission(e, db, collection, addDoc) {
+// ── BACKEND SURVEY SUBMISSION ──
+async function executeSubmission(e) {
     e.preventDefault();
     const ui = i18n[currentLang];
     const formNode = e.target;
@@ -253,21 +240,20 @@ async function executeSubmission(e, db, collection, addDoc) {
         return element.value === 'true' ? true : element.value === 'false' ? false : parseInt(element.value);
     };
 
-    const payload = {
-        airline_id: activeTenantId,
+    const answers = {};
+    MASTER_QUESTIONS.forEach(q => { answers[q.id] = parseInput(q.id); });
+    const comments = document.getElementById('q24_comments')?.value?.trim() || null;
+    if (comments) answers['q24_comments'] = comments;
+
+    const body = {
         tenantId: activeTenantId,
-        version_id: 3,
-        language_used: currentLang,
+        respondentId: null,
+        answers,
         department: document.getElementById('department')?.value || null,
         employee_category: document.getElementById('employee_category')?.value || null,
         years_experience: document.getElementById('years_experience')?.value || null,
-        q24_comments: document.getElementById('q24_comments')?.value?.trim() || null,
-        submitted_at: new Date().toISOString()
+        language: currentLang
     };
-
-    MASTER_QUESTIONS.forEach(q => {
-        payload[q.id] = parseInput(q.id);
-    });
 
     // Cloud transmission configuration context
     actionBtn.disabled = true;
@@ -277,12 +263,35 @@ async function executeSubmission(e, db, collection, addDoc) {
     }
 
     try {
-        // Enforce structural data isolation boundary by pushing directly into specific tenant workspace sub-collections
-        await addDoc(collection(db, "tenants", activeTenantId, "responses"), payload);
-        
+        const response = await fetch(getApiBaseUrl() + '/api/v1/surveys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            let message = ui.submitErr;
+            try {
+                const errBody = await response.json();
+                const detail = errBody.detail || errBody.error?.message || errBody.message;
+                if (errBody.errors) {
+                    const fieldErrors = Object.entries(errBody.errors).map(([qid, msg]) => `${qid}: ${msg}`);
+                    if (fieldErrors.length) message = fieldErrors.join('; ');
+                } else if (typeof detail === 'string') {
+                    message = detail;
+                }
+            } catch (_) { /* keep default message */ }
+            if (statusBox) {
+                statusBox.className = 'status-alert-box-error';
+                statusBox.textContent = message;
+            }
+            actionBtn.disabled = false;
+            return;
+        }
+
         formNode.style.display = 'none';
         if (statusBox) statusBox.style.display = 'none';
-        
+
         const successView = document.getElementById('successScreen');
         if (successView) {
             document.getElementById('successTitle').textContent = ui.successTitle;
@@ -291,7 +300,7 @@ async function executeSubmission(e, db, collection, addDoc) {
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-        console.error("Firestore ingestion exception: ", err);
+        console.error("Survey submission exception: ", err);
         actionBtn.disabled = false;
         if (statusBox) {
             statusBox.className = 'status-alert-box-error';

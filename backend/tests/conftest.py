@@ -10,6 +10,16 @@ def client():
     return TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _high_in_memory_rate_limit(monkeypatch):
+    """The in-memory per-IP limiter (security.RateLimitMiddleware) is too low
+    for a full suite running under one TestClient IP, and the Redis-backed
+    @rate_limit decorators must not consume real quota during tests. Both are
+    disabled so tests exercise the logic under test only."""
+    monkeypatch.setattr(settings, "RATE_LIMIT_PER_MINUTE", 100_000)
+    monkeypatch.setattr("app.middleware.rate_limit.redis_enabled", False)
+
+
 @pytest.fixture
 def sample_reports():
     from datetime import datetime, timezone

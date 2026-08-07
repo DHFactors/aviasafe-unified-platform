@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     API_PREFIX_REPORTING: str = "/api/v1/reporting"
     API_PREFIX_FLIGHT_DIVERSIONS: str = "/api/v1/flight-diversions"
     API_PREFIX_STATE_RISK: str = "/api/v1/state-risk"
+    API_PREFIX_SURVEYS: str = "/api/v1/surveys"
     API_PREFIX_AUTH_LEGACY: str = "/api/auth"
     API_PREFIX_REPORTS_LEGACY: str = "/api/reports"
     API_PREFIX_DASHBOARD_LEGACY: str = "/api/dashboard"
@@ -41,6 +42,7 @@ class Settings(BaseSettings):
     API_PREFIX_REPORTING_LEGACY: str = "/api/reporting"
     API_PREFIX_FLIGHT_DIVERSIONS_LEGACY: str = "/api/flight-diversions"
     API_PREFIX_STATE_RISK_LEGACY: str = "/api/state-risk"
+    API_PREFIX_SURVEYS_LEGACY: str = "/api/surveys"
     DEBUG: bool = False
 
     # ── CORS ──
@@ -94,6 +96,8 @@ class Settings(BaseSettings):
 
     # ── Rate limiting ──
     RATE_LIMIT_PER_MINUTE: int = 60
+    # Per-tenant daily survey submission cap (configurable per deployment).
+    SURVEY_RATE_LIMIT: int = 5
 
     # ── Admin security (env-only; RC-1) ──
     # Setup key used as a second factor on admin provisioning endpoints. Never

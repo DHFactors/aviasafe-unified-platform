@@ -168,7 +168,48 @@ fields: `severity_level`, `probability_level`, `risk_index`, `risk_level`, `risk
 | GET | `/admin/tenants` | Tenant list (SUPER_ADMIN) |
 | GET | `/admin/usage` | Usage analytics (SUPER_ADMIN) |
 
-### 3.10 System
+### 3.10 Surveys — `/api/v1/surveys`
+
+Survey submission is **anonymous by default**: a Bearer token is optional. Public survey pages
+submit without login; an authenticated user with a tenant may only submit to their own tenant
+(cross-tenant roles may submit anywhere). Each response is validated against the master
+question contract, scored server-side into the four ICAO pillars (1-5), persisted to
+`tenants/{id}/surveys` (scored — feeds the airline + CAAN SMS health dashboards) and
+`tenants/{id}/responses` (raw), and audited with `SURVEY_SUBMITTED`.
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/` | Submit an ICAO-aligned survey response (validates + scores + persists) |
+
+Request body:
+
+```json
+{
+  "tenantId": "tara-air",
+  "respondentId": "optional-employee@taraair.com",
+  "answers": {
+    "q1_aware": true,
+    "q2": 4,
+    "...": 1,
+    "q23_peer": 5,
+    "q24_comments": "Optional free text"
+  },
+  "department": "Flight Operations",
+  "employee_category": "Pilot",
+  "years_experience": "5-10",
+  "language": "en"
+}
+```
+
+Rules:
+- All **23 scored questions** must be present (`q1_aware` binary → `true`/`false` or `1`/`5`;
+  likert `q2`…`q23_peer` → `1-5`). `q24_comments` is optional free text.
+- Pillar grouping: `safety_policy` = q1–q5, `safety_risk_management` = q6–q13,
+  `safety_assurance` = q14–q16 + q19–q20, `safety_promotion` = q17–q18 + q21–q23.
+- Responses: `201` with `{id, tenant_id, overall_sms_health, overall_score_pct, pillar_scores}`.
+- Rate limited to **`SURVEY_RATE_LIMIT` submissions per tenant per day** (default 5, env-configurable).
+
+### 3.11 System
 
 | Method | Path | Description |
 |---|---|---|

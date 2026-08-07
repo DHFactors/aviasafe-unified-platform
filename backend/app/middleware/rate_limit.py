@@ -39,7 +39,7 @@ async def get_redis():
 
 RATE_LIMITS = {
     "vsr_submit":    (50,  86400),   # 50/day  (beta)
-    "survey_submit": (100, 86400),   # 100/day (beta)
+    "survey_submit": (settings.SURVEY_RATE_LIMIT, 86400),   # per-day, configurable (SURVEY_RATE_LIMIT)
     "mor_submit":    (20,  86400),   # 20/day  (beta)
     "dashboard":     (500, 3600),    # 500/hour (beta)
     "auth_attempts": (200, 3600),    # 200/hour (beta; safety net for shared login attempts)
@@ -122,6 +122,13 @@ def _get_tenant_id(kwargs: dict) -> str:
     user = kwargs.get("user") or kwargs.get("current_user")
     if user and isinstance(user, dict):
         return user.get("tenant_id")
+    # Anonymous submissions (e.g. the public survey) carry the tenant in the
+    # request body so the daily survey cap applies per tenant, not per IP.
+    payload = kwargs.get("payload")
+    if payload is not None:
+        tid = getattr(payload, "tenantId", None) or getattr(payload, "tenant_id", None)
+        if tid:
+            return tid
     return None
 
 

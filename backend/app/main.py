@@ -12,7 +12,7 @@ from app.core.logging import setup_logging, RequestLoggingMiddleware
 from app.core.metrics import router as metrics_router
 from app.core.security import SecurityHeadersMiddleware, RateLimitMiddleware
 from app.firebase import initialize_firebase, is_firebase_ready
-from app.routes import reports, dashboard, auth, admin, hazards, can_cap, verification, reporting, flight_diversions, state_risk
+from app.routes import reports, dashboard, auth, admin, hazards, can_cap, verification, reporting, flight_diversions, state_risk, surveys
 
 setup_logging()
 
@@ -23,6 +23,10 @@ CANONICAL_ALLOWED_ORIGINS = (
     "https://sms.aviasafesystems.com",
     "https://aerosafety-sms-prod.web.app",
     "https://sms-beta.web.app",
+    # Public survey frontends (multi-tenant subdomains / portals)
+    "https://smssurvey.gsacharya.com",
+    "https://sms.nac.com.np",
+    "https://ssp.caanepal.gov.np",
 )
 
 
@@ -99,13 +103,19 @@ def _error_body(
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    detail = exc.detail
+    errors = None
+    if isinstance(detail, dict):
+        message = detail.get("message") or "Request failed"
+        errors = detail.get("errors")
+    else:
+        message = detail if isinstance(detail, str) else str(detail)
     request_id = _req_id(request)
     logger.error(f"HTTP {exc.status_code} for {request.method} {request.url.path} (request_id={request_id}): {message}")
     return JSONResponse(
         status_code=exc.status_code,
         headers=exc.headers,
-        content=_error_body(request, exc.status_code, message),
+        content=_error_body(request, exc.status_code, message, detail=message, errors=errors),
     )
 
 
@@ -170,6 +180,9 @@ app.include_router(flight_diversions.router, prefix=settings.API_PREFIX_FLIGHT_D
 
 app.include_router(state_risk.router, prefix=settings.API_PREFIX_STATE_RISK, tags=["State Risk Register"])
 app.include_router(state_risk.router, prefix=settings.API_PREFIX_STATE_RISK_LEGACY, tags=["State Risk Register (Legacy)"], include_in_schema=False)
+
+app.include_router(surveys.router, prefix=settings.API_PREFIX_SURVEYS, tags=["Surveys"])
+app.include_router(surveys.router, prefix=settings.API_PREFIX_SURVEYS_LEGACY, tags=["Surveys (Legacy)"], include_in_schema=False)
 
 app.include_router(metrics_router, prefix="", tags=["Metrics"])
 
