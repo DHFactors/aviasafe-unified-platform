@@ -192,8 +192,11 @@ curl -H "Authorization: Bearer $TOKEN" \
   `caan_reports`, `state`, `metadata`. Survey responses live under each tenant:
   `tenants/{tenant_id}/surveys` (collection group).
 - **Caveat:** `pageSize` caps at 1000 docs/call — follow `nextPageToken` to paginate.
-- `docs/BETA_TEST_CHECKLIST.md` references an `audit_logs` collection, but **no such collection exists**;
-  the "audit trail" check means CAP/hazard status history inside `can_cap`/`hazards` documents.
+- `docs/BETA_TEST_CHECKLIST.md` previously noted there was **no** `audit_logs` collection. As of 2026-08-08 an
+  `audit_logs` top-level collection **does** exist: `log_audit` (`backend/app/services/audit_service.py`) writes
+  every audit action there, and the escalation job appends entries for each CAN/CAP escalation. The checklist's
+  "audit trail" check covers both the CAP/hazard status history inside `can_cap`/`hazards` documents **and** the
+  `audit_logs` collection entries.
 
 ### 9.3 Weekly — Auth Failures via Redis
 

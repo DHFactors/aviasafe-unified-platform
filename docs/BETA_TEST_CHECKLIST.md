@@ -34,7 +34,7 @@
 - [ ] Create a CAP for an active hazard
 - [ ] Assign responsibility to a user
 - [ ] Update CAP status (Draft → In Progress → Complete)
-- [ ] Verify the audit trail (status/history fields embedded within the `can_cap` and `hazards` documents — there is no separate `audit_logs` collection)
+- [ ] Verify the audit trail (status/history fields embedded within the `can_cap` and `hazards` documents, plus escalation events written to the `audit_logs` collection)
 
 ## 5. Rate Limiting (Redis — beta only)
 

@@ -73,7 +73,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 **Survey responses** live as a collection group `surveys` under each tenant:
 `tenants/{tenant_id}/surveys` — query with a collection-group query or list per tenant.
 
-> **Note on the checklist:** `docs/BETA_TEST_CHECKLIST.md` references an `audit_logs` collection, but **no `audit_logs` collection exists** in the codebase. The "audit trail" check should be read as CAP/hazard status history stored inside the `can_cap` / `hazards` documents — flagging for a checklist correction.
+> **Note on the checklist:** `docs/BETA_TEST_CHECKLIST.md` historically referenced an `audit_logs` collection when **no such collection existed**. As of 2026-08-08 an `audit_logs` top-level collection **does** exist (`log_audit` in `backend/app/services/audit_service.py`, including escalation events). The "audit trail" check now covers both the CAP/hazard status history stored inside the `can_cap` / `hazards` documents **and** the `audit_logs` collection entries.
 
 **Counting caveat:** `pageSize` returns at most 1000 documents per call. For large collections, follow the response `nextPageToken` to paginate, or use the Firebase console (query count) for an exact figure.
 

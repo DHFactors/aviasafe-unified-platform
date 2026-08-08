@@ -4,7 +4,7 @@
 
 This document contains the comprehensive manual verification checklist for the AviaSAFE SMS platform, covering all major user journeys and system functionalities.
 
-**Current Status**: All flows are verified and functional on both beta and production environments.
+**Current Status**: All flows verified and functional on both beta and production. New department mapping, escalation, Master Register and Responsible Manager flows deployed 2026-08-08 — checklist rows for these are pending re-verification against live environments.
 
 ---
 
@@ -103,6 +103,9 @@ This document contains the comprehensive manual verification checklist for the A
 - [ ] Report appears in "Latest Reports" section
 - [ ] Risk matrix calculation (5/9/15) is correct
 - [ ] Audit trail shows actions (created by, timestamps)
+- [ ] CAN past its `target_completion_date` and still Open flips to **Escalated** when the daily escalation job runs
+- [ ] CAP past due (non-terminal) flips to **Overdue**
+- [ ] Audit trail for escalations is recorded in the `audit_logs` collection (`log_audit` in `backend/app/services/audit_service.py`)
 
 ---
 
@@ -193,6 +196,93 @@ This document contains the comprehensive manual verification checklist for the A
 
 ---
 
+## Master Register
+
+**User**: Safety Officer (AIRLINE_ADMIN), SUPER_ADMIN, CAAN_SMD
+
+| # | Step | Expected Result | Status |
+|---|------|-----------------|--------|
+| 1 | Login as `safety.tara-air@taraair.com` | Successful login to dashboard | |
+| 2 | Click "Master Register" in sidebar | Navigates to `/dashboard/master-register.html` | |
+| 3 | Page loads | Tabs for Hazards / CANs / CAPs + stat cards visible | |
+| 4 | Hazards tab | Shows unified hazard list (all statuses) | |
+| 5 | CANs tab | Shows CAN list with status badges (incl. Escalated) | |
+| 6 | CAPs tab | Shows CAP list with status badges (incl. Overdue) | |
+| 7 | Status filter | Filtering narrows the list correctly | |
+| 8 | Department filter | Filtering by department returns only that department's records | |
+| 9 | Search box | Text search narrows by reference/title | |
+| 10 | Sortable columns | Clicking a column header sorts the table | |
+
+### Master Register Detailed Checks
+- [ ] Data comes from `GET /api/v1/dashboard/master-register`
+- [ ] Both Hazards and CANs/CAPs appear in the same register
+- [ ] CAN "Escalated" and CAP "Overdue" badges render correctly
+- [ ] Role access: AIRLINE_ADMIN sees own tenant; CAAN_SMD/SUPER_ADMIN see all
+- [ ] Department scoping respects the caller's department when provided
+
+---
+
+## Responsible Manager (My Tasks)
+
+**User**: USER with a `department` claim
+
+| # | Step | Expected Result | Status |
+|---|------|-----------------|--------|
+| 1 | Login as a USER account with a department | Redirects to `/dashboard/responsible-manager.html` (not `/safety.html`) | |
+| 2 | Page loads | Title reads "My Tasks" | |
+| 3 | CAN/CAP list | Shows only CANs/CAPs assigned to the logged-in user (`assigned_to_uid`) | |
+| 4 | Hazards tab hidden | No full-hazard view for this role | |
+| 5 | Department filter | Present and pre-scoped to the user's department | |
+| 6 | "Master Register" button | Links back to `/dashboard/master-register.html` | |
+
+### Responsible Manager Detailed Checks
+- [ ] `getRoleDestination()` in `public/js/firebase.js` routes USER-with-department to this page
+- [ ] USER without a department still lands on `/safety.html`
+- [ ] Tasks from other users are not visible
+
+---
+
+## Department Mapping
+
+**User**: Safety Officer (AIRLINE_ADMIN)
+
+| # | Step | Expected Result | Status |
+|---|------|-----------------|--------|
+| 1 | Create/assign a hazard to a user who has a department | Hazard document gets a `department` field matching the assignee | |
+| 2 | Issue a CAN | CAN gets the assignee's department | |
+| 3 | Create a CAP from a CAN | CAP inherits the CAN's department | |
+| 4 | Edit a user's department in admin | New assignments use the updated department | |
+| 5 | Filter hazards by department | `GET /api/v1/hazards?department=<dept>` returns only matching hazards | |
+| 6 | Filter CANs/CAPs by department | `GET /api/v1/cans?department=<dept>` / `.../cans/caps?department=<dept>` work | |
+
+### Department Mapping Detailed Checks
+- [ ] Department is read from the user's profile (`department` field) on assignment
+- [ ] CAP created from a CAN carries the CAN's department (even if the CAP owner differs)
+- [ ] Users without a department produce records with empty department (no crash)
+
+---
+
+## Escalation & Audit Trail
+
+**User**: Safety Officer (AIRLINE_ADMIN) — backend-automated
+
+| # | Step | Expected Result | Status |
+|---|------|-----------------|--------|
+| 1 | Have an Open CAN past its `target_completion_date` | `POST /api/v1/admin/tasks/check-overdue` (with `X-Task-Key`) sets it to **Escalated** | |
+| 2 | Have a CAP past due (non-terminal status) | Same run sets it to **Overdue** | |
+| 3 | Re-run the check | Idempotent — already-escalated/overdue records are not re-processed | |
+| 4 | Check `audit_logs` collection | Each escalation writes an audit entry (action/actor/target/detail/timestamp) | |
+| 5 | Scheduled run | Cloud Scheduler job `check-overdue` fires daily at 00:00 UTC | |
+| 6 | Manual trigger | `gcloud scheduler jobs run check-overdue --location=us-west1 --project=aerosafety-sms-prod` | |
+
+### Escalation Detailed Checks
+- [ ] Endpoint requires `X-Task-Key` matching `TASK_API_KEY` (or a SUPER_ADMIN token) — otherwise 403
+- [ ] Terminal statuses (Closed) are never escalated
+- [ ] Escalated/Overdue badges render on the CAN/CAP and Master Register pages
+- [ ] Audit entries appear under the `audit_logs` collection in Firestore
+
+---
+
 ## Confirmed State (Live)
 
 | # | Check | Status | Details |
@@ -245,6 +335,10 @@ On production (`sms.aviasafesystems.com`), the State Regulator dashboard finds n
 | **Navigation** | Added "Contact" link in header | ✅ |
 | **Founder Photo** | Changed from circular to rectangular | ✅ |
 | **Just Culture** | Removed from founder section | ✅ |
+| **Department Mapping** | Department field on users, auto-populated on hazards/CANs/CAPs, `?department=` filters | ✅ |
+| **Escalation** | CAN→Escalated, CAP→Overdue via daily Cloud Scheduler job; audit-logged | ✅ |
+| **Master Register** | Unified Hazards + CANs + CAPs view at `/dashboard/master-register.html` | ✅ |
+| **Responsible Manager** | "My Tasks" at `/dashboard/responsible-manager.html`, routed for USERs with a department | ✅ |
 
 ---
 
