@@ -139,7 +139,7 @@ per tenant type and role.
 | `/can_cap/cans.html` → `can_detail.html` → `cap_submit.html` / `cap_review.html` | all roles | CAN/CAP workflow |
 | `/flight_diversions/` (index, create, detail) | all roles | Log/link diversions |
 | `/reports/` (index, generate, view) | USER, AIRLINE_ADMIN (own tenant); CAAN_SMD, SUPER_ADMIN (any/state) | Quarterly/annual report generation + PDF export |
-| `/survey/index.html` | Anonymous (public) | Safety climate survey (see §15 caveat) |
+| `/survey/` | Anonymous (public) | Safety culture survey (POST `/api/v1/surveys`) |
 | `/caan.html` | CAAN_SMD, SUPER_ADMIN | Aggregated airline oversight dashboard |
 | `/caan-state-risk.html` | CAAN_SMD, SUPER_ADMIN | SSP / state risk register dashboard |
 | `/admin/index.html` | SUPER_ADMIN | Provisioning, tenant list, risk-matrix config, platform health |
@@ -301,20 +301,22 @@ loop between flows E and D.
 
 ## 12. Flow G — Safety Survey
 
-**Page:** `public/survey/index.html` + `public/survey/app.js` (public, no login gate)
+**Page:** `public/survey/` (`index.html` + `app.js` + `default_q.js` + `style.css`, public, no login gate)
 
-1. Tenant resolved from `?tenant=` (or URL); the tenant name is fetched from
-   `tenants/{tenantId}` to brand the survey.
-2. On completion the response is written **client-side directly to Firestore**:
-   - with a tenant: `tenants/{tenantId}/responses` (`app.js:326`);
-   - otherwise: top-level `surveyResponses` (`app.js:328`).
+1. Tenant resolved from `?tenant=` (or hostname route map); unknown tenants see
+   the "not found" screen.
+2. Renders 23 bilingual (EN/नेपाली) ICAO 4-pillar questions from `MASTER_QUESTIONS`
+   in `default_q.js`, with progress tracking and a comments box.
+3. On completion the response is POSTed **to the backend survey endpoint**
+   `POST /api/v1/surveys` (`app.js:335`), which validates, scores, and persists
+   responses server-side. The API base URL is `APP_CONFIG.apiBaseUrl` (beta →
+   `https://sms-aviasafesystems-beta.onrender.com`, prod → `https://aviasafe-unified-platform.onrender.com`)
+   or derived from the hostname when the config module is not loaded.
+4. `/portal/survey/` is a legacy redirect to `/survey/` (preserving `?tenant=`).
 
-> **Caveat (TD-6):** there is **no backend endpoint** for surveys — no VSR-style API touchpoint, no
-> server-side rate limiting beyond the shared `survey_submit` bucket (100/day), and the live form is
-> not yet aligned to the ICAO 4-pillar / 12-element charter (`seed/config.py` defines the canonical
-> pillars/elements; `SURVEY_COLLECTION = "surveys"`). The CAAN "survey health" widget aggregates via
-> `collection_group("surveys")` (see §14). Survey responses therefore land in a *different* path
-> than the backend's `surveys` collection — flagged as TD-6 in `docs/KNOWN_LIMITATIONS.md`.
+> **Note:** the historical classic survey (`public/survey/`, v2.2.0) that wrote responses
+> client-side directly to Firestore was replaced by the v3 functional form in this flow.
+
 
 ---
 

@@ -8,16 +8,16 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0b2a42; margin: 0; }
         .page { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
-        .page-header h1 { font-size: 1.25rem; color: #002f6c; margin: 0; }
+        .page-header h1 { font-size: 1.25rem; color: #0b2a42; margin: 0; }
         .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
-        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 { font-size: 1rem; color: #0b2a42; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
         .card h2 i { width: 1.25rem; text-align: center; }
         .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; border: none; transition: all 0.15s; }
-        .btn-primary { background: #1a73e8; color: #fff; }
-        .btn-primary:hover { background: #1557b0; }
+        .btn-primary { background: #1a6b8a; color: #fff; }
+        .btn-primary:hover { background: #0b2a42; }
         .btn-success { background: #2e7d32; color: #fff; }
         .btn-success:hover { background: #1b5e20; }
         .btn-outline { background: transparent; color: #475569; border: 1px solid #e2e8f0; }
@@ -38,16 +38,19 @@
         .empty-state i { font-size: 2.5rem; margin-bottom: 0.75rem; }
         .tab-bar { display: flex; gap: 0; margin-bottom: 1.25rem; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
         .tab-btn { flex: 1; padding: 0.75rem 1rem; border: none; background: transparent; font-size: 0.85rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.15s; border-bottom: 3px solid transparent; }
-        .tab-btn.active { color: #1a73e8; border-bottom-color: #1a73e8; background: #f0f6ff; }
+        .tab-btn.active { color: #1a6b8a; border-bottom-color: #1a6b8a; background: #f0f6ff; }
         .tab-btn:hover:not(.active) { background: #f8fafc; }
         @media (max-width: 600px) { .page-header { flex-direction: column; align-items: stretch; } }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div class="page">
     <div class="page-header">
-        <h1><i class="fas fa-chart-bar" style="color:#1a73e8;"></i> Reports & Analytics</h1>
+        <h1><i class="fas fa-chart-bar" style="color:#1a6b8a;"></i> Reports & Analytics</h1>
         <div>
             <a href="/reports/generate.html" class="btn btn-primary"><i class="fas fa-plus"></i> Generate Report</a>
             <a href="/safety.html" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Dashboard</a>

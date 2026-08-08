@@ -252,10 +252,10 @@ async function generateDummyResponses(tenantId) {
 
         for (var i = 0; i < count; i++) {
             var answers = [];
-            for (var j = 0; j < 19; j++) {
+            for (var j = 0; j < 20; j++) {
                 if (j === 0) {
                     answers.push(Math.random() > 0.2 ? 'Aware' : 'Unaware');
-                } else if (j === 18) {
+                } else if (j === 19) {
                     answers.push(Math.random() > 0.7 ? 'Great safety culture. Would like more training.' : '');
                 } else {
                     answers.push(likertOptions[Math.floor(Math.random() * likertOptions.length)]);

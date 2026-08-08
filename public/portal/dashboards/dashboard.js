@@ -7,7 +7,7 @@
  * calculates live Annex 19 safety pillar metrics.
  */
 
-import { MASTER_QUESTIONS } from '../survey/default_q.js';
+import { MASTER_QUESTIONS } from '../../survey/default_q.js';
 
 // ── FIREBASE CONFIGURATION ──
 const firebaseConfig = {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survey Dashboard - AviaSAFE</title>
+    <title>Airline SMS Dashboard - AviaSAFE</title>
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/shell.css">
@@ -12,21 +12,22 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="/js/firebase.js"></script>
+    <script src="/js/api/client.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 2px solid #e9ecef; margin-bottom: 30px; }
-        .header h1 { margin: 0; color: #1a73e8; font-size: 22px; }
+        .header h1 { margin: 0; color: #1a6b8a; font-size: 22px; }
         .card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 20px; }
-        .card h3 { margin: 0 0 16px 0; font-size: 16px; color: #202124; }
+        .card h3 { margin: 0 0 16px 0; font-size: 16px; color: #0b2a42; }
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 13px; color: #5f6368; }
         .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-        .form-group input:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+        .form-group input:focus { outline: none; border-color: #1a6b8a; box-shadow: 0 0 0 3px rgba(26,107,138,0.1); }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
-        .btn-primary { background: #1a73e8; color: white; }
-        .btn-primary:hover { background: #1557b0; }
+        .btn-primary { background: #1a6b8a; color: white; }
+        .btn-primary:hover { background: #0b2a42; }
         .btn-success { background: #34a853; color: white; }
         .btn-success:hover { background: #2d8e47; }
         .btn-danger { background: #ea4335; color: white; }
@@ -38,18 +39,39 @@
         .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f3f4; }
         .info-row:last-child { border-bottom: none; }
         .info-label { font-size: 13px; color: #5f6368; }
-        .info-value { font-size: 14px; font-weight: 500; color: #202124; }
+        .info-value { font-size: 14px; font-weight: 500; color: #0b2a42; }
         .tenant-selector { margin-bottom: 24px; }
         .tenant-selector select { width: 100%; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: white; }
-        .tenant-selector select:focus { outline: none; border-color: #1a73e8; }
+        .tenant-selector select:focus { outline: none; border-color: #1a6b8a; }
         #message { padding: 12px 16px; border-radius: 6px; margin-top: 16px; display: none; font-size: 14px; }
         #message.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
         #message.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
+        #adminMessage { padding: 12px 16px; border-radius: 6px; margin-top: 16px; display: none; font-size: 14px; }
+        #adminMessage.success { display: block; background: #e6f4ea; color: #1e7e34; border-left: 4px solid #34a853; }
+        #adminMessage.error { display: block; background: #fce8e6; color: #d33426; border-left: 4px solid #ea4335; }
         @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
-        .section-title { font-size: 1.25rem; font-weight: 600; color: #002f6c; margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .section-title { font-size: 1.25rem; font-weight: 600; color: #0b2a42; margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
         .section-title:first-of-type { margin-top: 0; }
-        .shell-content { max-width: 900px; }
+        .shell-content { max-width: 960px; }
+        .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+        .stat-card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.06); padding:1.25rem; border-top:4px solid #1a6b8a; }
+        .stat-card.gold { border-top-color:#d4af37; }
+        .stat-card.green { border-top-color:#34a853; }
+        .stat-card.red { border-top-color:#ea4335; }
+        .stat-card .num { font-size:1.9rem; font-weight:700; color:#0b2a42; }
+        .stat-card .lbl { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.4px; color:#64748b; margin-top:0.25rem; }
+        .b-acceptable { background:#e6f4ea; color:#1e7e34; }
+        .b-tolerable { background:#fff3cd; color:#9a6700; }
+        .b-action { background:#fde8d0; color:#c25400; }
+        .b-intolerable { background:#fce8e6; color:#c5221f; }
+        .loading, .empty { text-align:center; padding:2.5rem; color:#64748b; }
+        .error { text-align:center; padding:2rem; color:#c5221f; }
+        .section-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
+        .section-sub { color:#64748b; font-size:0.85rem; margin-top:0.25rem; }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -58,22 +80,90 @@
         <div class="card" style="text-align:center;padding:40px;">
             <i class="fas fa-lock" style="font-size:48px;color:#ea4335;margin-bottom:16px;"></i>
             <h3>Authentication Required</h3>
-            <p style="color:#5f6368;">Please <a href="/login.html">log in</a> with an admin account to manage survey periods.</p>
+            <p style="color:#5f6368;">Please <a href="/login.html">log in</a> with an admin account to view your SMS health dashboard.</p>
         </div>
     </div>
 
     <div id="appContent" style="display:none;">
 
+        <!-- ==================== SECTION 1: OVERALL SMS HEALTH ==================== -->
         <div class="section-title shell-scroll-spy" id="overview">
-            <i class="fas fa-poll"></i> Survey Overview
+            <i class="fas fa-heart-pulse"></i> Overall SMS Health
         </div>
 
-        <!-- Tenant Selector -->
-        <div class="card tenant-selector">
-            <label for="tenantSelect" style="font-weight:600;font-size:14px;color:#202124;display:block;margin-bottom:8px;">Select Airline / Tenant</label>
+        <!-- Tenant Selector (SUPER_ADMIN only) -->
+        <div class="card tenant-selector" id="tenantSelectorCard" style="display:none;">
+            <label for="tenantSelect" style="font-weight:600;font-size:14px;color:#0b2a42;display:block;margin-bottom:8px;">Select Airline / Tenant</label>
             <select id="tenantSelect" onchange="onTenantChange()">
                 <option value="">— Select a tenant —</option>
             </select>
+        </div>
+
+        <div class="card" id="smsHealthCard" style="display:none;">
+            <div class="section-head">
+                <div>
+                    <h3 style="margin:0;"><i class="fas fa-heart-pulse" style="color:#1a6b8a;"></i> <span id="healthTenantName">Current SMS Health</span></h3>
+                    <div class="section-sub">Scored from ICAO Annex 19 survey responses over the selected period. Pillars scoring below 70% drive the AI assessment below.</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <select id="healthDays" class="form-control" style="width:auto;" onchange="onHealthDaysChange()">
+                        <option value="30">Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                        <option value="180">Last 180 days</option>
+                        <option value="365" selected>Last 365 days</option>
+                        <option value="730">Last 730 days</option>
+                    </select>
+                    <button class="btn btn-outline btn-sm" onclick="loadSmsDashboard()"><i class="fas fa-rotate"></i> Refresh</button>
+                </div>
+            </div>
+            <div id="overviewStats" class="stat-grid">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading SMS health...</div>
+            </div>
+            <div id="healthBanner" style="display:none;margin-top:8px;"></div>
+        </div>
+
+        <!-- ==================== SECTION 2: ICAO SMS COMPONENTS ==================== -->
+        <div class="section-title shell-scroll-spy" id="components">
+            <i class="fas fa-cubes"></i> ICAO SMS Components
+        </div>
+        <div class="card" id="componentsCard" style="display:none;">
+            <div class="section-sub" style="margin-bottom:1rem;">Annex 19 / Doc 9859 SMS component scores as a percentage of the target maturity level.</div>
+            <div id="componentsGrid" class="stat-grid"></div>
+        </div>
+
+        <!-- ==================== SECTION 3: SMS HEALTH ASSESSMENT ==================== -->
+        <div class="section-title shell-scroll-spy" id="assessment">
+            <i class="fas fa-robot"></i> SMS Health Assessment
+        </div>
+        <div class="card" id="assessmentCard" style="display:none;">
+            <div id="assessmentContent"><p class="loading"><i class="fas fa-spinner fa-spin"></i> Generating SMS health assessment...</p></div>
+        </div>
+
+        <!-- ==================== SECTION 4: ASSESSMENT HISTORY ==================== -->
+        <div class="section-title shell-scroll-spy" id="history">
+            <i class="fas fa-history"></i> Assessment History
+        </div>
+        <div class="card" id="historyCard" style="display:none;">
+            <div class="section-sub" style="margin-bottom:1rem;">Monthly SMS health trend across the selected period.</div>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr>
+                    <th>Period</th>
+                    <th>Assessment Date</th>
+                    <th>Overall</th>
+                    <th>Tier</th>
+                    <th>Safety Policy</th>
+                    <th>Risk Mgmt</th>
+                    <th>Safety Assurance</th>
+                    <th>Safety Promotion</th>
+                    <th>Responses</th>
+                </tr></thead>
+                <tbody id="historyBody"></tbody>
+            </table></div>
+        </div>
+
+        <!-- ==================== SECTION 5: SURVEY PERIOD MANAGEMENT ==================== -->
+        <div class="section-title shell-scroll-spy" id="survey">
+            <i class="fas fa-poll"></i> Survey Period Management
         </div>
 
         <!-- Survey Info -->
@@ -91,7 +181,7 @@
         <!-- Survey Period Form -->
         <div class="card" id="surveyFormCard" style="display:none;">
             <h3><i class="fas fa-calendar-alt"></i> Set Survey Period</h3>
-            <p style="font-size:13px;color:#5f6368;margin-bottom:16px;">Define when the safety survey opens and closes for this airline.</p>
+            <p style="font-size:13px;color:#5f6368;margin-bottom:16px;">Define when the safety survey opens and closes for this airline. The survey link is time-boxed to this window.</p>
             <div class="form-row">
                 <div class="form-group">
                     <label for="openDate">Survey Open Date</label>
@@ -112,25 +202,95 @@
             <h3><i class="fas fa-link"></i> Survey Link</h3>
             <p style="font-size:13px;color:#5f6368;">Share this link with employees to access the survey:</p>
             <div style="display:flex;gap:8px;align-items:center;">
-                <input type="text" id="surveyLink" readonly style="flex:1;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#f8f9fa;">
+                <input type="text" id="surveyLink" readonly style="flex:1;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#f8fafc;">
                 <button class="btn btn-primary btn-sm" onclick="copySurveyLink()"><i class="fas fa-copy"></i> Copy</button>
             </div>
+        </div>
+
+        <!-- ==================== SECTION 6: ADMINISTRATION ==================== -->
+        <div class="section-title shell-scroll-spy" id="administration">
+            <i class="fas fa-user-gear"></i> Administration
+        </div>
+
+        <!-- Survey Rate Limit -->
+        <div class="card" id="adminRateLimitCard" style="display:none;">
+            <div class="section-head">
+                <div>
+                    <h3 style="margin:0;"><i class="fas fa-gauge-high" style="color:#1a6b8a;"></i> Survey Rate Limit</h3>
+                    <div class="section-sub">Maximum daily survey submissions allowed for this airline. The cap resets at midnight UTC.</div>
+                </div>
+            </div>
+            <div class="form-group" style="max-width:320px;">
+                <label for="surveyRateLimit">Daily survey submissions</label>
+                <select id="surveyRateLimit" onchange="onSurveyRateLimitChange()">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div id="rateLimitSaveRow">
+                <button class="btn btn-success" onclick="saveSurveyRateLimit()"><i class="fas fa-save"></i> Save Rate Limit</button>
+                <span id="rateLimitSavedHint" style="font-size:13px;color:#34a853;margin-left:12px;display:none;"><i class="fas fa-check"></i> Saved</span>
+            </div>
+            <div id="adminMessage"></div>
+        </div>
+
+        <!-- Survey Instructions -->
+        <div class="card" id="adminInstructionsCard" style="display:none;">
+            <div class="section-head">
+                <div>
+                    <h3 style="margin:0;"><i class="fas fa-bullhorn" style="color:#1a6b8a;"></i> Survey Instructions</h3>
+                    <div class="section-sub">Message shown to employees at the top of the safety survey.</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="surveyInstructionsText">Instructions text</label>
+                <textarea id="surveyInstructionsText" rows="5" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;resize:vertical;" placeholder="e.g. Please answer each statement honestly. Your responses are confidential and anonymous."></textarea>
+            </div>
+            <div id="instructionsSaveRow">
+                <button class="btn btn-success" onclick="saveSurveyInstructions()"><i class="fas fa-save"></i> Save Instructions</button>
+                <span id="instructionsSavedHint" style="font-size:13px;color:#34a853;margin-left:12px;display:none;"><i class="fas fa-check"></i> Saved</span>
+            </div>
+        </div>
+
+        <!-- Authorized Users (view-only) -->
+        <div class="card" id="adminUsersCard" style="display:none;">
+            <div class="section-head">
+                <div>
+                    <h3 style="margin:0;"><i class="fas fa-users" style="color:#1a6b8a;"></i> Authorized Users</h3>
+                    <div class="section-sub">Users with access to this airline's SMS workspace. View-only.</div>
+                </div>
+            </div>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Created</th>
+                    <th>Last Login</th>
+                </tr></thead>
+                <tbody id="usersTableBody"></tbody>
+            </table></div>
+            <div id="usersEmpty" class="section-sub" style="display:none;padding:12px 0;">No authorized users found.</div>
         </div>
 
     </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="/js/firebase.js"></script>
+<script src="/js/dashboard-render.js"></script>
 <script src="/js/shell.js"></script>
 <script>
 window.SHELL_CONFIG = {
     brand: 'AviaSAFE',
-    roleLabel: 'Survey Period Management',
+    roleLabel: 'Airline SMS Dashboard',
     nav: [
-        { id: 'overview', label: 'Survey Overview', icon: 'fa-poll' },
+        { id: 'overview', label: 'Overall SMS Health', icon: 'fa-heart-pulse' },
+        { id: 'components', label: 'ICAO Components', icon: 'fa-cubes' },
+        { id: 'assessment', label: 'SMS Health Assessment', icon: 'fa-robot' },
+        { id: 'history', label: 'Assessment History', icon: 'fa-history' },
+        { id: 'survey', label: 'Survey Period Management', icon: 'fa-poll' },
+        { id: 'administration', label: 'Administration', icon: 'fa-user-gear' },
     ],
 };
 </script>
@@ -138,33 +298,36 @@ window.SHELL_CONFIG = {
 var tenants = [];
 var selectedTenantId = '';
 var currentUser = null;
+var smsHealthData = null;
 
-firebase.auth().onAuthStateChanged(function(user) {
-    currentUser = user;
+document.addEventListener('DOMContentLoaded', async () => {
+    await waitForFirebase();
+    currentUser = await getCurrentUser();
 
-    if (!user) {
+    if (!currentUser) {
         document.getElementById('authGuard').style.display = 'block';
         document.getElementById('appContent').style.display = 'none';
         return;
     }
 
-    user.getIdTokenResult().then(function(tokenResult) {
-        var claims = tokenResult.claims || {};
-        if (claims.role === 'SUPER_ADMIN' || claims.role === 'AIRLINE_ADMIN') {
-            document.getElementById('authGuard').style.display = 'none';
-            document.getElementById('appContent').style.display = 'block';
-            var roleName = claims.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : (claims.tenant_id ? (claims.tenant_id + ' · AIRLINE_ADMIN') : 'AIRLINE_ADMIN');
-            if (typeof window.updateShellTenant === 'function') {
-                window.updateShellTenant('Survey Period Management', roleName);
-            }
-            loadTenants();
-        } else {
-            document.getElementById('authGuard').querySelector('h3').textContent = 'Access Denied';
-            document.getElementById('authGuard').querySelector('p').innerHTML = 'Your role (' + claims.role + ') does not have permission to manage survey periods.';
-            document.getElementById('authGuard').style.display = 'block';
-            document.getElementById('appContent').style.display = 'none';
-        }
-    });
+    var claims = currentUser.claims || {};
+    if (claims.role !== 'SUPER_ADMIN' && claims.role !== 'AIRLINE_ADMIN') {
+        document.getElementById('authGuard').querySelector('h3').textContent = 'Access Denied';
+        document.getElementById('authGuard').querySelector('p').innerHTML = 'Your role (' + (claims.role || 'USER') + ') does not have permission to view the airline SMS dashboard.';
+        document.getElementById('authGuard').style.display = 'block';
+        document.getElementById('appContent').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('authGuard').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+
+    var roleName = claims.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : (claims.tenant_id ? (claims.tenant_id + ' · AIRLINE_ADMIN') : 'AIRLINE_ADMIN');
+    if (typeof window.updateShellTenant === 'function') {
+        window.updateShellTenant('Airline SMS Dashboard', roleName);
+    }
+
+    loadTenants();
 });
 
 async function loadTenants() {
@@ -172,17 +335,22 @@ async function loadTenants() {
     select.innerHTML = '<option value="">— Select a tenant —</option>';
 
     try {
-        var user = currentUser;
-        var query = firebase.firestore().collection('tenants');
+        var claims = currentUser.claims || {};
+        var isAirlineAdmin = claims.role === 'AIRLINE_ADMIN';
 
-        var tokenResult = await user.getIdTokenResult();
-        var claims = tokenResult.claims || {};
-
-        if (claims.role === 'AIRLINE_ADMIN' && claims.tenant_id) {
-            query = query.where(firebase.firestore.FieldPath.documentId(), '==', claims.tenant_id);
+        if (isAirlineAdmin && claims.tenant_id) {
+            // Scoped: only this airline, no selector
+            document.getElementById('tenantSelectorCard').style.display = 'none';
+            tenants = [{ id: claims.tenant_id, name: claims.tenant_id }];
+            select.innerHTML = '<option value="' + claims.tenant_id + '">' + claims.tenant_id + '</option>';
+            select.value = claims.tenant_id;
+            selectedTenantId = claims.tenant_id;
+            onTenantChange();
+            return;
         }
 
-        var snapshot = await query.get();
+        document.getElementById('tenantSelectorCard').style.display = 'block';
+        var snapshot = await firebase.firestore().collection('tenants').get();
 
         if (snapshot.empty) {
             select.innerHTML = '<option value="">No tenants available</option>';
@@ -192,18 +360,12 @@ async function loadTenants() {
         tenants = [];
         snapshot.forEach(function(doc) {
             var data = doc.data();
-            tenants.push({ id: doc.id, name: data.name, icao: data.icao, surveyConfig: data.surveyConfig || null });
+            tenants.push({ id: doc.id, name: data.name || doc.id, icao: data.icao, surveyConfig: data.surveyConfig || null });
             var option = document.createElement('option');
             option.value = doc.id;
             option.textContent = data.name || doc.id;
             select.appendChild(option);
         });
-
-        // Auto-select for AIRLINE_ADMIN with single tenant
-        if (claims.role === 'AIRLINE_ADMIN' && claims.tenant_id) {
-            select.value = claims.tenant_id;
-            onTenantChange();
-        }
     } catch (error) {
         console.error('Error loading tenants:', error);
         select.innerHTML = '<option value="">Error loading tenants</option>';
@@ -214,27 +376,35 @@ async function onTenantChange() {
     var tenantId = document.getElementById('tenantSelect').value;
     selectedTenantId = tenantId;
 
-    var surveyInfoCard = document.getElementById('surveyInfoCard');
-    var surveyFormCard = document.getElementById('surveyFormCard');
-    var surveyLinkCard = document.getElementById('surveyLinkCard');
+    var cards = ['smsHealthCard', 'componentsCard', 'assessmentCard', 'historyCard', 'surveyInfoCard', 'surveyFormCard', 'surveyLinkCard', 'adminRateLimitCard', 'adminInstructionsCard', 'adminUsersCard'];
+    cards.forEach(function(id) {
+        document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById('healthBanner').style.display = 'none';
 
     if (!tenantId) {
-        surveyInfoCard.style.display = 'none';
-        surveyFormCard.style.display = 'none';
-        surveyLinkCard.style.display = 'none';
         return;
     }
 
     var tenant = tenants.find(function(t) { return t.id === tenantId; });
-    if (!tenant) return;
+    document.getElementById('healthTenantName').textContent = tenant && tenant.name ? tenant.name + ' — Current SMS Health' : 'Current SMS Health';
 
-    // Load latest data
+    await Promise.all([loadSurveyInfo(), loadSmsDashboard(), loadAdminConfig(), loadAdminUsers()]);
+}
+
+async function loadSurveyInfo() {
+    var tenantId = selectedTenantId;
+    if (!tenantId) return;
+
+    var surveyInfoCard = document.getElementById('surveyInfoCard');
+    var surveyFormCard = document.getElementById('surveyFormCard');
+    var surveyLinkCard = document.getElementById('surveyLinkCard');
+
     try {
         var doc = await firebase.firestore().collection('tenants').doc(tenantId).get();
         var data = doc.data();
         var config = data.surveyConfig || {};
 
-        // Show info card
         surveyInfoCard.style.display = 'block';
         var statusEl = document.getElementById('surveyStatusDisplay');
         var now = new Date();
@@ -267,7 +437,6 @@ async function onTenantChange() {
             document.getElementById('currentDaysRemaining').textContent = '—';
         }
 
-        // Count responses
         try {
             var responsesSnap = await firebase.firestore().collection('tenants').doc(tenantId).collection('responses').get();
             document.getElementById('responseCount').textContent = responsesSnap.size;
@@ -275,7 +444,6 @@ async function onTenantChange() {
             document.getElementById('responseCount').textContent = '0';
         }
 
-        // Pre-fill form
         if (config.openDate) {
             document.getElementById('openDate').value = config.openDate.substring(0, 10);
         } else {
@@ -289,7 +457,6 @@ async function onTenantChange() {
 
         surveyFormCard.style.display = 'block';
 
-        // Show survey link
         surveyLinkCard.style.display = 'block';
         var baseUrl = window.location.protocol + '//' + window.location.host;
         document.getElementById('surveyLink').value = baseUrl + '/survey/?tenant=' + tenantId;
@@ -376,6 +543,197 @@ function showMessage(text, type) {
     msg.textContent = text;
     msg.className = type;
     msg.style.display = 'block';
+}
+
+// ============================================================================
+// ADMINISTRATION (Phase 1: Survey Rate Limit)
+// ============================================================================
+
+async function loadAdminConfig() {
+    var tenantId = selectedTenantId;
+    if (!tenantId) return;
+
+    var card = document.getElementById('adminRateLimitCard');
+    var claims = currentUser.claims || {};
+    var isSuperAdmin = claims.role === 'SUPER_ADMIN';
+
+    try {
+        var doc = await firebase.firestore().collection('tenants').doc(tenantId).get();
+        var data = doc.data();
+        var config = data.config || {};
+        var rateLimit = config.survey_rate_limit || 5;
+
+        document.getElementById('surveyRateLimit').value = String(rateLimit);
+        document.getElementById('surveyRateLimit').disabled = isSuperAdmin;
+        document.getElementById('rateLimitSaveRow').style.display = isSuperAdmin ? 'none' : 'block';
+        document.getElementById('rateLimitSavedHint').style.display = 'none';
+        document.getElementById('adminMessage').style.display = 'none';
+
+        // Survey instructions
+        var instructionsEl = document.getElementById('surveyInstructionsText');
+        instructionsEl.value = config.survey_instructions || '';
+        instructionsEl.disabled = isSuperAdmin;
+        document.getElementById('instructionsSaveRow').style.display = isSuperAdmin ? 'none' : 'block';
+        document.getElementById('instructionsSavedHint').style.display = 'none';
+        document.getElementById('adminInstructionsCard').style.display = 'block';
+
+        if (isSuperAdmin) {
+            document.querySelector('#adminRateLimitCard .section-sub').textContent =
+                'Read-only for CAAN. The AIRLINE_ADMIN of this tenant can change the daily survey cap.';
+        } else {
+            document.querySelector('#adminRateLimitCard .section-sub').textContent =
+                'Maximum daily survey submissions allowed for this airline. The cap resets at midnight UTC.';
+        }
+
+        card.style.display = 'block';
+    } catch (error) {
+        console.error('Error loading admin config:', error);
+    }
+}
+
+function onSurveyRateLimitChange() {
+    document.getElementById('rateLimitSavedHint').style.display = 'none';
+}
+
+async function saveSurveyInstructions() {
+    if (!selectedTenantId) {
+        showAdminMessage('Please select a tenant first.', 'error');
+        return;
+    }
+
+    var instructions = document.getElementById('surveyInstructionsText').value.trim();
+    var rateLimit = parseInt(document.getElementById('surveyRateLimit').value, 10);
+
+    try {
+        await ApiClient.put('/api/v1/tenants/' + selectedTenantId + '/config', {
+            survey_rate_limit: rateLimit,
+            survey_instructions: instructions
+        });
+        document.getElementById('instructionsSavedHint').style.display = 'inline';
+        setTimeout(function() { document.getElementById('instructionsSavedHint').style.display = 'none'; }, 2500);
+    } catch (error) {
+        console.error('Error saving survey instructions:', error);
+        showAdminMessage('Error: ' + error.message, 'error');
+    }
+}
+
+async function saveSurveyRateLimit() {
+    if (!selectedTenantId) {
+        showAdminMessage('Please select a tenant first.', 'error');
+        return;
+    }
+
+    var value = parseInt(document.getElementById('surveyRateLimit').value, 10);
+
+    try {
+        await ApiClient.put('/api/v1/tenants/' + selectedTenantId + '/config', { survey_rate_limit: value });
+        document.getElementById('rateLimitSavedHint').style.display = 'inline';
+        showAdminMessage('Survey rate limit updated.', 'success');
+        setTimeout(function() { document.getElementById('rateLimitSavedHint').style.display = 'none'; }, 2500);
+    } catch (error) {
+        console.error('Error saving survey rate limit:', error);
+        showAdminMessage('Error: ' + error.message, 'error');
+    }
+}
+
+function showAdminMessage(text, type) {
+    var msg = document.getElementById('adminMessage');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+}
+
+// ============================================================================
+// ADMINISTRATION (Phase 2: Authorized Users, view-only)
+// ============================================================================
+
+async function loadAdminUsers() {
+    var tenantId = selectedTenantId;
+    if (!tenantId) return;
+
+    var card = document.getElementById('adminUsersCard');
+    var body = document.getElementById('usersTableBody');
+    var empty = document.getElementById('usersEmpty');
+
+    body.innerHTML = '<tr><td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>';
+    empty.style.display = 'none';
+
+    try {
+        var data = await ApiClient.get('/api/v1/tenants/' + tenantId + '/users');
+        var users = (data && data.users) || [];
+
+        card.style.display = 'block';
+        if (users.length === 0) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+
+        body.innerHTML = users.map(function(u) {
+            return '<tr>' +
+                '<td>' + escapeHtml(u.email || '—') + '</td>' +
+                '<td><span class="status-badge status-pending" style="background:#eef2f7;color:#0b2a42;">' + escapeHtml(u.role || 'USER') + '</span></td>' +
+                '<td>' + (u.createdAt ? formatDate(u.createdAt) : '—') + '</td>' +
+                '<td>' + (u.lastLogin ? formatDate(u.lastLogin) : '—') + '</td>' +
+                '</tr>';
+        }).join('');
+    } catch (error) {
+        console.error('Error loading users:', error);
+        body.innerHTML = '<tr><td colspan="4" class="error">Failed to load users: ' + escapeHtml(error.message) + '</td></tr>';
+        card.style.display = 'block';
+    }
+}
+
+function formatDate(iso) {
+    try {
+        var d = new Date(iso);
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+        return iso;
+    }
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ============================================================================
+// SMS HEALTH DASHBOARD (sections 1-4)
+// ============================================================================
+
+function onHealthDaysChange() {
+    loadSmsDashboard();
+}
+
+async function loadSmsDashboard() {
+    var tenantId = selectedTenantId;
+    if (!tenantId) return;
+
+    var days = document.getElementById('healthDays').value;
+    var statsEl = document.getElementById('overviewStats');
+    var bannerEl = document.getElementById('healthBanner');
+
+    document.getElementById('smsHealthCard').style.display = 'block';
+    document.getElementById('componentsCard').style.display = 'block';
+    document.getElementById('assessmentCard').style.display = 'block';
+    document.getElementById('historyCard').style.display = 'block';
+
+    statsEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading SMS health...</div>';
+    bannerEl.style.display = 'none';
+    document.getElementById('componentsGrid').innerHTML = '';
+    document.getElementById('assessmentContent').innerHTML = '<p class="loading"><i class="fas fa-spinner fa-spin"></i> Generating SMS health assessment...</p>';
+    document.getElementById('historyBody').innerHTML = '<tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading history...</td></tr>';
+
+    try {
+        var data = await ApiClient.get('/api/v1/dashboard/airline/sms-health?days=' + days);
+        smsHealthData = data;
+        DashboardRender.renderAll(data);
+    } catch (err) {
+        statsEl.innerHTML = '<div class="error">Failed to load SMS health: ' + err.message + '</div>';
+        document.getElementById('componentsGrid').innerHTML = '';
+        document.getElementById('assessmentContent').innerHTML = '<div class="error">Failed to load SMS health assessment: ' + err.message + '</div>';
+        document.getElementById('historyBody').innerHTML = '<tr><td colspan="9" class="error">Failed to load assessment history: ' + err.message + '</td></tr>';
+    }
 }
 
 function logout() {

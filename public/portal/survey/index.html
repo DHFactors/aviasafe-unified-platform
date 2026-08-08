@@ -1,139 +1,27 @@
-<!-- 
-  FOLDER/FILE PATH: public/survey/index.html
-  VERSION NO: 3.0.0
-  DATE: 2026-07-17
-  PURPOSE OF THE FILE: The primary client-facing web interface. Integrates the ICAO-compliant 
-  typography and color scheme, dynamic bilingual toggles, the structural DOM anchors 
-  for the JavaScript rendering engine, and the operational flight hero banner.
+<!--
+  FOLDER/FILE PATH: public/portal/survey/index.html
+  VERSION NO: 3.1.1
+  DATE: 2026-08-07
+  PURPOSE OF THE FILE: Legacy path redirect. The functional bilingual survey was
+  consolidated to /survey/ (public/survey/). This page forwards any remaining
+  /portal/survey/ links (with their ?tenant= parameter) to the canonical survey.
 -->
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Safety Culture Survey | State Safety Programme</title>
-    
-    <!-- ICAO Official Typography Package -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-    
-    <!-- Core Application Stylesheet -->
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting — Safety Culture Survey</title>
+    <meta http-equiv="refresh" content="0; url=/survey/">
 </head>
 <body>
-
-<!-- FIXED HEADER NAVIGATION BAR -->
-<nav id="sticky-nav" class="fixed-header">
-    <div class="header-container">
-        <div class="logo-wrap">
-            <!-- Ensure sita_air_logo.jpg is placed in public/assets/ -->
-            <img src="../assets/sita_air_logo.jpg" class="airline-logo-nav" alt="Airline Logo" onerror="this.style.display='none'">
-        </div>
-        <div class="header-right">
-            <div class="lang-bar">
-                <button class="lang-btn active" id="btn-en">English</button>
-                <button class="lang-btn" id="btn-ne">नेपाली</button>
-            </div>
-            <div class="status-tag">🔒 Anonymous</div>
-        </div>
-    </div>
-</nav>
-
-<!-- SYSTEM STATE SCREENS -->
-<div id="loadingScreen">
-    <div class="loader-logo">STATE <span>SAFETY</span> PROGRAMME</div>
-    <div class="spinner"></div>
-</div>
-
-<div id="notFoundScreen" style="display:none; margin-top: 120px; text-align: center;">
-    <h2>Silo Not Found / त्रुटि</h2>
-    <p>This tenant portal is invalid or offline.<br>Please check the link provided by your safety department.</p>
-</div>
-
-<!-- MAIN SURVEY APPLICATION CONTEXT -->
-<div id="mainContent" style="display:none;">
-    
-    <!-- OPERATIONAL FLIGHT HERO BANNER -->
-    <div class="hero-image-container">
-        <!-- Ensure sita_air_dornier.jpg is placed in public/assets/ -->
-        <img src="../assets/sita_air_dornier.jpg" class="hero-aircraft-img" alt="Operational Aircraft" onerror="this.style.display='none'">
-        <div class="hero-overlay-text">
-            <h1 id="headerTitle">Safety Culture Diagnostic</h1>
-            <p id="headerSubtitle">ICAO Annex 19 Alignment · State Safety Programme</p>
-        </div>
-    </div>
-
-    <div class="container">
-        
-        <!-- PROGRESS TRACKING COMPONENT -->
-        <div class="progress-wrap">
-            <div class="progress-label">
-                <span id="progressLabel">Survey Progress</span>
-                <span id="progressText">0 of 23 answered</span>
-            </div>
-            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-        </div>
-
-        <!-- FORM INGESTION BOUNDARY -->
-        <form id="surveyForm" novalidate>
-            
-            <!-- DYNAMIC QUESTION INJECTION TARGET -->
-            <div id="questionsContainer"></div>
-
-            <!-- DEMOGRAPHICS & ANONYMITY CONTROLS -->
-            <div class="section-header-card" style="margin-top: 2rem;">
-                <div class="section-title-wrap">
-                    <h3>Demographics & Open Feedback (Optional)</h3>
-                </div>
-            </div>
-            
-            <div class="demo-grid">
-                <div class="form-group">
-                    <label>Department / विभाग</label>
-                    <select id="department" name="department">
-                        <option value="">Prefer not to say / खुलाउन नचाहने</option>
-                        <option value="Flight Operations">Flight Operations</option>
-                        <option value="Maintenance & Engineering">Maintenance & Engineering</option>
-                        <option value="Ground Handling">Ground Handling</option>
-                        <option value="Cabin Crew">Cabin Crew</option>
-                        <option value="Administration">Administration / Management</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Experience Base / अनुभव</label>
-                    <select id="years_experience" name="years_experience">
-                        <option value="">Prefer not to say / खुलाउन नचाहने</option>
-                        <option value="0-2">0 – 2 years</option>
-                        <option value="2-7">2 – 7 years</option>
-                        <option value="7-15">7 – 15 years</option>
-                        <option value="15+">15+ years</option>
-                    </select>
-                </div>
-                <div class="form-group full">
-                    <label>Safety Suggestions / थप सुझाव</label>
-                    <textarea id="q24_comments" name="q24_comments" placeholder="If you have specific safety concerns or suggestions, detail them here..."></textarea>
-                </div>
-            </div>
-
-            <!-- SUBMISSION WORKFLOW -->
-            <div class="submit-wrap">
-                <button type="submit" class="btn-submit" id="submitBtn">SECURE SUBMIT ✈️</button>
-                <div id="statusMessage"></div>
-            </div>
-        </form>
-
-        <!-- POST-SUBMISSION VERIFICATION -->
-        <div id="successScreen" style="display:none; text-align: center; padding: 4rem 1rem;">
-            <div class="success-icon" style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
-            <h2 id="successTitle">Thank You!</h2>
-            <p id="successBody">Your response has been recorded securely.</p>
-        </div>
-
-    </div>
-</div>
-
-<script type="module" src="app.js"></script>
+    <script>
+        var params = new URLSearchParams(window.location.search);
+        var target = '/survey/';
+        if (params.get('tenant')) target += '?tenant=' + encodeURIComponent(params.get('tenant'));
+        window.location.replace(target);
+    </script>
+    <p>Redirecting to <a href="/survey/">the safety culture survey</a>...</p>
 </body>
 </html>

@@ -1,258 +1,174 @@
+<!-- 
+  FOLDER/FILE PATH: public/survey/index.html
+  VERSION NO: 3.0.0
+  DATE: 2026-07-17
+  PURPOSE OF THE FILE: The primary client-facing web interface. Integrates the ICAO-compliant 
+  typography and color scheme, dynamic bilingual toggles, the structural DOM anchors 
+  for the JavaScript rendering engine, and the operational flight hero banner.
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Safety Survey - AviaSAFEsystem</title>
-    <link rel="stylesheet" href="/css/variables.css">
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* ========== RESET ========== */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f9fa; height: 100vh; overflow: hidden; }
-
-        /* ========== APP CONTAINER ========== */
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
-        }
-
-        /* ========== HEADER ========== */
-        .app-header {
-            background: #1a73e8;
-            color: white;
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            min-height: 56px;
-        }
-        .app-header .logo { font-size: 18px; font-weight: 700; }
-        .app-header .logo span { color: #34a853; }
-        .app-header nav a { color: white; margin-left: 16px; text-decoration: none; font-size: 14px; }
-        .app-header nav a.active { font-weight: 700; }
-
-        /* ========== STEP 1: INFO SCREEN ========== */
-        #infoScreen {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-            text-align: center;
-            overflow-y: auto;
-        }
-        #infoScreen .icon { font-size: 48px; color: #1a73e8; margin-bottom: 16px; }
-        #infoScreen h1 { font-size: 24px; color: #1a73e8; margin-bottom: 8px; }
-        #infoScreen .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
-        #infoScreen .demo-badge { background: #fff3cd; padding: 8px 16px; border-radius: 20px; font-size: 12px; color: #856404; margin-bottom: 24px; }
-        #infoScreen .fields { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-        #infoScreen .fields input { padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-        #infoScreen .fields input:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
-        #infoScreen .btn-group { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-        #infoScreen .btn-group .btn { padding: 12px 32px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        #infoScreen .btn-group .btn-primary { background: #1a73e8; color: white; }
-        #infoScreen .btn-group .btn-primary:hover { background: #1557b0; }
-        #infoScreen .btn-group .btn-secondary { background: #e9ecef; color: #333; }
-        #infoScreen .btn-group .btn-secondary:hover { background: #dee2e6; }
-
-        /* ========== STEP 2: SURVEY SCREEN ========== */
-        #surveyScreen {
-            flex: 1;
-            display: none;
-            flex-direction: column;
-            padding: 16px 20px;
-            overflow: hidden;
-        }
-        #surveyScreen.active { display: flex; }
-
-        /* ========== PROGRESS ========== */
-        .survey-progress { margin-bottom: 12px; flex-shrink: 0; }
-        .progress-bar { height: 4px; background: #1a73e8; border-radius: 2px; transition: width 0.3s; }
-        .progress-text { font-size: 12px; color: #666; text-align: right; margin-top: 4px; }
-
-        /* ========== SECTION HEADER ========== */
-        .section-header { background: #e8f0fe; padding: 4px 12px; border-radius: 4px; font-weight: 700; color: #1a73e8; font-size: 12px; letter-spacing: 0.5px; text-align: center; margin-bottom: 12px; flex-shrink: 0; }
-
-        /* ========== QUESTION ========== */
-        .question-container { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow-y: auto; padding: 4px 0; }
-        .question-text { font-size: 18px; font-weight: 500; color: #202124; margin-bottom: 16px; line-height: 1.4; }
-
-        /* ========== OPTIONS ========== */
-        .options-container { display: flex; flex-direction: column; gap: 8px; }
-        .likert-row { display: flex; gap: 8px; justify-content: center; }
-        .likert-row .option-btn {
-            flex: 1;
-            padding: 10px 4px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-            font-size: 13px;
-            min-height: 56px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            line-height: 1.2;
-        }
-        .likert-row .option-btn .value { font-size: 11px; opacity: 0.4; font-weight: 700; }
-        .likert-row .option-btn .label { font-size: 11px; }
-        .likert-row .option-btn.selected { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; font-weight: 600; }
-        .likert-row .option-btn:hover { border-color: #1a73e8; }
-
-        .choice-options { display: flex; gap: 12px; justify-content: center; }
-        .choice-options .option-btn { padding: 12px 24px; border: 2px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 16px; min-width: 100px; text-align: center; }
-        .choice-options .option-btn.selected { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; font-weight: 600; }
-
-        /* ========== NAVIGATION ========== */
-        .navigation-buttons { display: flex; gap: 12px; margin-top: 12px; flex-shrink: 0; padding-top: 8px; border-top: 1px solid #eee; }
-        .navigation-buttons .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
-        .navigation-buttons .btn-primary { background: #1a73e8; color: white; }
-        .navigation-buttons .btn-primary:hover { background: #1557b0; }
-        .navigation-buttons .btn-secondary { background: #e9ecef; color: #333; }
-        .navigation-buttons .btn-secondary:hover { background: #dee2e6; }
-        .navigation-buttons .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* ========== COMPLETE ========== */
-        #completeScreen {
-            flex: 1;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-            text-align: center;
-        }
-        #completeScreen.active { display: flex; }
-        #completeScreen .icon { font-size: 48px; color: #f9ab00; margin-bottom: 16px; }
-        #completeScreen h2 { color: #f9ab00; font-size: 24px; margin-bottom: 8px; }
-        #completeScreen p { color: #666; margin-bottom: 16px; }
-        #completeScreen .note { background: #fff3cd; padding: 12px 16px; border-radius: 8px; font-size: 14px; color: #856404; max-width: 400px; margin-bottom: 20px; }
-        #completeScreen .btn { padding: 12px 32px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1a73e8; color: white; text-decoration: none; }
-
-        /* ========== FOOTER ========== */
-        .app-footer { background: #f8f9fa; padding: 8px 16px; text-align: center; font-size: 11px; color: #999; flex-shrink: 0; border-top: 1px solid #eee; }
-        .app-footer a { color: #999; text-decoration: none; margin: 0 8px; }
-        .app-footer a:hover { color: #1a73e8; }
-
-        /* ========== RESPONSIVE: MOBILE ========== */
-        @media (max-width: 600px) {
-            .app-header .logo { font-size: 16px; }
-            .app-header nav a { font-size: 12px; margin-left: 10px; }
-            .question-text { font-size: 16px; }
-            .likert-row .option-btn { font-size: 11px; min-height: 48px; padding: 6px 2px; }
-            .likert-row .option-btn .label { font-size: 9px; }
-            .likert-row .option-btn .value { font-size: 9px; }
-            .choice-options .option-btn { font-size: 14px; padding: 10px 16px; min-width: 80px; }
-            .navigation-buttons .btn { font-size: 13px; padding: 10px; }
-            #infoScreen h1 { font-size: 20px; }
-            #infoScreen .fields input { font-size: 16px; padding: 10px 14px; }
-            .section-header { font-size: 10px; }
-        }
-
-        @media (max-width: 400px) {
-            .question-text { font-size: 14px; }
-            .likert-row .option-btn { font-size: 9px; min-height: 40px; padding: 4px 2px; }
-            .likert-row .option-btn .label { font-size: 8px; }
-            .likert-row .option-btn .value { font-size: 8px; }
-            .choice-options .option-btn { font-size: 12px; padding: 8px 12px; min-width: 60px; }
-        }
-
-        /* ========== DESKTOP: Single Row ========== */
-        @media (min-width: 601px) {
-            .likert-row .option-btn { font-size: 14px; min-height: 64px; padding: 8px 12px; }
-            .likert-row .option-btn .label { font-size: 13px; }
-            .likert-row .option-btn .value { font-size: 12px; }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Safety Culture Survey | State Safety Programme</title>
+    
+    <!-- ICAO Official Typography Package -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+    
+    <!-- Core Application Stylesheet -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="app-container">
-
-    <!-- ===== HEADER ===== -->
-    <header class="app-header">
-        <div class="logo">Avia<span>SAFE</span>system</div>
-        <div id="tenantBadge" style="font-size:12px;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:12px;display:none;"></div>
-        <nav>
-            <a href="/">Home</a>
-            <a href="/survey/" class="active">Survey</a>
-            <a href="/login.html">Login</a>
-        </nav>
-    </header>
-
-    <!-- ===== SURVEY STATUS BAR ===== -->
-    <div id="surveyStatusBar" style="display:none;background:#e8f0fe;padding:8px 16px;font-size:13px;color:#1a73e8;flex-shrink:0;text-align:center;border-bottom:1px solid #c5d9f7;">
-        <span id="statusMessage"></span>
-    </div>
-
-    <!-- ===== STEP 1: INFO SCREEN ===== -->
-    <div id="infoScreen">
-        <div class="icon"><i class="fas fa-clipboard-list"></i></div>
-        <h1 id="surveyTitle">Safety Survey</h1>
-        <p class="subtitle">ICAO Annex 19 Gap Analysis · SMS Maturity Assessment</p>
-        <div style="background:#fff8e1;border:1px solid #ffca28;border-radius:8px;padding:10px 14px;font-size:13px;color:#8a6d00;margin-bottom:16px;text-align:left;line-height:1.5;">
-            <strong>[BETA NOTICE]</strong> Survey statistics are currently in offline/preview mode and will sync automatically in release v1.1.0.
+<!-- FIXED HEADER NAVIGATION BAR -->
+<nav id="sticky-nav" class="fixed-header">
+    <div class="header-container">
+        <div class="logo-wrap">
+            <!-- Ensure sita_air_logo.jpg is placed in public/assets/ -->
+            <img src="../assets/sita_air_logo.jpg" class="airline-logo-nav" alt="Airline Logo" onerror="this.style.display='none'">
         </div>
-        <div id="surveyPeriodInfo" style="font-size:13px;color:#666;margin-bottom:8px;display:none;"></div>
-        <div id="daysRemaining" style="font-size:14px;font-weight:600;color:#1a73e8;margin-bottom:16px;display:none;"></div>
-
-        <div class="fields">
-            <input type="text" id="respondentName" placeholder="Full Name">
-            <input type="text" id="respondentDesignation" placeholder="Designation / Role">
-            <input type="text" id="respondentDepartment" placeholder="Department">
-        </div>
-        <p style="font-size: 12px; color: #999; margin-top: -8px; margin-bottom: 16px;">Fields above are optional — you may skip any or all of them.</p>
-
-        <div class="btn-group">
-            <button class="btn btn-secondary" onclick="skipInfo()">Skip Details</button>
-            <button class="btn btn-primary" onclick="startSurvey()">Begin Survey →</button>
-        </div>
-        <p style="font-size: 12px; color: #999; margin-top: 16px;">Your responses are confidential and anonymous</p>
-    </div>
-
-    <!-- ===== STEP 2: SURVEY SCREEN ===== -->
-    <div id="surveyScreen">
-        <div id="surveyContainer" style="flex:1; display:flex; flex-direction:column;">
-            <!-- Dynamically rendered -->
+        <div class="header-right">
+            <div class="lang-bar">
+                <button class="lang-btn active" id="btn-en">English</button>
+                <button class="lang-btn" id="btn-ne">नेपाली</button>
+            </div>
+            <div class="status-tag">🔒 Anonymous</div>
         </div>
     </div>
+</nav>
 
-    <!-- ===== COMPLETE SCREEN ===== -->
-    <div id="completeScreen">
-        <div class="icon"><i class="fas fa-check-circle" style="color:#34a853;"></i></div>
-        <h2 style="color:#34a853;">Survey Complete!</h2>
-        <p>Thank you for your participation. Your responses have been recorded.</p>
-        <div class="note" style="background:#e6f4ea;color:#1e7e34;border-color:#34a853;">✅ Your feedback helps improve safety — thank you.</div>
-        <a href="/" class="btn"><i class="fas fa-home"></i> Return Home</a>
-    </div>
-
-    <!-- ===== FOOTER ===== -->
-    <footer class="app-footer">
-        <span>A project by <strong>Ghanshyam Acharya</strong></span>
-        <span style="margin:0 8px;">·</span>
-        <span>&copy; 2026 AviaSAFEsystem</span>
-    </footer>
-
+<!-- SYSTEM STATE SCREENS -->
+<div id="loadingScreen">
+    <div class="loader-logo">STATE <span>SAFETY</span> PROGRAMME</div>
+    <div class="spinner"></div>
 </div>
 
-<!-- ===== SCRIPTS ===== -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="default_q.js"></script>
-<script src="app.js"></script>
+<div id="notFoundScreen" style="display:none; margin-top: 120px; text-align: center;">
+    <h2>Silo Not Found / त्रुटि</h2>
+    <p>This tenant portal is invalid or offline.<br>Please check the link provided by your safety department.</p>
+</div>
 
+<!-- MAIN SURVEY APPLICATION CONTEXT -->
+<div id="mainContent" style="display:none;">
+    
+    <!-- OPERATIONAL FLIGHT HERO BANNER -->
+    <div class="hero-image-container">
+        <!-- Ensure sita_air_dornier.jpg is placed in public/assets/ -->
+        <img src="../assets/sita_air_dornier.jpg" class="hero-aircraft-img" alt="Operational Aircraft" onerror="this.style.display='none'">
+        <div class="hero-overlay-text">
+            <h1 class="tenant-name" id="tenantName">Safety Survey</h1>
+            <h2 class="survey-title" id="headerTitle">SMS Health Assessment</h2>
+            <p class="survey-subtitle" id="headerSubtitle">Based on Safety Management System's 4 pillars and 12 elements. This survey is conducted aligning Annex 19, Doc 9859, Doc 10951 and state requirements.</p>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <!-- SURVEY INSTRUCTIONS BANNER (populated from tenant config) -->
+        <div id="instructionsBanner" class="instructions-banner" style="display:none;"></div>
+
+        <!-- CLOSED SURVEY BANNER -->
+        <div id="surveyClosedBanner" class="survey-closed-banner"></div>
+
+        <!-- PROGRESS TRACKING COMPONENT -->
+        <div class="progress-wrap">
+            <div class="progress-label">
+                <span id="progressLabel">Survey Progress</span>
+                <span id="progressText">0 of 23 answered</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+
+        <!-- FORM INGESTION BOUNDARY -->
+        <form id="surveyForm" novalidate>
+            
+            <!-- DYNAMIC QUESTION INJECTION TARGET -->
+            <div id="questionsContainer"></div>
+
+            <!-- DEMOGRAPHICS & ANONYMITY CONTROLS -->
+            <div class="section-header-card" style="margin-top: 2rem;">
+                <div class="section-title-wrap">
+                    <h3>Demographics & Open Feedback (Optional)</h3>
+                </div>
+            </div>
+            
+            <div class="demo-grid">
+                <div class="form-group">
+                    <label>Department / विभाग</label>
+                    <select id="department" name="department">
+                        <option value="">Prefer not to say / खुलाउन नचाहने</option>
+                        <option value="Flight Operations">Flight Operations</option>
+                        <option value="Maintenance & Engineering">Maintenance & Engineering</option>
+                        <option value="Ground Handling">Ground Handling</option>
+                        <option value="Cabin Crew">Cabin Crew</option>
+                        <option value="Administration">Administration / Management</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Experience Base / अनुभव</label>
+                    <select id="years_experience" name="years_experience">
+                        <option value="">Prefer not to say / खुलाउन नचाहने</option>
+                        <option value="0-2">0 – 2 years</option>
+                        <option value="2-7">2 – 7 years</option>
+                        <option value="7-15">7 – 15 years</option>
+                        <option value="15+">15+ years</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Safety Suggestions / थप सुझाव</label>
+                    <textarea id="q24_comments" name="q24_comments" placeholder="If you have specific safety concerns or suggestions, detail them here..."></textarea>
+                </div>
+            </div>
+
+            <!-- SUBMISSION WORKFLOW -->
+            <div class="submit-wrap">
+                <button type="submit" class="btn-submit" id="submitBtn">SECURE SUBMIT ✈️</button>
+                <div id="statusMessage"></div>
+            </div>
+        </form>
+
+        <!-- POST-SUBMISSION VERIFICATION -->
+        <div id="successScreen" style="display:none; text-align: center; padding: 4rem 1rem;">
+            <div class="success-icon" style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+            <h2 id="successTitle">Thank You!</h2>
+            <p id="successBody">Your response has been recorded securely.</p>
+        </div>
+
+    </div>
+</div>
+
+<!-- Popup Modal for visitors without a tenant context -->
+<div id="surveyPopup" class="popup-overlay" style="display:none;">
+  <div class="popup-modal">
+    <div class="popup-content">
+      <h2>Measuring Our Living SMS Health</h2>
+      <p>
+        A Safety Management System is not a static manual or a compliance checklist.
+        It is an active ecosystem designed to protect every life, aircraft, and mission in our sky.
+      </p>
+      <p>
+        Safety cannot be assumed. It must be continuously measured, evaluated, and strengthened
+        against the four pillars and twelve elements of ICAO Annex 19.
+      </p>
+      <p>
+        <strong>Your active participation is vital.</strong> Every report, survey, and observation
+        feeds our safety intelligence engine, helping us identify risks before they escalate.
+      </p>
+      <p>
+        Under our <strong>Just Culture</strong>, your voice is the primary sensor of our safety network.
+      </p>
+      <p class="popup-timer">
+        <em>You will be redirected to the home page in <span id="countdownTimer">10</span> seconds.</em>
+      </p>
+      <button id="popupCloseBtn" class="popup-close-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
 </body>
 </html>

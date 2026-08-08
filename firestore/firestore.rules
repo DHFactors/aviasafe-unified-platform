@@ -67,6 +67,17 @@ service cloud.firestore {
     }
 
     // ========================================================================
+    // SURVEY SCORES — Scored pillar docs consumed by CAAN survey-health
+    // ========================================================================
+
+    match /tenants/{tenantId}/surveys/{surveyId} {
+      allow create: if request.resource.data.tenant_id == tenantId;
+      allow read: if isAuthenticated() &&
+        (isOwnTenant(tenantId) || isAdminOrCaan());
+      allow update, delete: if false;
+    }
+
+    // ========================================================================
     // VSR REPORTS — Public submission, tenant-isolated reads
     // ========================================================================
 
@@ -173,6 +184,16 @@ service cloud.firestore {
       allow create: if true;
       allow read: if isSuperAdmin();
       allow update, delete: if isSuperAdmin();
+    }
+
+    // ========================================================================
+    // SURVEY RESPONSES (anonymous / public) — Public submission
+    // ========================================================================
+
+    match /surveyResponses/{responseId} {
+      allow create: if true;
+      allow read: if isSuperAdmin();
+      allow update, delete: if false;
     }
 
     // ========================================================================

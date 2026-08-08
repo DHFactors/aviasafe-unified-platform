@@ -26,6 +26,14 @@ const CanCapAPI = {
 
     listCaps: (canId) => ApiClient.get(`/api/cans/${canId}/caps`),
 
+    listAllCaps: (params = {}) => {
+        const qs = new URLSearchParams();
+        if (params.status) qs.set('status', params.status);
+        if (params.can_id) qs.set('can_id', params.can_id);
+        if (params.search) qs.set('search', params.search);
+        return ApiClient.get(`/api/cans/caps?${qs.toString()}`);
+    },
+
     getCap: (capId) => ApiClient.get(`/api/cans/caps/${capId}`),
 
     updateCap: (capId, data) => ApiClient.patch ? ApiClient._request('PATCH', `/api/cans/caps/${capId}`, data) : ApiClient.put(`/api/cans/caps/${capId}`, data),

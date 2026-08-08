@@ -20,107 +20,19 @@ CODE OWNER: AviaSafeSystems
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/tenant-overrides.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/global.css">
     <style>
-        /* ========== HERO ========== */
-        .hero {
-            background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
-            color: var(--color-white);
-            padding: var(--spacing-3xl) 0;
-            text-align: center;
-        }
-        .hero h1 {
-            font-size: var(--font-size-4xl);
-            color: var(--color-white);
-            margin-bottom: var(--spacing-md);
-        }
-        .hero h1 .safe-highlight {
-            color: #34a853;
-        }
-        .hero p {
-            font-size: var(--font-size-lg);
-            max-width: 700px;
-            margin: 0 auto var(--spacing-xl);
-            opacity: 0.9;
-        }
+        /* ========== LAYOUT ONLY — colors handled by /styles/global.css ========== */
         .hero .btn-group {
             display: flex;
             gap: var(--spacing-md);
             justify-content: center;
             flex-wrap: wrap;
         }
-        .hero .btn-hero-primary {
-            background: var(--color-secondary);
-            color: var(--color-white);
-            padding: var(--spacing-md) var(--spacing-2xl);
-            border-radius: var(--border-radius-md);
-            font-weight: 600;
-            transition: all var(--transition-normal);
-        }
-        .hero .btn-hero-primary:hover {
-            background: var(--color-secondary-dark);
-            transform: translateY(-2px);
-            text-decoration: none;
-        }
-        .hero .btn-hero-secondary {
-            background: rgba(255,255,255,0.15);
-            color: var(--color-white);
-            padding: var(--spacing-md) var(--spacing-2xl);
-            border-radius: var(--border-radius-md);
-            font-weight: 600;
-            border: 2px solid rgba(255,255,255,0.3);
-            transition: all var(--transition-normal);
-        }
-        .hero .btn-hero-secondary:hover {
-            background: rgba(255,255,255,0.25);
-            transform: translateY(-2px);
-            text-decoration: none;
-        }
-
-        /* ========== FEATURES ========== */
-        .features-section {
-            padding: var(--spacing-3xl) 0;
-            background: var(--color-white);
-        }
-        .features-section h2 {
-            text-align: center;
-            margin-bottom: var(--spacing-2xl);
-        }
         .features-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: var(--spacing-xl);
-        }
-        .feature-card {
-            background: var(--color-gray-50);
-            padding: var(--spacing-xl);
-            border-radius: var(--border-radius-lg);
-            text-align: center;
-            transition: all var(--transition-normal);
-            border: 1px solid transparent;
-        }
-        .feature-card:hover {
-            transform: translateY(-6px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--color-primary-light);
-        }
-        .feature-card i {
-            font-size: 2.5rem;
-            color: var(--color-primary);
-            margin-bottom: var(--spacing-md);
-        }
-        .feature-card h3 {
-            margin-bottom: var(--spacing-xs);
-        }
-        .feature-card .tagline {
-            font-size: var(--font-size-sm);
-            color: var(--color-primary);
-            font-weight: 600;
-            margin-bottom: var(--spacing-sm);
-        }
-        .feature-card p {
-            color: var(--color-gray-700);
-            font-size: var(--font-size-sm);
-            margin-bottom: var(--spacing-md);
         }
         .feature-card .badge {
             display: inline-block;
@@ -131,55 +43,16 @@ CODE OWNER: AviaSafeSystems
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
-        /* ========== BADGES ========== */
-        .badge-thermometer { background: var(--color-info-bg); color: var(--color-info); }
-        .badge-speakup { background: var(--color-success-bg); color: var(--color-success); }
-        .badge-regulatory { background: var(--color-danger-bg); color: var(--color-danger); }
-        .badge-cockpit { background: var(--color-warning-bg); color: var(--color-warning); }
-        .badge-pulse { background: var(--color-primary-light); color: var(--color-primary-dark); }
-        .badge-command { background: var(--color-secondary-light); color: var(--color-secondary-dark); }
-
-        /* ========== TRUST SECTION ========== */
-        .trust-section {
-            background: var(--color-gray-50);
-            padding: var(--spacing-3xl) 0;
-            text-align: center;
-        }
-        .trust-section h2 {
-            margin-bottom: var(--spacing-xl);
-        }
-        .trust-section h2 i {
-            color: var(--color-primary);
-            margin-right: var(--spacing-sm);
-        }
         .trust-logos {
             display: flex;
             justify-content: center;
             gap: var(--spacing-2xl);
             flex-wrap: wrap;
-            opacity: 0.8;
         }
         .trust-logos span {
             font-size: var(--font-size-xl);
             font-weight: 700;
-            color: var(--color-gray-600);
             letter-spacing: 1px;
-        }
-
-        /* ========== TENANT PORTAL ========== */
-        .tenant-portal-section {
-            background: var(--color-primary-light);
-            padding: var(--spacing-2xl) 0;
-            text-align: center;
-        }
-        .tenant-portal-section h2 {
-            color: var(--color-primary-dark);
-        }
-        .tenant-portal-section p {
-            color: var(--color-gray-700);
-            max-width: 600px;
-            margin: 0 auto var(--spacing-lg);
         }
         .tenant-input-group {
             display: flex;
@@ -190,59 +63,29 @@ CODE OWNER: AviaSafeSystems
         .tenant-input-group input {
             flex: 1;
             padding: var(--spacing-md);
-            border: var(--border-width) solid var(--color-gray-300);
-            border-radius: var(--border-radius-md);
             font-size: var(--font-size-base);
-        }
-        .tenant-input-group input:focus {
-            outline: none;
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
         }
         .tenant-input-group .btn {
             padding: var(--spacing-md) var(--spacing-xl);
-            background: var(--color-primary);
-            color: var(--color-white);
-            border: none;
-            border-radius: var(--border-radius-md);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-normal);
-        }
-        .tenant-input-group .btn:hover {
-            background: var(--color-primary-dark);
         }
         .tenant-hint {
             margin-top: var(--spacing-md);
             font-size: var(--font-size-sm);
-            color: var(--color-gray-700);
         }
-        .tenant-hint code {
-            background: var(--color-gray-200);
-            padding: var(--spacing-xs) var(--spacing-sm);
-            border-radius: var(--border-radius-sm);
-            font-size: var(--font-size-xs);
-        }
-
-        /* ========== UTILITIES ========== */
         section {
             scroll-margin-top: 80px;
         }
-
-        /* ========== RESPONSIVE ========== */
         @media (max-width: 992px) {
-            .features-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 600px) {
-            .hero h1 { font-size: var(--font-size-2xl); }
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
+            .features-grid { grid-template-columns: 1fr; }
             .tenant-input-group { flex-direction: column; }
         }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -251,34 +94,72 @@ CODE OWNER: AviaSafeSystems
     <div class="container header-content">
         <div class="logo">
             <i class="fas fa-shield-alt"></i>
-            <span>Avia<span style="color: #34a853;">SAFE</span>system</span>
+            <span>Avia<span style="color: var(--color-accent);">SAFE</span>system</span>
         </div>
         <nav>
             <ul>
                 <li><a href="/" class="active">Home</a></li>
                 <li><a href="#features">Features</a></li>
                 <li><a href="#tenants">Tenant Portal</a></li>
-                <li><a href="login.html" class="btn btn-outline" style="color: white; border-color: rgba(255,255,255,0.3);">Login</a></li>
+                <li><a href="contact.html" class="btn btn-outline">Contact</a></li>
+                <li><a href="login.html" class="btn btn-outline">Login</a></li>
             </ul>
         </nav>
     </div>
 </header>
 
 <!-- ========== HERO ========== -->
-<section class="hero" id="home">
+<section id="hero" class="hero-section">
     <div class="container">
-        <h1>Avia<span class="safe-highlight">SAFE</span>system</h1>
-        <p>
-            ICAO Annex 19 & CAR-19 compliant. Enterprise-grade safety management
-            for airlines, regulators, and aviation organizations.
-        </p>
-        <div class="btn-group">
-            <a href="/survey/" class="btn-hero-primary">
-                <i class="fas fa-clipboard-list"></i> Take Survey
-            </a>
-            <a href="login.html" class="btn-hero-secondary">
-                <i class="fas fa-sign-in-alt"></i> Login
-            </a>
+        <div class="hero-grid">
+
+            <!-- Left: Text Content -->
+            <div class="hero-content">
+                <span class="hero-badge">ICAO Annex 19 · Doc 9859 · Doc 10951 Aligned</span>
+                <h1 class="hero-headline">From Safety Reporting to <span class="highlight">Safety Intelligence</span></h1>
+                <p class="hero-description">
+                    Built for the next evolution of aviation safety management, AviaSAFE SMS is
+                    founded on ICAO Annex 19, Doc 9859 (Safety Management Manual) and Doc 10951
+                    (Safety Intelligence Manual). It helps organizations measure SMS maturity,
+                    identify hazards, assess and mitigate risks, and turn safety data into safety
+                    intelligence — understanding risks before they become events.
+                </p>
+            </div>
+
+            <!-- Right: Rotating Screenshot Gallery -->
+            <div class="hero-gallery">
+                <div class="gallery-container">
+                    <img src="/images/screenshots/screenshot-1.jpg" alt="SMS Health Assessment Dashboard" class="gallery-image active">
+                    <img src="/images/screenshots/screenshot-2.jpg" alt="Hazard Register" class="gallery-image">
+                    <img src="/images/screenshots/screenshot-3.jpg" alt="Risk Matrix" class="gallery-image">
+                    <img src="/images/screenshots/screenshot-4.jpg" alt="Safety Dashboard" class="gallery-image">
+                    <img src="/images/screenshots/screenshot-5.jpg" alt="State Risk Dashboard" class="gallery-image">
+                    <img src="/images/screenshots/screenshot-6.jpg" alt="Safety Survey Analytics" class="gallery-image">
+
+                    <!-- Navigation Dots -->
+                    <div class="gallery-dots">
+                        <span class="dot active" data-index="0"></span>
+                        <span class="dot" data-index="1"></span>
+                        <span class="dot" data-index="2"></span>
+                        <span class="dot" data-index="3"></span>
+                        <span class="dot" data-index="4"></span>
+                        <span class="dot" data-index="5"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ========== WHY IT MATTERS ========== -->
+<section id="why-matters" class="why-matters-section">
+    <div class="container">
+        <div class="why-matters-content">
+            <span class="why-tag">Why It Matters</span>
+            <blockquote class="why-quote">
+                <p>Collecting safety data is not the goal.<br>Turning safety data into safer decisions <strong>is</strong>.</p>
+            </blockquote>
         </div>
     </div>
 </section>
@@ -325,11 +206,11 @@ CODE OWNER: AviaSafeSystems
                 <span class="badge badge-cockpit">Command Center</span>
             </div>
 
-            <!-- 5. CAAN -->
+            <!-- 5. Regulator Oversight -->
             <div class="feature-card">
                 <i class="fas fa-heart-pulse"></i>
-                <h3>CAAN Oversight</h3>
-                <div class="tagline">National Safety Pulse</div>
+                <h3>Regulator Oversight</h3>
+                <div class="tagline">State Safety Programme</div>
                 <p>Aggregated intelligence. Zero identity exposure. Industry-wide view.</p>
                 <span class="badge badge-pulse">Regulator Access</span>
             </div>
@@ -347,38 +228,63 @@ CODE OWNER: AviaSafeSystems
     </div>
 </section>
 
+<!-- ========== TRUST ========== -->
+<section class="trust-section">
+    <div class="container">
+        <h2><i class="fas fa-search-plus"></i> Built on Three ICAO Foundations</h2>
+        <p style="color: var(--color-gray-700); max-width: 640px; margin: 0 auto var(--spacing-lg);">
+            From standards to intelligence — ICAO Annex 19, Doc 9859 and Doc 10951
+            are the framework that turns safety data into safer decisions.
+        </p>
+        <div class="trust-logos">
+            <span>ICAO Annex 19</span>
+            <span>Doc 9859</span>
+            <span>Doc 10951</span>
+        </div>
+        <p class="trust-sub">
+            Safety Management Standards · Safety Management Manual · Safety Intelligence Manual
+        </p>
+    </div>
+</section>
+
 <!-- ========== TENANT PORTAL ========== -->
 <section class="tenant-portal-section" id="tenants">
     <div class="container">
         <h2><i class="fas fa-building"></i> Tenant Portal</h2>
         <p>
-            Enter your organization's tenant ID to access your dedicated safety portal.
+            Enter your organization's name to access your dedicated safety portal.
         </p>
         <div class="tenant-input-group">
-            <input type="text" id="tenantInput" placeholder="e.g., sita-air" aria-label="Tenant ID">
+            <input type="text" id="tenantInput" placeholder="Enter Your Organization Name" aria-label="Organization name">
             <button class="btn" onclick="goToTenant()">
                 <i class="fas fa-arrow-right"></i> Go
             </button>
         </div>
-        <div class="tenant-hint">
-            <i class="fas fa-info-circle"></i>
-            Examples: <code>sita-air</code>, <code>buddha-air</code>, <code>tara-air</code>, <code>caan</code>, <code>admin</code>
-        </div>
     </div>
 </section>
 
-<!-- ========== TRUST ========== -->
-<section class="trust-section">
-    <div class="container">
-        <h2><i class="fas fa-search-plus"></i> Recognize Your SMS Health Status</h2>
-        <p style="color: var(--color-gray-700); max-width: 600px; margin: 0 auto var(--spacing-xl);">
-            Built in alignment with international aviation safety standards.
-        </p>
-        <div class="trust-logos">
-            <span>ICAO Annex 19</span>
-            <span>CAR-19</span>
-            <span>EASA IMS</span>
-            <span>Just Culture</span>
+<!-- ========== FOUNDER ========== -->
+<section class="founder-section" id="founder">
+    <div class="container founder-content">
+        <div class="founder-photo-wrap">
+            <img src="/images/ghanshyam-acharya.jpg"
+                 alt="Ghanshyam Acharya, Founder of AviaSAFE Systems"
+                 class="founder-photo"
+                 loading="lazy">
+        </div>
+        <div class="founder-text">
+            <h2><i class="fas fa-user-tie"></i> Meet the Founder</h2>
+            <p>
+                <strong>Ghanshyam Acharya</strong> built AviaSAFE to give airlines and
+                regulators an affordable, ICAO Annex 19, Doc 9859 &amp; Doc 10951 aligned safety
+                management platform — turning complex safety data into clear, actionable
+                intelligence for the whole industry.
+            </p>
+            <div class="trust-logos founder-cred">
+                <span>ICAO Annex 19</span>
+                <span>Doc 9859</span>
+                <span>Doc 10951</span>
+            </div>
         </div>
     </div>
 </section>
@@ -397,7 +303,7 @@ CODE OWNER: AviaSafeSystems
             <span class="footer-divider">|</span>
             <a href="#">Terms of Service</a>
             <span class="footer-divider">|</span>
-            <a href="#">Contact</a>
+            <a href="contact.html">Contact</a>
             <span class="footer-divider">|</span>
             <a href="/admin/login.html">Developer Login</a>
         </div>
@@ -459,6 +365,8 @@ document.getElementById('tenantInput').addEventListener('keydown', function(e) {
     }
 })();
 </script>
+
+<script src="/js/main.js"></script>
 
 </body>
 </html>

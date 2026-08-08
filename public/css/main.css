@@ -139,7 +139,7 @@ p { margin-bottom: var(--spacing-md); }
 .form-control:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+    box-shadow: 0 0 0 3px rgba(26,107,138,0.1);
 }
 .form-control:disabled {
     background: var(--color-gray-100);

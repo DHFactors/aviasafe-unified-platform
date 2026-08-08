@@ -8,17 +8,17 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0b2a42; margin: 0; }
         .page { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
-        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a6b8a; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
         .back-link:hover { text-decoration: underline; }
         .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
-        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 { font-size: 1rem; color: #0b2a42; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
         .card h2 i { width: 1.25rem; text-align: center; }
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .detail-field { margin-bottom: 0.5rem; }
         .detail-field .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
-        .detail-field .value { font-size: 0.95rem; color: #1e293b; margin-top: 0.15rem; word-break: break-word; }
+        .detail-field .value { font-size: 0.95rem; color: #0b2a42; margin-top: 0.15rem; word-break: break-word; }
         .detail-field.full-width { grid-column: 1 / -1; }
         .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
         .badge-critical { background: #fde8e8; color: #dc3545; }
@@ -30,14 +30,14 @@
         .badge-completed { background: #e8f5e9; color: #2e7d32; }
         .badge-failed { background: #fde8e8; color: #dc3545; }
 
-        .ai-panel { background: linear-gradient(135deg, #f0f4ff, #e8f0fe); border-left: 4px solid #1a73e8; border-radius: 0 10px 10px 0; }
-        .ai-panel h2 { color: #1a73e8; }
+        .ai-panel { background: linear-gradient(135deg, #f0f4ff, #e8f0f8); border-left: 4px solid #1a6b8a; border-radius: 0 10px 10px 0; }
+        .ai-panel h2 { color: #1a6b8a; }
         .ai-assessment-card { background: #fff; border-radius: 8px; padding: 1rem; margin-top: 0.75rem; border: 1px solid #d2e3fc; }
         .ai-assessment-card .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
         .ai-assessment-card .head .sev-prob { display: flex; gap: 1rem; font-size: 1.25rem; font-weight: 700; }
         .ai-assessment-card .head .sev-prob span { display: flex; align-items: center; gap: 0.35rem; }
         .ai-assessment-card .explanation { font-size: 0.85rem; color: #475569; line-height: 1.5; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #e2e8f0; }
-        .ai-assessment-card .explanation strong { color: #1e293b; }
+        .ai-assessment-card .explanation strong { color: #0b2a42; }
 
         .risk-index-display { text-align: center; padding: 1rem; border-radius: 10px; margin-bottom: 1rem; }
         .risk-index-display .value { font-size: 2.5rem; font-weight: 800; line-height: 1; }
@@ -45,19 +45,19 @@
         .risk-index-display .sub { font-size: 0.75rem; opacity: 0.8; margin-top: 0.15rem; }
         .bg-very-high { background: #7f1d1d; color: #fff; }
         .bg-high { background: #dc3545; color: #fff; }
-        .bg-medium { background: #f9a825; color: #1e293b; }
+        .bg-medium { background: #f9a825; color: #0b2a42; }
         .bg-low { background: #2e7d32; color: #fff; }
         .bg-na { background: #f1f5f9; color: #64748b; }
 
-        .sm-module { border: 2px solid #002f6c; border-radius: 10px; }
-        .sm-module h2 { color: #002f6c; }
-        .sm-module .sm-badge { display: inline-block; background: #002f6c; color: #fff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sm-module { border: 2px solid #0b2a42; border-radius: 10px; }
+        .sm-module h2 { color: #0b2a42; }
+        .sm-module .sm-badge { display: inline-block; background: #0b2a42; color: #fff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .sm-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; align-items: end; }
         .sm-form .form-group { margin-bottom: 0; }
         .sm-form .form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem; }
         .sm-form .form-group select, .sm-form .form-group input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: #fff; }
-        .sm-form .form-group select:focus, .sm-form .form-group input:focus { outline: none; border-color: #002f6c; box-shadow: 0 0 0 3px rgba(0,47,108,0.1); }
-        .btn-sm { background: #002f6c; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+        .sm-form .form-group select:focus, .sm-form .form-group input:focus { outline: none; border-color: #0b2a42; box-shadow: 0 0 0 3px rgba(0,47,108,0.1); }
+        .btn-sm { background: #0b2a42; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
         .btn-sm:hover { opacity: 0.9; }
         .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -72,13 +72,16 @@
         .risk-kv .item .num { font-size: 1.5rem; font-weight: 700; }
         .risk-kv .item .lbl { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
 
-        .official-badge { background: #002f6c; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin-left: 0.5rem; }
+        .official-badge { background: #0b2a42; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin-left: 0.5rem; }
 
         @media (max-width: 600px) {
             .detail-grid { grid-template-columns: 1fr; }
             .sm-form { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 

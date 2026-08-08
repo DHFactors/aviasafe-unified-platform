@@ -1,0 +1,137 @@
+/* ============================================================================
+   FILE: contact.css
+   PATH: public/css/contact.css
+   PURPOSE: Contact page styles — clean, professional, matching AviaSAFE branding.
+   AUTHOR: AviaSAFE Systems
+   ============================================================================ */
+
+.contact-section {
+    padding: var(--spacing-3xl) 0;
+    background: var(--color-gray-50);
+    min-height: 65vh;
+}
+
+.contact-section h1 {
+    font-size: var(--font-size-4xl);
+    text-align: center;
+    color: var(--color-primary-dark);
+    margin-bottom: var(--spacing-sm);
+}
+
+.contact-section h1 i {
+    color: var(--color-accent);
+}
+
+.contact-section > .container > p {
+    text-align: center;
+    color: var(--color-gray-700);
+    margin-bottom: var(--spacing-2xl);
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.contact-form {
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--color-white);
+    padding: var(--spacing-2xl);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.contact-form .form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.contact-form label {
+    display: block;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    margin-bottom: var(--spacing-xs);
+}
+
+.contact-form input,
+.contact-form textarea {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-base);
+    font-family: var(--font-family);
+    color: var(--color-gray-900);
+    background: var(--color-white);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.contact-form input::placeholder,
+.contact-form textarea::placeholder {
+    color: var(--color-gray-500);
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(26, 107, 138, 0.1);
+}
+
+.contact-form textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.contact-form .btn-primary {
+    width: 100%;
+    padding: var(--spacing-md);
+    text-align: center;
+    border: none;
+    cursor: pointer;
+}
+
+.contact-form .btn-primary:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.contact-status {
+    max-width: 600px;
+    margin: 0 auto var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    font-weight: 500;
+    text-align: center;
+}
+
+.contact-status-success {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+    border: 1px solid var(--color-success);
+}
+
+.contact-status-error {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger);
+}
+
+.contact-alt {
+    text-align: center;
+    margin-top: var(--spacing-2xl);
+    color: var(--color-gray-700);
+}
+
+.contact-alt a {
+    font-weight: 600;
+    color: var(--color-accent);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 600px) {
+    .contact-section h1 {
+        font-size: var(--font-size-3xl);
+    }
+    .contact-form {
+        padding: var(--spacing-lg);
+    }
+}

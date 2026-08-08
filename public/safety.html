@@ -338,6 +338,17 @@
             </div>
         </div>
 
+        <!-- Section 3e: Corrective Action Progress (CAPs) Widget -->
+        <div class="section-title shell-scroll-spy" id="corrective-actions"><i class="fas fa-tasks"></i> Corrective Action Progress</div>
+        <div class="chart-grid">
+            <div class="chart-card chart-full">
+                <h3>CAP Status <a href="/can_cap/caps.html" style="float:right;font-size:0.8rem;font-weight:400;"><i class="fas fa-external-link-alt"></i> View CAP Register</a></h3>
+                <div id="capWidget" class="state-container" style="min-height:80px;">
+                    <div id="capStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.75rem;"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Section: Latest Reports (consolidated) -->
         <div class="section-title shell-scroll-spy" id="reports"><i class="fas fa-chart-bar"></i> Latest Reports</div>
         <div id="reportsTable" class="table-card state-container">
@@ -433,7 +444,8 @@ window.SHELL_CONFIG = {
         { id: 'reports', label: 'Latest Reports', icon: 'fa-chart-bar' },
         { id: 'risk-matrix', label: 'Risk Matrix', icon: 'fa-sliders-h' },
         { href: '/flight_diversions/index.html', label: 'Flight Diversions', icon: 'fa-plane-slash' },
-        { href: '/can_cap/cans.html', label: 'CAN/CAP', icon: 'fa-clipboard-check' },
+        { href: '/can_cap/cans.html', label: 'CANs', icon: 'fa-clipboard-check' },
+        { href: '/can_cap/caps.html', label: 'CAPs', icon: 'fa-tasks' },
     ],
 };
 </script>
@@ -518,12 +530,58 @@ async function loadVerificationWidget() {
     }
 }
 
+// Corrective Action Progress (CAPs) Widget
+async function loadCapWidget() {
+    const grid = document.getElementById('capStatsGrid');
+    try {
+        const stats = await CanCapAPI.getStats();
+        if (!stats || !stats.caps) {
+            grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">No CAP data available.</p>';
+            return;
+        }
+        const capStatuses = stats.caps.by_status || {};
+        const capTotal = stats.caps.total || 0;
+        const canTotal = (stats.cans && stats.cans.total) || 0;
+        const statusColors = {
+            'In Progress': '#e65100',
+            'Under Review': '#d97706',
+            'Completed': '#2e7d32',
+            'Revision Required': '#b91c1c',
+            'Overdue': '#dc3545',
+        };
+        let html = Object.entries(capStatuses).map(([status, count]) => `
+            <div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:3px solid ${statusColors[status] || '#64748b'};">
+                <div style="font-size:1.5rem;font-weight:700;color:#0b2a42;">${count}</div>
+                <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;">${status}</div>
+            </div>
+        `).join('');
+        html += `
+            <div style="background:#1a6b8a;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+                <div style="font-size:1.5rem;font-weight:700;">${capTotal}</div>
+                <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.3px;opacity:0.8;">Total CAPs</div>
+            </div>
+            <div style="background:#0b2a42;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+                <div style="font-size:1.5rem;font-weight:700;">${canTotal}</div>
+                <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.3px;opacity:0.8;">Total CANs</div>
+            </div>
+            <div style="grid-column:1/-1;text-align:center;padding-top:0.5rem;">
+                <a href="/can_cap/cans.html" class="btn btn-outline btn-sm"><i class="fas fa-list"></i> All CANs</a>
+                <a href="/can_cap/caps.html" class="btn btn-primary btn-sm"><i class="fas fa-list"></i> All CAPs</a>
+            </div>`;
+        grid.innerHTML = html;
+    } catch (err) {
+        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:1rem;">Error loading CAP data.</p>';
+        console.error('CAP widget error:', err);
+    }
+}
+
 // Override loadAll to include the remaining widgets
 const origLoadAll = loadAll;
 loadAll = function() {
     origLoadAll();
     loadHazardWidget();
     loadVerificationWidget();
+    loadCapWidget();
 };
 </script>
 

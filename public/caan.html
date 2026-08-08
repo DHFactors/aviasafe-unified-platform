@@ -156,6 +156,9 @@ AUTHOR: AviaSAFE Systems
             }
         }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -530,7 +533,7 @@ function renderCaanHeatMap(data) {
     let html = '<table style="border-collapse:collapse;margin:0 auto;font-size:0.85rem;">';
     html += '<tr><td style="padding:0.5rem;font-weight:700;color:#475569;text-align:right;">P\\S</td>';
     for (let s = 1; s <= 5; s++) {
-        html += `<td style="padding:0.5rem 0.75rem;font-weight:700;color:#1a73e8;text-align:center;">S=${s}</td>`;
+        html += `<td style="padding:0.5rem 0.75rem;font-weight:700;color:#1a6b8a;text-align:center;">S=${s}</td>`;
     }
     html += '</tr>';
 
@@ -569,7 +572,7 @@ function renderCaanTopRisks(topRisks) {
         html += `<tr style="border-bottom:1px solid #f1f5f9;">
             <td style="padding:0.75rem;font-size:0.875rem;">${r.category}</td>
             <td style="padding:0.75rem;text-align:right;font-weight:600;font-size:0.875rem;">${r.count}</td>
-            <td style="padding:0.75rem;"><div style="background:#e2e8f0;border-radius:4px;height:20px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:#1a73e8;border-radius:4px;transition:width 0.3s;"></div></div></td>
+            <td style="padding:0.75rem;"><div style="background:#e2e8f0;border-radius:4px;height:20px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:#1a6b8a;border-radius:4px;transition:width 0.3s;"></div></div></td>
         </tr>`;
     }
     html += '</tbody></table>';
@@ -594,7 +597,7 @@ async function loadNationalVerificationWidget() {
         ];
         let html = items.map(item => `
             <div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${item.value}</div>
+                <div style="font-size:1.5rem;font-weight:700;color:#0b2a42;">${item.value}</div>
                 <div style="font-size:0.65rem;color:#64748b;text-transform:uppercase;">${item.label}</div>
             </div>
         `).join('');
@@ -615,7 +618,7 @@ async function loadNationalDiversionWidget() {
         }
         const reasons = stats.by_reason || {};
         let html = `
-            <div style="background:#002f6c;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+            <div style="background:#0b2a42;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
                 <div style="font-size:1.5rem;font-weight:700;">${stats.total_diversions}</div>
                 <div style="font-size:0.65rem;text-transform:uppercase;opacity:0.8;">Total Diversions</div>
             </div>
@@ -688,15 +691,15 @@ async function loadNationalCanCapWidget() {
         const capTotal = stats.caps.total || 0;
         let html = Object.entries(canStatuses).map(([k, v]) =>
             `<div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${v}</div>
+                <div style="font-size:1.5rem;font-weight:700;color:#0b2a42;">${v}</div>
                 <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;">CAN ${k}</div>
             </div>`
         ).join('');
-        html += `<div style="background:#002f6c;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+        html += `<div style="background:#0b2a42;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
                 <div style="font-size:1.5rem;font-weight:700;">${canTotal}</div>
                 <div style="font-size:0.7rem;text-transform:uppercase;">Total CANs</div>
             </div>
-            <div style="background:#1a73e8;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+            <div style="background:#1a6b8a;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
                 <div style="font-size:1.5rem;font-weight:700;">${capTotal}</div>
                 <div style="font-size:0.7rem;text-transform:uppercase;">Total CAPs</div>
             </div>`;
@@ -731,11 +734,11 @@ async function loadNationalHazardWidget() {
         const riskLevel = stats.by_risk_level || {};
         let html = Object.entries(statuses).map(([k, v]) =>
             `<div style="background:#fff;padding:0.75rem;border-radius:8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <div style="font-size:1.5rem;font-weight:700;color:#002f6c;">${v}</div>
+                <div style="font-size:1.5rem;font-weight:700;color:#0b2a42;">${v}</div>
                 <div style="font-size:0.7rem;color:#64748b;text-transform:uppercase;">${k}</div>
             </div>`
         ).join('');
-        html += `<div style="background:#002f6c;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
+        html += `<div style="background:#0b2a42;padding:0.75rem;border-radius:8px;text-align:center;color:#fff;">
                 <div style="font-size:1.5rem;font-weight:700;">${total}</div>
                 <div style="font-size:0.7rem;text-transform:uppercase;opacity:0.8;">Total Hazards</div>
             </div>`;

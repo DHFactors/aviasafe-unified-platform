@@ -13,6 +13,8 @@ service-account.json
 
 # Beta-testing credential exports (real passwords)
 beta-testing-credentials.csv
+BETA_CREDENTIALS_*.md
+credential.md
 
 # Python Virtual Environments
 .venv/
@@ -31,6 +33,10 @@ node_modules/
 
 # Firebase CLI cache
 .firebase/
+
+# Live auth tokens / one-off backup artifacts (never commit)
+tests/e2e/e2e_tokens.json
+scripts/firebase/backups/
 
 # Runtime logs
 backend/logs/

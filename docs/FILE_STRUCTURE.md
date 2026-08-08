@@ -35,12 +35,15 @@ public/admin/
 ### Survey Pages
 ```
 public/survey/
-└── index.html                          # SMS Health Assessment (classic)
+├── index.html                          # Safety Culture Survey (functional, v3.0.0)
+├── app.js                              # Survey runtime + POST /api/v1/surveys
+├── default_q.js                        # MASTER_QUESTIONS (23 bilingual questions)
+└── style.css                           # Survey stylesheet
 
 public/portal/
 ├── index.html                          # Portal home
 └── survey/
-    └── index.html                      # SMS Health Assessment (portal)
+    └── index.html                      # Legacy redirect → /survey/ (v3.1.1)
 ```
 
 ### Portal Dashboards
@@ -118,9 +121,9 @@ backend/app/templates/
 | `/admin/login.html` | `admin/login.html` | Developer login |
 | `/admin/production-setup.html` | `admin/production-setup.html` | Seeding panel |
 | `/admin/tenant-credentials.html` | `admin/tenant-credentials.html` | Tenant credentials |
-| `/survey/` | `survey/index.html` | Classic survey |
+| `/survey/` | `survey/index.html` | Safety Culture Survey (functional, POST `/api/v1/surveys`) |
 | `/portal/` | `portal/index.html` | Portal home |
-| `/portal/survey/` | `portal/survey/index.html` | Portal survey |
+| `/portal/survey/` | `portal/survey/index.html` | Redirect → `/survey/` |
 | `/portal/dashboards/safety.html` | `portal/dashboards/safety.html` | Portal safety dashboard |
 | `/portal/dashboards/caan.html` | `portal/dashboards/caan.html` | Portal CAAN dashboard |
 | `/hazards/` | `hazards/index.html` | Hazard Register |
@@ -172,7 +175,7 @@ backend/app/templates/
 |----------|-------|-------|
 | **Root Pages** | 5 | index, login, safety, caan, caan-state-risk |
 | **Admin Pages** | 4 | index, login, production-setup, tenant-credentials |
-| **Survey Pages** | 3 | survey/index, portal/index, portal/survey/index |
+| **Survey Pages** | 2 | survey/index, portal/index, portal/survey/index (redirect) |
 | **Portal Dashboards** | 2 | portal/dashboards/safety, portal/dashboards/caan |
 | **Hazards** | 5 | index, create, detail, verify, approve_closure |
 | **Flight Diversions** | 3 | index, create, detail |

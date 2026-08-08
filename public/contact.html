@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact | AviaSAFE SMS</title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/tenant-overrides.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/global.css">
+    <link rel="stylesheet" href="/css/contact.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<header class="app-header">
+    <div class="container header-content">
+        <div class="logo">
+            <i class="fas fa-shield-alt"></i>
+            <span>Avia<span style="color: var(--color-accent);">SAFE</span>system</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/#features">Features</a></li>
+                <li><a href="/#tenants">Tenant Portal</a></li>
+                <li><a href="contact.html" class="active">Contact</a></li>
+                <li><a href="login.html" class="btn btn-outline">Login</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<!-- ========== CONTACT ========== -->
+<section class="contact-section">
+    <div class="container">
+        <h1><i class="fas fa-envelope-open-text"></i> Contact Us</h1>
+        <p>Have questions about AviaSAFE SMS? Reach out to our team — we usually respond within one business day.</p>
+
+        <div id="contactStatus" class="contact-status" role="alert" hidden></div>
+
+        <form class="contact-form" id="contactForm" novalidate>
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" placeholder="Your full name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="you@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="subject">Subject</label>
+                <input type="text" id="subject" name="subject" placeholder="How can we help?">
+            </div>
+            <div class="form-group">
+                <label for="message">Message</label>
+                <textarea id="message" name="message" rows="5" placeholder="Tell us a little about your query…" required></textarea>
+            </div>
+            <button type="submit" id="contactSubmitBtn" class="btn-primary">
+                <i class="fas fa-paper-plane"></i> Send Message
+            </button>
+        </form>
+
+        <div class="contact-alt">
+            <p><i class="fas fa-at"></i> Prefer email? Write to us at
+                <a href="mailto:info@aviasafesystems.com">info@aviasafesystems.com</a></p>
+        </div>
+    </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="app-footer">
+    <div class="container">
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <span class="footer-divider">|</span>
+            <a href="/survey/">Survey</a>
+            <span class="footer-divider">|</span>
+            <a href="login.html">Login</a>
+            <span class="footer-divider">|</span>
+            <a href="#">Privacy Policy</a>
+            <span class="footer-divider">|</span>
+            <a href="#">Terms of Service</a>
+            <span class="footer-divider">|</span>
+            <a href="contact.html">Contact</a>
+            <span class="footer-divider">|</span>
+            <a href="/admin/login.html">Developer Login</a>
+        </div>
+
+        <p style="margin-top: var(--spacing-md); font-size: var(--font-size-sm); opacity: 0.8;">
+            A project by <strong>Ghanshyam Acharya</strong>.
+        </p>
+        <p style="margin-top: var(--spacing-xs); font-size: var(--font-size-sm); opacity: 0.6;">
+            &copy; 2026 AviaSAFEsystem. All rights reserved.
+        </p>
+    </div>
+</footer>
+
+<script>
+// ============================================================================
+// CONTACT PAGE - Sender.net integration via the backend contact endpoint.
+// The Sender API key lives on the server (env var) and is never exposed here.
+// ============================================================================
+
+function getApiBaseUrl() {
+    if (window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl) return window.APP_CONFIG.apiBaseUrl;
+    var host = window.location.hostname;
+    return (host.indexOf('beta') !== -1 || host === 'localhost' || host === '127.0.0.1')
+        ? 'https://sms-aviasafesystems-beta.onrender.com'
+        : 'https://aviasafe-unified-platform.onrender.com';
+}
+
+function showStatus(message, type) {
+    var el = document.getElementById('contactStatus');
+    el.textContent = message;
+    el.className = 'contact-status ' + (type === 'error' ? 'contact-status-error' : 'contact-status-success');
+    el.hidden = false;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+document.getElementById('contactForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    var name = document.getElementById('name').value.trim();
+    var email = document.getElementById('email').value.trim();
+    var subject = document.getElementById('subject').value.trim();
+    var message = document.getElementById('message').value.trim();
+
+    if (!name || !email || !message) {
+        showStatus('Please fill in your name, email and message.', 'error');
+        return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showStatus('Please enter a valid email address.', 'error');
+        return;
+    }
+
+    var btn = document.getElementById('contactSubmitBtn');
+    var original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Sending…';
+
+    try {
+        var resp = await fetch(getApiBaseUrl() + '/api/v1/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, email: email, subject: subject, message: message })
+        });
+        var data = await resp.json().catch(function () { return {}; });
+
+        if (resp.ok && data.status === 'success') {
+            showStatus('Thank you! Your message has been received. We will get back to you shortly.', 'success');
+            document.getElementById('contactForm').reset();
+        } else {
+            var detail = (data && data.detail) || 'Something went wrong. Please try again.';
+            showStatus(detail, 'error');
+        }
+    } catch (err) {
+        showStatus('Network error — could not reach the server. Please try again later.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+    }
+});
+</script>
+
+</body>
+</html>

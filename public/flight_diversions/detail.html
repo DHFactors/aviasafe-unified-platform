@@ -8,17 +8,17 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; }
+        body { background: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0b2a42; margin: 0; }
         .page { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
-        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a73e8; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #1a6b8a; font-size: 0.875rem; margin-bottom: 1rem; text-decoration: none; }
         .back-link:hover { text-decoration: underline; }
         .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.25rem; }
-        .card h2 { font-size: 1rem; color: #002f6c; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .card h2 { font-size: 1rem; color: #0b2a42; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
         .card h2 i { width: 1.25rem; text-align: center; }
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .detail-field { margin-bottom: 0.35rem; }
         .detail-field .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
-        .detail-field .value { font-size: 0.95rem; color: #1e293b; margin-top: 0.15rem; word-break: break-word; }
+        .detail-field .value { font-size: 0.95rem; color: #0b2a42; margin-top: 0.15rem; word-break: break-word; }
         .detail-field.full-width { grid-column: 1 / -1; }
         .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
         .badge-new { background: #e3f2fd; color: #1565c0; }
@@ -33,7 +33,7 @@
         .action-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
         .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
         .action-btn:hover { opacity: 0.85; }
-        .action-btn-primary { background: #1a73e8; color: #fff; }
+        .action-btn-primary { background: #1a6b8a; color: #fff; }
         .action-btn-danger { background: #fde8e8; color: #dc3545; }
         .action-btn-success { background: #e8f5e9; color: #2e7d32; }
         .action-btn-warning { background: #fef3c7; color: #d97706; }
@@ -44,10 +44,13 @@
         .loading-state i { font-size: 2rem; margin-right: 0.75rem; }
         .error-state { text-align: center; padding: 4rem; color: #dc3545; }
         .edit-field { width: 100%; padding: 0.4rem 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem; }
-        .edit-field:focus { outline: none; border-color: #1a73e8; }
-        .btn-save-edit { background: #1a73e8; color: #fff; border: none; padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 0.25rem; }
+        .edit-field:focus { outline: none; border-color: #1a6b8a; }
+        .btn-save-edit { background: #1a6b8a; color: #fff; border: none; padding: 0.3rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 0.25rem; }
         @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 

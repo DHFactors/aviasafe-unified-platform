@@ -170,6 +170,17 @@
         return footer;
     }
 
+    function applyTenantToSurveyLinks(tenantId) {
+        if (!tenantId) return;
+        document.querySelectorAll('a[href*="/survey"]').forEach(function (a) {
+            const href = a.getAttribute('href') || '';
+            if (href.indexOf('/survey') === -1) return;
+            if (href.indexOf('tenant=') !== -1) return;
+            const sep = href.indexOf('?') === -1 ? '?' : '&';
+            a.setAttribute('href', href + sep + 'tenant=' + encodeURIComponent(tenantId));
+        });
+    }
+
     function attachScrollSpy() {
         const links = document.querySelectorAll('.sidebar-nav li a');
         const navWrap = document.querySelector('.sidebar-nav');
@@ -248,6 +259,12 @@
             firebase.auth().onAuthStateChanged(function (user) {
                 const el = document.getElementById('shellUser');
                 if (el && user) el.textContent = user.email;
+                if (user && user.getIdTokenResult) {
+                    user.getIdTokenResult(true).then(function (tokenResult) {
+                        const claims = (tokenResult && tokenResult.claims) || {};
+                        if (claims.tenant_id) applyTenantToSurveyLinks(claims.tenant_id);
+                    }).catch(function () {});
+                }
             });
         }
     }

@@ -9,9 +9,13 @@
 
 :root {
     /* ========== PRIMARY COLORS ========== */
-    --color-primary: #1a73e8;
-    --color-primary-dark: #0d47a1;
-    --color-primary-light: #e8f0fe;
+    --color-primary: #1a6b8a;
+    --color-primary-dark: #0b2a42;
+    --color-primary-light: #e8f0f8;
+
+    /* ========== ACCENT COLORS ========== */
+    --color-accent: #1a6b8a;
+    --color-accent-light: #4aa8cc;
     
     /* ========== SECONDARY COLORS ========== */
     --color-secondary: #f57c00;
@@ -20,8 +24,8 @@
     
     /* ========== NEUTRAL COLORS ========== */
     --color-white: #ffffff;
-    --color-black: #202124;
-    --color-gray-50: #f8f9fa;
+    --color-black: #0b2a42;
+    --color-gray-50: #f8fafc;
     --color-gray-100: #f1f3f4;
     --color-gray-200: #e9ecef;
     --color-gray-300: #dadce0;
@@ -30,7 +34,7 @@
     --color-gray-600: #80868b;
     --color-gray-700: #5f6368;
     --color-gray-800: #3c4043;
-    --color-gray-900: #202124;
+    --color-gray-900: #0b2a42;
     
     /* ========== STATUS COLORS ========== */
     --color-success: #34a853;
@@ -39,11 +43,11 @@
     --color-warning-bg: #fff3cd;
     --color-danger: #ea4335;
     --color-danger-bg: #fce8e6;
-    --color-info: #1a73e8;
-    --color-info-bg: #e8f0fe;
+    --color-info: #1a6b8a;
+    --color-info-bg: #e8f0f8;
     
     /* ========== TYPOGRAPHY ========== */
-    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.875rem;
     --font-size-base: 1rem;

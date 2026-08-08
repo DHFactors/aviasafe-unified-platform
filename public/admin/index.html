@@ -24,23 +24,23 @@ PURPOSE: Super Admin Portal - NO AUTO-REDIRECTS
     <script src="/js/firebase.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 2px solid #e9ecef; margin-bottom: 30px; }
-        .header h1 { margin: 0; color: #1a73e8; }
+        .header h1 { margin: 0; color: #1a6b8a; }
         .status-box { padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }
         .status-box.success { background: #e6f4ea; border-left: 4px solid #34a853; }
         .status-box.error { background: #fce8e6; border-left: 4px solid #ea4335; }
-        .status-box.info { background: #e8f0fe; border-left: 4px solid #1a73e8; }
+        .status-box.info { background: #e8f0f8; border-left: 4px solid #1a6b8a; }
         .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
         .btn-danger { background: #ea4335; color: white; }
         .btn-success { background: #34a853; color: white; }
-        .btn-primary { background: #1a73e8; color: white; }
+        .btn-primary { background: #1a6b8a; color: white; }
         .btn-sm { padding: 4px 12px; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         th { background: #f1f3f4; padding: 12px 15px; text-align: left; font-weight: 600; color: #5f6368; }
         td { padding: 12px 15px; border-bottom: 1px solid #e9ecef; }
-        tr:hover { background: #f8f9fa; }
+        tr:hover { background: #f8fafc; }
         .badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
         .badge-active { background: #e6f4ea; color: #1e7e34; }
         .badge-inactive { background: #fce8e6; color: #d33426; }
@@ -54,6 +54,9 @@ PURPOSE: Super Admin Portal - NO AUTO-REDIRECTS
         .tenant-form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
         @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -416,7 +419,7 @@ function showToast(message, type) {
     var container = document.getElementById('toastContainer');
     var toast = document.createElement('div');
     toast.style.cssText = 'padding:12px 20px; margin-bottom:10px; border-radius:4px; color:white; background:' + 
-        (type === 'success' ? '#34a853' : type === 'error' ? '#ea4335' : '#1a73e8');
+        (type === 'success' ? '#34a853' : type === 'error' ? '#ea4335' : '#1a6b8a');
     toast.textContent = message;
     container.appendChild(toast);
 
