@@ -304,6 +304,12 @@ function getRoleDestination(user) {
     var role = (user && user.role) || 'USER';
     if (role === 'SUPER_ADMIN') return '/admin/production-setup.html';
     if (role === 'CAAN_SMD') return '/caan.html';
+    if (role === 'USER') {
+        var claims = (user && (user.claims || {})) || {};
+        var department = claims.department || (user && user.department) || '';
+        if (department) return '/dashboard/responsible-manager.html';
+        return '/safety.html';
+    }
     return '/safety.html';
 }
 

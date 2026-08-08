@@ -47,6 +47,7 @@ async def list_cans(
     status: Optional[str] = Query(None),
     priority: Optional[str] = Query(None),
     assigned_to: Optional[str] = Query(None),
+    department: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -61,6 +62,8 @@ async def list_cans(
         filters["priority"] = priority
     if assigned_to:
         filters["assigned_to"] = assigned_to
+    if department:
+        filters["department"] = department
     if search:
         filters["search"] = search
 
@@ -82,6 +85,7 @@ async def get_can_stats(
 async def list_all_caps(
     status: Optional[str] = Query(None),
     can_id: Optional[str] = Query(None),
+    department: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -94,6 +98,8 @@ async def list_all_caps(
         filters["status"] = status
     if can_id:
         filters["can_id"] = can_id
+    if department:
+        filters["department"] = department
     if search:
         filters["search"] = search
     docs = service.list_all_caps(user, filters)
@@ -274,6 +280,7 @@ def _to_can_response(data: dict) -> dict:
         "target_completion_date": data.get("target_completion_date"),
         "assigned_to": data.get("assigned_to", ""),
         "assigned_to_uid": data.get("assigned_to_uid", ""),
+        "department": data.get("department"),
         "priority": data.get("priority", ""),
         "status": data.get("status", "Open"),
         "tenant_id": data.get("tenant_id", ""),
@@ -293,6 +300,7 @@ def _to_can_list_item(data: dict) -> dict:
         "priority": data.get("priority", ""),
         "status": data.get("status", "Open"),
         "assigned_to": data.get("assigned_to", ""),
+        "department": data.get("department"),
         "target_completion_date": data.get("target_completion_date"),
         "issued_at": data.get("issued_at"),
     }
@@ -309,6 +317,7 @@ def _to_cap_response(data: dict) -> dict:
         "implementation_plan": data.get("implementation_plan"),
         "submitted_by": data.get("submitted_by", ""),
         "submitted_by_uid": data.get("submitted_by_uid", ""),
+        "department": data.get("department"),
         "submitted_at": data.get("submitted_at"),
         "target_completion_date": data.get("target_completion_date"),
         "status": data.get("status", "In Progress"),
@@ -333,6 +342,7 @@ def _to_cap_list_item(data: dict) -> dict:
         "cap_reference": data.get("cap_reference", ""),
         "action_plan": data.get("action_plan", ""),
         "status": data.get("status", "In Progress"),
+        "department": data.get("department"),
         "submitted_by": data.get("submitted_by", ""),
         "submitted_at": data.get("submitted_at"),
     }

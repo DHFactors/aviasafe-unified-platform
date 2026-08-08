@@ -5,6 +5,7 @@ from loguru import logger
 from app.core.config import settings
 from app.firebase import get_tenant_collection, get_cross_tenant_collection
 from app.services.hazard_service import HazardService
+from app.services.users import get_user_department
 
 
 CAN_COLLECTION = "can_cap"
@@ -72,6 +73,14 @@ class CanCapService:
             "target_completion_date": payload["target_completion_date"],
             "assigned_to": payload["assigned_to"],
             "assigned_to_uid": payload["assigned_to_uid"],
+            "department": payload.get("department")
+            or (
+                get_user_department(
+                    uid=payload.get("assigned_to_uid"), email=payload.get("assigned_to")
+                )
+                if payload.get("assigned_to_uid") or payload.get("assigned_to")
+                else ""
+            ),
             "priority": payload["priority"],
             "status": "Open",
             "issued_by": user.get("email", user["uid"]),
@@ -149,6 +158,8 @@ class CanCapService:
                         continue
                     if filters.get("assigned_to") and data.get("assigned_to") != filters["assigned_to"]:
                         continue
+                    if filters.get("department") and (data.get("department") or "") != filters["department"]:
+                        continue
                     if filters.get("search"):
                         s = filters["search"].lower()
                         ref = (data.get("can_reference") or "").lower()
@@ -178,6 +189,11 @@ class CanCapService:
                 return None
 
             ref = self._can_collection().document(target_id)
+            if "assigned_to" in payload or "assigned_to_uid" in payload:
+                current = ref.get().to_dict() or {}
+                new_uid = payload.get("assigned_to_uid", current.get("assigned_to_uid"))
+                new_email = payload.get("assigned_to", current.get("assigned_to"))
+                payload["department"] = get_user_department(uid=new_uid, email=new_email)
             payload["updated_at"] = datetime.now(timezone.utc)
             ref.update(payload)
 
@@ -248,15 +264,19 @@ class CanCapService:
         docs = self._can_collection().get()
         can_doc_id = None
         can_ref = None
+        can_data = {}
         for doc in docs:
             data = doc.to_dict()
             if doc.id == can_id or data.get("can_reference") == can_id:
                 can_doc_id = doc.id
                 can_ref = data.get("can_reference")
+                can_data = data
                 break
 
         if not can_doc_id:
             raise ValueError("CAN not found")
+
+        can_department = can_data.get("department", "")
 
         sequence = self._get_next_cap_sequence(can_doc_id, can_ref)
         cap_reference = generate_cap_reference(can_ref, sequence)
@@ -264,6 +284,7 @@ class CanCapService:
         doc_data = {
             "cap_reference": cap_reference,
             "can_id": can_id,
+            "department": payload.get("department") or can_department or "",
             "action_plan": payload["action_plan"],
             "timeline": payload["timeline"],
             "resources_required": payload.get("resources_required"),
@@ -337,6 +358,7 @@ class CanCapService:
             filters = filters or {}
             status_f = filters.get("status")
             can_id_f = filters.get("can_id")
+            department_f = filters.get("department")
             search = (filters.get("search") or "").lower()
 
             results = []
@@ -358,6 +380,9 @@ class CanCapService:
                     data["can_issued_at"] = can_issued
                     data["hazard_id"] = can_data.get("hazard_id", "")
                     data["priority"] = can_data.get("priority", "")
+                    data["department"] = data.get("department") or can_data.get("department", "")
+                    if department_f and (data["department"] or "") != department_f:
+                        continue
                     self._serialize_timestamps(data)
                     if search:
                         hay = " ".join(str(v) for v in [

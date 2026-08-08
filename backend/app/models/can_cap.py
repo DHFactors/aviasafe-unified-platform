@@ -8,6 +8,7 @@ class CANStatus(str, Enum):
     OPEN = "Open"
     UNDER_REVIEW = "Under Review"
     CLOSED = "Closed"
+    ESCALATED = "Escalated"
 
 
 class CAPStatus(str, Enum):
@@ -34,6 +35,7 @@ class CANCreate(BaseModel):
     target_completion_date: datetime = Field(...)
     assigned_to: str = Field(...)
     assigned_to_uid: str = Field(...)
+    department: Optional[str] = None
     priority: str = Field(..., pattern="^(High|Medium|Low)$")
 
 
@@ -44,6 +46,7 @@ class CANUpdate(BaseModel):
     target_completion_date: Optional[datetime] = None
     assigned_to: Optional[str] = None
     assigned_to_uid: Optional[str] = None
+    department: Optional[str] = None
     priority: Optional[str] = None
     status: Optional[CANStatus] = None
 
@@ -61,6 +64,7 @@ class CANResponse(BaseModel):
     target_completion_date: Optional[datetime] = None
     assigned_to: str
     assigned_to_uid: str
+    department: Optional[str] = None
     priority: str
     status: str
     tenant_id: str
@@ -92,6 +96,7 @@ class CAPCreate(BaseModel):
     timeline: str = Field(...)
     resources_required: Optional[str] = None
     implementation_plan: Optional[str] = None
+    department: Optional[str] = None
     target_completion_date: datetime = Field(...)
 
 
@@ -121,6 +126,7 @@ class CAPResponse(BaseModel):
     implementation_plan: Optional[str] = None
     submitted_by: str
     submitted_by_uid: str
+    department: Optional[str] = None
     submitted_at: Optional[datetime] = None
     target_completion_date: Optional[datetime] = None
     status: str

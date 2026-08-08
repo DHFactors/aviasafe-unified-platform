@@ -81,6 +81,7 @@ def _stored_users(users: List[Dict[str, Any]], now: datetime) -> List[Dict[str, 
             "email": email,
             "role": u.get("role") or "AIRLINE_ADMIN",
             "full_name": (u.get("full_name") or "").strip(),
+            "department": (u.get("department") or "").strip(),
             "status": "active",
             "created_at": now.isoformat(),
             "last_login": None,
@@ -94,6 +95,7 @@ def _create_auth_user(auth, u: Dict[str, Any], tid: str) -> Dict[str, Any]:
     role = u.get("role") or "AIRLINE_ADMIN"
     password = u.get("password") or generate_password()
     full_name = (u.get("full_name") or "").strip()
+    department = (u.get("department") or "").strip()
     try:
         user = auth.create_user(
             email=email,
@@ -101,7 +103,10 @@ def _create_auth_user(auth, u: Dict[str, Any], tid: str) -> Dict[str, Any]:
             email_verified=True,
             display_name=full_name or None,
         )
-        auth.update_user(user.uid, custom_claims={"role": role, "tenant_id": tid})
+        claims = {"role": role, "tenant_id": tid}
+        if department:
+            claims["department"] = department
+        auth.update_user(user.uid, custom_claims=claims)
         upsert_user_doc(user.uid, user_doc_from_auth_record(auth.get_user(user.uid)))
         return {"email": email, "role": role, "uid": user.uid, "password": password, "status": "ok"}
     except fb_auth.EmailAlreadyExistsError:
@@ -141,6 +146,7 @@ def create_tenant_with_credentials(data: Dict[str, Any], actor: Dict[str, Any]) 
             "role": r["role"],
             "uid": r.get("uid"),
             "full_name": (src.get("full_name") or "").strip(),
+            "department": (src.get("department") or "").strip(),
             "status": "active",
             "created_at": now.isoformat(),
             "last_login": None,

@@ -1,0 +1,45 @@
+# ============================================================================
+# Cloud Scheduler job for the AviaSAFE overdue/escalation check.
+#
+# Runs daily at 00:00 UTC and POSTs to the internal task endpoint
+# (POST /api/v1/admin/tasks/check-overdue) on the Cloud Run backend.
+#
+# Create with:
+#   gcloud scheduler jobs create http aviasafe-overdue-check \
+#     --schedule="0 0 * * *" \
+#     --uri="https://aviasafe-api-<hash>-<region>.run.app/api/v1/admin/tasks/check-overdue" \
+#     --http-method=POST \
+#     --headers="Content-Type=application/json" \
+#     --message-body="{}" \
+#     --oidc-service-account-email=<SA-EMAIL> \
+#     --oidc-token-audience=<RUN_SERVICE_URL>
+#
+# NOTE: if using --oidc the Cloud Run service must allow unauthenticated
+# invocation from the scheduler OR you can use the shared-secret fallback by
+# setting the backend env var TASK_API_KEY and sending it as a header:
+#
+#   --headers="Content-Type=application/json,X-Task-Key=<TASK_API_KEY>"
+#   --message-body="{}"
+#
+# The endpoint also accepts a JSON body:  { "tenant_id": "<tid>" }  to limit
+# the scan to a single tenant (useful for testing).
+# ============================================================================
+apiVersion: "cloudscheduler.cnrm.cloud.google.com/v1beta1"
+kind: CloudSchedulerJob
+metadata:
+  name: aviasafe-overdue-check
+  namespace: aviasafe
+  labels:
+    app: aviasafe
+    purpose: sms-escalation
+spec:
+  schedule: "0 0 * * *"
+  timeZone: "UTC"
+  description: "Daily AviaSAFE SMS overdue/escalation scan (CAN -> Escalated, CAP -> Overdue)"
+  httpTarget:
+    uri: "REPLACE_WITH_RUN_SERVICE_URL/api/v1/admin/tasks/check-overdue"
+    httpMethod: POST
+    headers:
+      Content-Type: "application/json"
+      X-Task-Key: "${TASK_API_KEY}"
+    body: "e30="

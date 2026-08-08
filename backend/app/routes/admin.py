@@ -10,14 +10,14 @@
 # ============================================================================
 
 import secrets
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 from loguru import logger
 from datetime import datetime, timezone
 
 from app.core.config import settings
-from app.firebase import get_auth, get_db
+from app.firebase import get_auth, get_db, verify_firebase_token
 from app.middleware.auth import get_safety_manager, get_admin_user
 from app.services.risk_matrix import (
     get_risk_matrix_config,
@@ -43,6 +43,35 @@ def _verify_admin_setup(setup_key: str) -> None:
         )
     if not setup_key or not secrets.compare_digest(setup_key, settings.SETUP_SECRET):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid setup key")
+
+
+def verify_task_auth(request: Request) -> Dict[str, Any]:
+    """Authenticate the internal scheduled-task endpoints.
+
+    Accepts either a shared `X-Task-Key` header matching TASK_API_KEY (used by
+    Cloud Scheduler) or a SUPER_ADMIN Firebase ID token in the Authorization
+    header. Returns the acting user context.
+    """
+    header_key = request.headers.get("X-Task-Key")
+    if header_key and settings.TASK_API_KEY and secrets.compare_digest(header_key, settings.TASK_API_KEY):
+        return {"uid": "system", "email": "system", "role": "SUPER_ADMIN", "tenant_id": None}
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[len("Bearer "):]
+        decoded = verify_firebase_token(token)
+        if decoded and decoded.get("role") == "SUPER_ADMIN":
+            return {
+                "uid": decoded.get("uid", "system"),
+                "email": decoded.get("email", "system"),
+                "role": "SUPER_ADMIN",
+                "tenant_id": decoded.get("tenant_id"),
+            }
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Task authentication required (X-Task-Key header or SUPER_ADMIN token)",
+    )
 
 
 class RiskMatrixThresholds(BaseModel):
@@ -538,6 +567,35 @@ async def admin_seed_logs(
     """Recent seeding/admin audit log entries (SUPER_ADMIN)."""
     from app.services.production_seed import list_audit_logs
     return {"success": True, "logs": list_audit_logs(limit=limit)}
+
+
+# ============================================================================
+# Scheduled tasks (internal; Cloud Scheduler / task runners)
+# ============================================================================
+
+class CheckOverdueRequest(BaseModel):
+    tenant_id: Optional[str] = None
+
+
+@router.post("/tasks/check-overdue", status_code=status.HTTP_200_OK)
+async def admin_check_overdue(
+    req: CheckOverdueRequest,
+    request: Request,
+):
+    """Run the overdue/escalation scan across all tenants (or one tenant).
+
+    Intended to be invoked daily by Cloud Scheduler with the X-Task-Key header
+    (TASK_API_KEY) or a SUPER_ADMIN token. Escalates past-due CANs to
+    "Escalated" and past-due CAPs to "Overdue", logging every change.
+    """
+    verify_task_auth(request)
+    from app.services.escalation_service import check_all_overdue
+    try:
+        result = check_all_overdue(tenant_id=req.tenant_id or None)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Overdue check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Overdue check failed: {str(e)}")
 
 
 # ============================================================================

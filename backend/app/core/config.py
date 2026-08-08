@@ -111,6 +111,9 @@ class Settings(BaseSettings):
     # hardcoded; must be provided via the environment. Access is never granted
     # by the key alone — a SUPER_ADMIN Firebase ID token is always required.
     SETUP_SECRET: Optional[str] = None
+    # Shared secret for internal scheduled tasks (e.g. the Cloud Scheduler job
+    # that runs the overdue/escalation check). Sent as the X-Task-Key header.
+    TASK_API_KEY: Optional[str] = None
     # Password used by /provision-airlines. No hardcoded fallback.
     DEFAULT_PROVISION_PASSWORD: Optional[str] = None
     # Password used by the seed data pipeline (backend/seed). No hardcoded fallback.

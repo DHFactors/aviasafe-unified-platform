@@ -70,6 +70,7 @@ class HazardCreate(BaseModel):
     corrective_action: Optional[str] = None
     assigned_to: Optional[str] = None
     assigned_to_uid: Optional[str] = None
+    department: Optional[str] = None
 
     srm_conducted: bool = False
     srm_date: Optional[datetime] = None
@@ -106,6 +107,7 @@ class HazardUpdate(BaseModel):
     corrective_action: Optional[str] = None
     assigned_to: Optional[str] = None
     assigned_to_uid: Optional[str] = None
+    department: Optional[str] = None
     srm_conducted: Optional[bool] = None
     srm_date: Optional[datetime] = None
     srm_status: Optional[str] = None
@@ -136,6 +138,7 @@ class HazardResponse(BaseModel):
     corrective_action: Optional[str] = None
     assigned_to: Optional[str] = None
     assigned_to_uid: Optional[str] = None
+    department: Optional[str] = None
     srm_conducted: bool = False
     srm_date: Optional[datetime] = None
     srm_status: Optional[str] = None
@@ -162,6 +165,7 @@ class HazardListItem(BaseModel):
     risk_level: Optional[str] = None
     status: HazardStatus
     assigned_to: Optional[str] = None
+    department: Optional[str] = None
     created_at: Optional[datetime] = None
     severity: Optional[int] = None
     probability: Optional[int] = None

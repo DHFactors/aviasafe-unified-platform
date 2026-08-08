@@ -149,6 +149,22 @@ async def get_actions_summary(
     return _envelope(data)
 
 
+@router.get("/master-register")
+async def get_master_register(
+    department: Optional[str] = Query(None),
+    assigned_to_uid: Optional[str] = Query(None),
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Unified Master Register: hazards + CANs + CAPs in one scoped view.
+
+    Supports department and assignee filtering. Available to any authenticated
+    tenant user (their own tenant) and to CAAN/SUPER_ADMIN (all tenants).
+    """
+    from app.services.master_register import build_master_register
+    data = build_master_register(user, department=department, assigned_to_uid=assigned_to_uid)
+    return _envelope(data)
+
+
 @router.get("/airline/sms-health")
 async def get_airline_sms_health(
     days: int = Query(365, ge=30, le=730),

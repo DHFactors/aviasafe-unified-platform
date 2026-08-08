@@ -11,6 +11,7 @@ from app.services.risk_matrix import (
     risk_outcome,
     get_thresholds,
 )
+from app.services.users import get_user_department
 
 
 def generate_hazard_id(tenant_id: str, taxonomy: str, year: int, sequence: int) -> str:
@@ -103,6 +104,14 @@ class HazardService:
             "corrective_action": payload.get("corrective_action"),
             "assigned_to": payload.get("assigned_to"),
             "assigned_to_uid": payload.get("assigned_to_uid"),
+            "department": payload.get("department")
+            or (
+                get_user_department(
+                    uid=payload.get("assigned_to_uid"), email=payload.get("assigned_to")
+                )
+                if payload.get("assigned_to_uid") or payload.get("assigned_to")
+                else ""
+            ),
             "srm_conducted": payload.get("srm_conducted", False),
             "srm_date": payload.get("srm_date"),
             "srm_status": payload.get("srm_status"),
@@ -176,6 +185,8 @@ class HazardService:
                         continue
                     if filters.get("tenant_id") and data.get("tenant_id") != filters["tenant_id"]:
                         continue
+                    if filters.get("department") and (data.get("department") or "") != filters["department"]:
+                        continue
                     if filters.get("search"):
                         search = filters["search"].lower()
                         hid = (data.get("hazard_id") or "").lower()
@@ -218,6 +229,11 @@ class HazardService:
                     payload["risk_index"] = compute_risk_index(sev, prob)
                     payload["risk_level"] = classify_risk(compute_risk_index(sev, prob), thresholds)
                     payload["risk_outcome"] = risk_outcome(sev, prob, thresholds)
+
+            if "assigned_to" in payload or "assigned_to_uid" in payload:
+                new_uid = payload.get("assigned_to_uid", target_doc.get("assigned_to_uid"))
+                new_email = payload.get("assigned_to", target_doc.get("assigned_to"))
+                payload["department"] = get_user_department(uid=new_uid, email=new_email)
 
             payload["updated_at"] = datetime.now(timezone.utc)
             ref.update(payload)
@@ -281,6 +297,7 @@ class HazardService:
             ref.update({
                 "assigned_to": assigned_to,
                 "assigned_to_uid": assigned_to_uid,
+                "department": get_user_department(uid=assigned_to_uid, email=assigned_to),
                 "updated_at": now,
             })
 

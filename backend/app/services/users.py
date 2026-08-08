@@ -52,6 +52,7 @@ def user_doc_from_auth_record(record: Any) -> Dict[str, Any]:
         "display_name": getattr(record, "display_name", None),
         "role": claims.get("role") or "USER",
         "tenant_id": claims.get("tenant_id"),
+        "department": claims.get("department") or "",
         "created_at": created_at,
         "last_login": last_login,
         "updated_at": datetime.now(timezone.utc),
@@ -107,9 +108,36 @@ def list_tenant_users(tenant_id: str) -> List[Dict[str, Any]]:
                 "uid": data.get("uid") or snap.id,
                 "email": data.get("email"),
                 "role": data.get("role"),
+                "department": data.get("department") or "",
                 "createdAt": data.get("created_at").isoformat() if data.get("created_at") else None,
                 "lastLogin": data.get("last_login").isoformat() if data.get("last_login") else None,
             }
         )
     results.sort(key=lambda u: (u["createdAt"] or "", u["email"] or ""))
     return results
+
+
+def get_user_department(uid: Optional[str] = None, email: Optional[str] = None) -> str:
+    """Resolve a user's department from the mirrored users collection.
+
+    Checks by uid first, then falls back to an email match. Returns an empty
+    string when the user cannot be found or has no department assigned.
+    """
+    try:
+        db = get_db()
+        if uid:
+            snap = db.collection(settings.FIREBASE_COLLECTION_USERS).document(uid).get()
+            if snap.exists:
+                return (snap.to_dict() or {}).get("department") or ""
+        if email:
+            docs = (
+                db.collection(settings.FIREBASE_COLLECTION_USERS)
+                .where("email", "==", email)
+                .limit(1)
+                .get()
+            )
+            for d in docs:
+                return (d.to_dict() or {}).get("department") or ""
+    except Exception as e:
+        logger.warning(f"Failed to resolve department for uid={uid} email={email}: {e}")
+    return ""

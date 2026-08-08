@@ -44,12 +44,12 @@ const CanCapAPI = {
         ApiClient._request('PATCH', `/api/cans/caps/${capId}/status?status=${status}`),
 };
 
-const CAN_STATUSES = ['Open', 'Under Review', 'Closed'];
+const CAN_STATUSES = ['Open', 'Under Review', 'Closed', 'Escalated'];
 const CAN_PRIORITIES = ['High', 'Medium', 'Low'];
 const CAP_STATUSES = ['In Progress', 'Under Review', 'Completed', 'Revision Required', 'Overdue'];
 
 function canStatusBadgeClass(status) {
-    const map = { 'Open': 'badge-new', 'Under Review': 'badge-warning', 'Closed': 'badge-completed' };
+    const map = { 'Open': 'badge-new', 'Under Review': 'badge-warning', 'Closed': 'badge-completed', 'Escalated': 'badge-danger' };
     return map[status] || 'badge-default';
 }
 

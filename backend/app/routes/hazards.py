@@ -42,6 +42,7 @@ async def list_hazards(
     source: Optional[str] = Query(None),
     taxonomy: Optional[str] = Query(None),
     tenant_id: Optional[str] = Query(None),
+    department: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -60,6 +61,8 @@ async def list_hazards(
         filters["source"] = source
     if taxonomy:
         filters["taxonomy"] = taxonomy
+    if department:
+        filters["department"] = department
     if search:
         filters["search"] = search
     if tenant_id and user.get("role") in ["CAAN_SMD", "SUPER_ADMIN"]:
@@ -159,6 +162,7 @@ def _to_hazard_response(data: dict) -> dict:
         "corrective_action": data.get("corrective_action"),
         "assigned_to": data.get("assigned_to"),
         "assigned_to_uid": data.get("assigned_to_uid"),
+        "department": data.get("department"),
         "srm_conducted": data.get("srm_conducted", False),
         "srm_date": data.get("srm_date"),
         "srm_status": data.get("srm_status"),
@@ -185,6 +189,7 @@ def _to_list_item(data: dict) -> dict:
         "risk_level": data.get("risk_level"),
         "status": data.get("status", "Open"),
         "assigned_to": data.get("assigned_to"),
+        "department": data.get("department"),
         "created_at": data.get("created_at"),
         "severity": data.get("severity"),
         "probability": data.get("probability"),
